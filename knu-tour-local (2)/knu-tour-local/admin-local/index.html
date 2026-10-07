@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>관리자 (로컬 테스트용)</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { background: #f2f4f6; }
+    main { max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; }
+    .ann-item { display: flex; justify-content: space-between; gap: 10px; }
+    .ann-item b { display: block; font-size: 14px; }
+    .ann-item p { margin: 4px 0 0; font-size: 13px; color: var(--sub); white-space: pre-wrap; }
+    .del { background: none; border: 0; color: var(--red); font-size: 13px; }
+    textarea { display: block; width: 100%; margin-top: 8px; padding: 12px; font: inherit; font-size: 15px;
+               border: 1.5px solid var(--line); border-radius: 12px; resize: vertical; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 class="onb-title" style="font-size:22px;margin-top:10px">관리자 (로컬 테스트용)</h1>
+    <p class="onb-sub" style="margin-bottom:18px">
+      이 페이지는 같은 브라우저의 로컬 저장소에 직접 공지를 씁니다.
+      실제 서비스에서는 비밀번호 로그인이 있는 별도 관리자 페이지로 교체해야 합니다.
+    </p>
+    <div class="card">
+      <input id="title" class="field" placeholder="공지 제목" style="padding:12px;border:1.5px solid var(--line);border-radius:12px;width:100%">
+      <textarea id="body" rows="3" placeholder="공지 내용"></textarea>
+      <button id="post-btn" class="btn" style="margin-top:10px">공지 등록</button>
+    </div>
+    <div id="list"></div>
+  </main>
+  <script type="module" src="admin-local.js"></script>
+</body>
+</html>
