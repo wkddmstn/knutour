@@ -172,7 +172,7 @@ async function goTab(tab, opts = {}) {
   clearCampusMap();
 
   if (tab === "home") {
-    const anns = await listAnnouncements();
+    const anns = await listAnnouncements(store.getState().profile?.dept);
     ui.renderDashboard(zones, anns, () => goTab("quest"));
     ui.showView("home");
    } else if (tab === "quest") {
@@ -184,7 +184,7 @@ async function goTab(tab, opts = {}) {
     wireQuestSegment();
     if (opts.mode === "rank") switchQuestPane("rank");
   } else if (tab === "community") {
-    const anns = await listAnnouncements();
+    const anns = await listAnnouncements(store.getState().profile?.dept);
     ui.renderCommunity(anns);
     ui.showView("community");
   } else if (tab === "me") {

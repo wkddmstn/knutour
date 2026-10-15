@@ -39,12 +39,12 @@ export function subscribeNotifications(onNew) {
 
 const SEEN_KEY = "knu-quest-announcements-seen-at";
 
-export async function listAnnouncements() {
-  const { data, error } = await client
-    .from("announcements")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(20);
+// dept를 넘기면: 전체 공지(dept가 비어있는 글) + 그 학과 공지만 가져온다.
+// dept를 안 넘기면(예: 온보딩 전) 전체 공지만 가져온다.
+export async function listAnnouncements(dept) {
+  let q = client.from("announcements").select("*").order("created_at", { ascending: false }).limit(20);
+  q = dept ? q.or(`dept.is.null,dept.eq.${dept}`) : q.is("dept", null);
+  const { data, error } = await q;
   if (error) return [];
   return data;
 }

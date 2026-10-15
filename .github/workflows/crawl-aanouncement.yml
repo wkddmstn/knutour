@@ -1,0 +1,23 @@
+name: Crawl department announcements
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # 6시간마다 자동 실행
+  workflow_dispatch: {}      # GitHub에서 수동으로도 실행 가능
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crawler
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node crawl.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

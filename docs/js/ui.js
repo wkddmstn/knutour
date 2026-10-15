@@ -98,7 +98,7 @@ export function renderDashboard(zones, announcements, onGoQuest) {
     <div class="list-card">
       ${preview.length ? preview.map((a) => `
         <div class="zone-card" style="cursor:default">
-          <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
+          <div class="zc-body"><strong>${a.dept ? `<span style="color:var(--primary);font-weight:700">[${esc(a.dept)}]</span> ` : ""}${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
         </div>`).join("") : `
         <div class="card" style="text-align:center;margin:0">
           <img src="img/mascot/save-earth.png" alt="호반우" style="width:100px;margin:0 auto 10px">
@@ -236,7 +236,7 @@ export function renderCommunity(announcements) {
     <div class="list-card">
       ${announcements.length ? announcements.map((a) => `
         <div class="zone-card" style="cursor:default">
-          <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
+          <div class="zc-body"><strong>${a.dept ? `<span style="color:var(--primary);font-weight:700">[${esc(a.dept)}]</span> ` : ""}${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
         </div>`).join("") : `
         <div class="card" style="text-align:center;margin:0">
           <img src="img/mascot/polarbear-friends.png" alt="호반우와 친구들" style="width:140px;margin:0 auto 10px">
