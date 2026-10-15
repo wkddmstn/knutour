@@ -181,7 +181,7 @@ async function runZone(zone) {
 
     if (DEMO_MODE) {
       chat.choices([{ label: "출발하기", value: "go" }])
-        .then(() => demoMove(zone));
+        .then(() => startJourney(zone));
     }
 
     await verifyLocation(zone);
@@ -216,39 +216,87 @@ async function showExtraInfo(info) {
 
 // 데모: 미션 위치로 "이동한 것"처럼 연출하고 인증을 완료시킨다
 // 데모: 목표 지점까지의 경로를 보여주고, 실제로 걸어가듯 실시간으로 이동시킨다
-async function demoMove(zone) {
-  const target = { lat: zone.lat, lng: zone.lng };
-  const start = geo.offsetPoint(target, 180, Math.random() * 360); // 180m 떨어진 임의 지점에서 출발
-  const steps = 24;
-  const stepDelay = 350;
+// OSRM(보행자 경로) API로 실제 걸을 수 있는 경로를 받아온다. 실패하면 직선 경로로 대체.
+// 브라우저 GPS로 현재 위치를 한 번 가져온다 (실패하면 reject)
+function getCurrentPositionOnce() {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) return reject();
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => reject(),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+}
 
-  if ($("status")) {
-    $("status").className = "pill";
-    $("status").textContent = "출발했어요! 목표 지점으로 이동하는 중...";
+// OSRM(보행자 경로) API로 실제 걸을 수 있는 경로를 받아온다. 실패하면 직선 경로로 대체.
+async function fetchWalkingRoute(start, end) {
+  const url = `https://router.project-osrm.org/route/v1/foot/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const coords = data.routes?.[0]?.geometry?.coordinates;
+  if (!coords || !coords.length) throw new Error("no route");
+  return coords.map(([lng, lat]) => ({ lat, lng }));
+}
+
+// 출발하기: 실제 내 위치 → 목표까지 경로/거리 표시, 위치 인증 버튼 + (데모용) 위치 이동 버튼 제공
+async function startJourney(zone) {
+  const target = { lat: zone.lat, lng: zone.lng };
+
+  let here;
+  try {
+    here = await getCurrentPositionOnce();
+  } catch {
+    here = geo.offsetPoint(target, 180, Math.random() * 360); // GPS를 못 가져오면 임의 지점에서 시작
+  }
+
+  let route;
+  try {
+    route = await fetchWalkingRoute(here, target);
+  } catch {
+    route = [here, target]; // 경로 API 실패 시 직선으로 대체
   }
 
   if (map) {
-    L.polyline([[start.lat, start.lng], [target.lat, target.lng]], {
-      color: "#d4121a", weight: 3, dashArray: "6 8", opacity: .8,
+    L.polyline(route.map((p) => [p.lat, p.lng]), {
+      color: "#d4121a", weight: 4, opacity: .85, lineCap: "round",
     }).addTo(map);
-    map.flyToBounds([[start.lat, start.lng], [target.lat, target.lng]], { padding: [30, 30] });
-  }
-  updateMarker({ ...start, accuracy: 5 });
-
-  for (let i = 1; i <= steps; i++) {
-    await new Promise((r) => setTimeout(r, stepDelay));
-    const pos = { ...geo.lerp(start, target, i / steps), accuracy: 5 };
-    updateMarker(pos);
-    const r2 = geo.evaluate(pos, zone);
-    if (r2.distance > 20) ui.setStatus({ ...r2, streak: 0 }, pos);
-    else break; // 20m 이내로 들어오면 자동 이동 멈춤
+    map.flyToBounds(route.map((p) => [p.lat, p.lng]), { padding: [30, 30] });
   }
 
-  if ($("status")) {
-    $("status").className = "pill ok";
-    $("status").textContent = "목표 지점 근처에 도착했어요!";
+  let simPos = { ...here, accuracy: 5 };
+  updateMarker(simPos);
+
+  while (true) {
+    const r = geo.evaluate(simPos, zone);
+    if (r.distance <= 20) {
+      if ($("status")) {
+        $("status").className = "pill ok";
+        $("status").textContent = "목표 지점 근처예요! 위치 인증하기를 눌러줘.";
+      }
+    } else {
+      ui.setStatus({ ...r, streak: 0 }, simPos);
+    }
+
+    const pick = await chat.choices([
+      { label: "위치 인증하기", value: "verify" },
+      { label: "위치 이동하기 (데모)", value: "teleport", ghost: true },
+    ]);
+
+    if (pick === "teleport") {
+      simPos = { ...target, accuracy: 5 };
+      updateMarker(simPos);
+      if (map) map.flyTo([target.lat, target.lng], 17);
+      continue; // 상태 갱신 후 버튼 다시 노출
+    }
+
+    const r2 = geo.evaluate(simPos, zone);
+    if (r2.distance <= 20) {
+      forceVerify?.();
+      return;
+    }
+    ui.setStatus({ ...r2, streak: 0 }, simPos); // 20m 넘게 떨어져 있으면 화살표+안내 코멘트 다시 표시
   }
-  chat.choices([{ label: "위치 인증하기", value: "verify" }]).then(() => forceVerify?.());
 }
 
 // 위치 인증이 끝나면 resolve되는 Promise
