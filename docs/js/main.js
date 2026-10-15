@@ -39,52 +39,72 @@ const todayQuiz = () => QUIZ_BANK[Math.floor(Date.now() / 86400000) % QUIZ_BANK.
 function renderDailySection() {
   const checkin = store.getDailyCheckin();
   const quizState = store.getDailyQuizState();
-  const q = todayQuiz();
-  ui.renderDaily(checkin, quizState, q);
+  ui.renderDaily(checkin, quizState);
 
   $("btn-daily-checkin")?.addEventListener("click", () => {
     const res = store.doDailyCheckin(10);
     if (res.ok) { ui.reward(res.pts); renderDailySection(); }
   });
 
-  document.querySelectorAll("#daily-quiz-opts [data-i]").forEach((btn) => {
-    btn.onclick = () => {
-      const i = Number(btn.dataset.i);
+  $("btn-daily-quiz")?.addEventListener("click", () => {
+    const q = todayQuiz();
+    ui.showDailyQuiz(q, (i) => {
       const correct = i === q.answer;
-      if (!store.completeDailyQuiz(correct, 15)) return;
-      if (correct) ui.reward(15);
-      if ($("daily-quiz-result")) {
-        $("daily-quiz-result").textContent = correct
-          ? "정답이에요! 내일 또 도전해보세요."
-          : `아쉬워요! 정답은 "${q.options[q.answer]}"였어요.`;
-      }
-      document.querySelectorAll("#daily-quiz-opts [data-i]").forEach((b) => (b.disabled = true));
-    };
+      const did = store.completeDailyQuiz(correct, 15);
+      if (did && correct) ui.reward(15);
+      renderDailySection();
+      return correct;
+    });
   });
 }
 
 /* ================= 지도 타일 (라이트/다크 자동 전환) ================= */
-// Esri의 무료 회색 베이스맵: API 키 없이 쓸 수 있고, 라이트는 연한 회색(Light Gray),
-// 다크는 짙은 회색(Dark Gray) — 기존 OSM 반전 필터보다 훨씬 깔끔합니다.
-const TILE_ATTR = 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, GIS User Community';
+// 라이트 모드: 표준 OpenStreetMap(초록/파랑 컬러, 길·건물 이름 다 보임) — API 키 불필요.
+// 다크 모드: OSM은 다크 버전이 없어서, Esri의 무료 Dark Gray(바탕) + Reference(라벨) 조합 사용.
 const isDarkMode = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-const tileUrl = () =>
-  isDarkMode()
-    ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-    : "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+
+function tileConfig() {
+  if (isDarkMode()) {
+    const attr = 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, GIS User Community';
+    return {
+      base: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        options: { maxZoom: 19, maxNativeZoom: 16, attribution: attr },
+      },
+      ref: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+        options: { maxZoom: 19, maxNativeZoom: 16 },
+      },
+    };
+  }
+  return {
+    base: {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      options: {
+        maxZoom: 19, subdomains: "abc",
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      },
+    },
+    ref: null, // 표준 OSM 타일에는 이미 라벨이 포함돼 있어서 별도 레이어가 필요 없음
+  };
+}
 
 function addBaseTiles(targetMap) {
-  const layer = L.tileLayer(tileUrl(), {
-    maxZoom: 19, maxNativeZoom: 16, attribution: TILE_ATTR,
-  }).addTo(targetMap);
-  return layer;
+  const cfg = tileConfig();
+  const baseLayer = L.tileLayer(cfg.base.url, cfg.base.options).addTo(targetMap);
+  const refLayer = cfg.ref ? L.tileLayer(cfg.ref.url, cfg.ref.options).addTo(targetMap) : null;
+  return { baseLayer, refLayer };
 }
 
 // 시스템 다크모드가 실시간으로 바뀌면(설정 변경 등) 열려 있는 지도 타일도 같이 바꿔준다
-let tileLayers = []; // { map, layer } 목록
+let tileLayers = []; // { targetMap, baseLayer, refLayer } 목록
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-  tileLayers.forEach(({ targetMap, layer }) => {
-    layer.setUrl(tileUrl());
+  const cfg = tileConfig();
+  tileLayers.forEach((entry) => {
+    entry.baseLayer.setUrl(cfg.base.url);
+    if (entry.refLayer && cfg.ref) entry.refLayer.setUrl(cfg.ref.url);
+    else if (entry.refLayer && !cfg.ref) { entry.targetMap.removeLayer(entry.refLayer); entry.refLayer = null; }
+    else if (!entry.refLayer && cfg.ref) { entry.refLayer = L.tileLayer(cfg.ref.url, cfg.ref.options).addTo(entry.targetMap); }
   });
 });
 
@@ -477,8 +497,8 @@ function initCampusMap(onSelect) {
     zones.reduce((sum, zone) => sum + zone.lng, 0) / zones.length,
   ];
   campusMap = L.map("campus-map").setView(center, 16);
-  const layer = addBaseTiles(campusMap);
-  tileLayers.push({ targetMap: campusMap, layer });
+  const { baseLayer, refLayer } = addBaseTiles(campusMap);
+  tileLayers.push({ targetMap: campusMap, baseLayer, refLayer });
 
   const bounds = [];
   zones.forEach((zone) => {
@@ -517,8 +537,8 @@ function initCampusMap(onSelect) {
 
 function initMap(zone) {
   map = L.map("map").setView([zone.lat, zone.lng], 17);
-  const layer = addBaseTiles(map);
-  tileLayers.push({ targetMap: map, layer });
+  const { baseLayer, refLayer } = addBaseTiles(map);
+  tileLayers.push({ targetMap: map, baseLayer, refLayer });
 
   L.circle([zone.lat, zone.lng], { radius: zone.radius, color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
   L.marker([zone.lat, zone.lng]).addTo(map).bindPopup(zone.name);

@@ -13,7 +13,7 @@ const empty = () => ({
   score: 0,
   startedAt: null,
   chatLog: {},     // { zoneId: htmlString }  구역별 대화 기록 스냅샷 (새로고침해도 유지)
-  daily: { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null } },  // 데일리 출석체크 / 퀴즈
+  daily: { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null, correct: false } },  // 데일리 출석체크 / 퀴즈
 });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -103,17 +103,18 @@ export function doDailyCheckin(pts = 10) {
 /* ---------- 데일리 퀴즈 ---------- */
 export function getDailyQuizState() {
   const s = load();
-  const q = s.daily?.quiz || { lastDate: null };
+  const q = s.daily?.quiz || { lastDate: null, correct: false };
   return { ...q, done: q.lastDate === todayStr() };
 }
 
 // 오늘 처음 푸는 거면 기록하고(정답이면 XP 지급), 이미 풀었으면 false
 export function completeDailyQuiz(correct, pts = 15) {
   const s = load();
-  s.daily = s.daily || { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null } };
+  s.daily = s.daily || { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null, correct: false } };
   const today = todayStr();
   if (s.daily.quiz.lastDate === today) return false;
   s.daily.quiz.lastDate = today;
+  s.daily.quiz.correct = !!correct;
   if (correct) s.score += pts;
   save(s);
   return true;

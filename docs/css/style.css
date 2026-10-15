@@ -182,9 +182,16 @@ body[data-view="zone"] #chat-mascot {
 .widget-card .chip.primary { width: 100%; margin-top: 8px; }
 
 /* ============ 랭킹 ============ */
-.seg { display: flex; padding: 3px; margin-bottom: 14px; background: var(--cream-weak); border-radius: 12px; }
-.seg button { flex: 1; padding: 10px; border-radius: 10px; color: var(--sub); font-size: 14px; font-weight: 600; }
-.seg button.on { background: var(--card); color: var(--primary-dark); box-shadow: 0 1px 3px rgba(36, 28, 22, .12); }
+.seg { display: flex; padding: 4px; margin-bottom: 14px; background: var(--cream-weak); border-radius: 14px; gap: 2px; }
+.seg button { flex: 1; padding: 11px; border-radius: 11px; color: var(--sub); font-size: 14px; font-weight: 600; transition: background .15s, color .15s, transform .1s; }
+.seg button.on { background: var(--primary); color: #fff; box-shadow: 0 3px 8px rgba(212, 18, 26, .35); }
+.seg button:active { transform: scale(.97); }
+
+/* 안쪽 서브탭(랭킹의 개인/소속 등) — 바깥 .seg와 헷갈리지 않게 밑줄 스타일로 구분 */
+.seg-sub { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.seg-sub button { flex: 1; padding: 10px 4px; color: var(--mute); font-size: 14px; font-weight: 600;
+                   border-bottom: 2px solid transparent; border-radius: 0; transition: color .15s, border-color .15s; }
+.seg-sub button.on { color: var(--primary); border-bottom-color: var(--primary); }
 .my-rank { display: flex; justify-content: space-between; align-items: center; }
 .my-big { margin-top: 2px; color: var(--primary); font-size: 30px; font-weight: 700; }
 .my-side { text-align: right; color: var(--sub); font-size: 14px; }

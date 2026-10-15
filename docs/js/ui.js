@@ -131,9 +131,11 @@ export function renderQuestShell(cleared = 0, total = 0) {
 }
 
 /* ---------- 데일리 출석체크 / 퀴즈 ---------- */
-export function renderDaily(checkin, quiz, q) {
+export function renderDaily(checkin, quiz) {
   const el = $("daily-section");
   if (!el) return;
+  const quizStatus = !quiz.done ? "경북대 상식 퀴즈에 도전해 보세요!"
+    : quiz.correct ? "✅ 오늘 정답을 맞혔어요" : "📝 오늘 퀴즈는 풀었어요";
   el.innerHTML = `
     <h3 class="sec">오늘의 데일리</h3>
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -146,14 +148,45 @@ export function renderDaily(checkin, quiz, q) {
         ${checkin.done ? "완료" : "+10 XP"}
       </button>
     </div>
-    <div class="card">
-      <div class="sum-label" style="margin-bottom:8px">오늘의 퀴즈</div>
-      <div style="font-weight:600;margin-bottom:12px;line-height:1.5">${esc(q.q)}</div>
-      <div id="daily-quiz-opts" style="display:flex;flex-direction:column;gap:8px">
-        ${q.options.map((opt, i) => `<button class="chip" data-i="${i}" ${quiz.done ? "disabled" : ""}>${esc(opt)}</button>`).join("")}
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div class="sum-label">오늘의 퀴즈</div>
+        <div class="sum-big" style="font-size:19px">${quizStatus}</div>
+        <div class="sum-foot">${quiz.done ? "내일 또 도전해보세요" : "정답 시 +15 XP"}</div>
       </div>
-      <p id="daily-quiz-result" class="sum-foot" style="margin-top:8px">${quiz.done ? "오늘 퀴즈는 이미 풀었어요. 내일 또 도전해보세요!" : ""}</p>
+      <button id="btn-daily-quiz" class="chip primary" style="white-space:nowrap" ${quiz.done ? "disabled" : ""}>
+        ${quiz.done ? "완료" : "퀴즈 풀기"}
+      </button>
     </div>`;
+}
+
+// 퀴즈 풀기 버튼을 누르면 열리는 팝업. onAnswer(선택한 인덱스)는 정답 여부(boolean)를 돌려줘야 한다
+export function showDailyQuiz(q, onAnswer) {
+  const m = $("modal");
+  m.classList.remove("hidden");
+  m.innerHTML = `
+    <div class="modal-card" style="text-align:center">
+      <h2 style="font-size:19px">오늘의 퀴즈</h2>
+      <p style="font-weight:600;margin:14px 0 18px;line-height:1.5">${esc(q.q)}</p>
+      <div id="quiz-modal-opts" style="display:flex;flex-direction:column;gap:8px;text-align:left">
+        ${q.options.map((opt, i) => `<button class="chip" data-i="${i}">${esc(opt)}</button>`).join("")}
+      </div>
+      <p id="quiz-modal-result" class="sum-foot" style="margin-top:12px"></p>
+      <button id="quiz-modal-close" class="btn alt hidden" style="margin-top:12px">닫기</button>
+    </div>`;
+  const close = () => { m.classList.add("hidden"); m.innerHTML = ""; };
+  m.querySelectorAll("#quiz-modal-opts [data-i]").forEach((btn) => {
+    btn.onclick = () => {
+      const i = Number(btn.dataset.i);
+      m.querySelectorAll("#quiz-modal-opts [data-i]").forEach((b) => (b.disabled = true));
+      const correct = onAnswer(i);
+      $("quiz-modal-result").textContent = correct
+        ? "정답이에요! +15 XP 획득했어요."
+        : `아쉬워요! 정답은 "${q.options[q.answer]}"였어요.`;
+      $("quiz-modal-close").classList.remove("hidden");
+    };
+  });
+  $("quiz-modal-close").onclick = close;
 }
 
 export function renderRankInto(container, rows, mode, onMode) {
@@ -178,7 +211,7 @@ export function renderRankInto(container, rows, mode, onMode) {
     </li>`).join("");
 
   container.innerHTML = `
-    <div class="seg" style="margin-top:12px">
+    <div class="seg-sub" style="margin-top:12px">
       <button data-m="total" class="${mode === "total" ? "on" : ""}">개인</button>
       <button data-m="dept" class="${mode === "dept" ? "on" : ""}">소속</button>
     </div>
@@ -192,7 +225,7 @@ export function renderRankInto(container, rows, mode, onMode) {
     <div class="podium">${podium}</div>
     ${list ? `<ol class="ranklist">${list}</ol>` : ""}
     <p class="note">지금은 데모용 더미 순위예요. 서버를 연결하면 실제 참가자 순위가 표시돼요.</p>`;
-  container.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => onMode(b.dataset.m)));
+  container.querySelectorAll(".seg-sub button").forEach((b) => (b.onclick = () => onMode(b.dataset.m)));
 }
 
 /* ---------- 커뮤니티 ---------- */
