@@ -125,8 +125,35 @@ export function renderQuestShell(cleared = 0, total = 0) {
         <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
       </div>
       <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
+      <div id="daily-section"></div>
     </div>
     <div id="quest-rank-pane" class="hidden"></div>`;
+}
+
+/* ---------- 데일리 출석체크 / 퀴즈 ---------- */
+export function renderDaily(checkin, quiz, q) {
+  const el = $("daily-section");
+  if (!el) return;
+  el.innerHTML = `
+    <h3 class="sec">오늘의 데일리</h3>
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div class="sum-label">출석 체크</div>
+        <div class="sum-big" style="font-size:19px">${checkin.done ? "✅ 오늘 출석 완료" : "오늘도 출석해볼까요?"}</div>
+        <div class="sum-foot">🔥 연속 ${checkin.streak}일째</div>
+      </div>
+      <button id="btn-daily-checkin" class="chip primary" style="white-space:nowrap" ${checkin.done ? "disabled" : ""}>
+        ${checkin.done ? "완료" : "+10 XP"}
+      </button>
+    </div>
+    <div class="card">
+      <div class="sum-label" style="margin-bottom:8px">오늘의 퀴즈</div>
+      <div style="font-weight:600;margin-bottom:12px;line-height:1.5">${esc(q.q)}</div>
+      <div id="daily-quiz-opts" style="display:flex;flex-direction:column;gap:8px">
+        ${q.options.map((opt, i) => `<button class="chip" data-i="${i}" ${quiz.done ? "disabled" : ""}>${esc(opt)}</button>`).join("")}
+      </div>
+      <p id="daily-quiz-result" class="sum-foot" style="margin-top:8px">${quiz.done ? "오늘 퀴즈는 이미 풀었어요. 내일 또 도전해보세요!" : ""}</p>
+    </div>`;
 }
 
 export function renderRankInto(container, rows, mode, onMode) {
@@ -192,16 +219,7 @@ export function renderMe(zones, onReset, onRanking) {
   const lv = getLevel(st.score);
   const missions = zones.flatMap((z) => z.missions);
   const doneCnt = missions.filter((m) => isDone(m.id)).length;
-  const count = (t) => missions.filter((m) => m.type === t && isDone(m.id)).length;
   const clearCnt = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
-  const badges = [
-    { e: "👣", n: "첫 발걸음", ok: doneCnt >= 1 },
-    { e: "📸", n: "포토 헌터", ok: count("photo") >= 1 },
-    { e: "🎤", n: "목소리 주인공", ok: count("voice") >= 1 },
-    { e: "🧠", n: "퀴즈 러버", ok: count("quiz") + count("code") >= 1 },
-    { e: "🚩", n: "구역 정복자", ok: clearCnt >= 1 },
-    { e: "🏅", n: "캠퍼스 마스터", ok: doneCnt === missions.length },
-  ];
 
   // 가입한 지 며칠째인지 (개인 정보 한 줄 요약에 사용)
   const joinedAt = st.startedAt || Date.now();
@@ -230,10 +248,6 @@ export function renderMe(zones, onReset, onRanking) {
       <div class="sum-big" style="font-size:30px;letter-spacing:4px">${esc(myCode)}</div>
       <div class="sum-foot">'함께하기' 미션에서 친구에게 이 코드를 알려주세요</div>
     </div>` : ""}
-    <h3 class="sec">배지</h3>
-    <div class="badges">
-      ${badges.map((b) => `<div class="badge ${b.ok ? "" : "off"}"><span>${b.e}</span>${b.n}</div>`).join("")}
-    </div>
     <h3 class="sec">설정</h3>
     <button id="btn-reset" class="btn alt" style="margin-top:0">기록 초기화하고 처음부터 시작</button>`;
   $("btn-reset").onclick = () => {

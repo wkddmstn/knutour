@@ -25,6 +25,44 @@ let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 
+/* ================= 데일리 퀴즈 문제 은행 ================= */
+// 날짜별로 문제가 바뀐다 (같은 날에는 모든 유저가 같은 문제를 봄)
+const QUIZ_BANK = [
+  { q: "경북대학교의 상징 마스코트 이름은 무엇일까요?", options: ["황소", "호반우", "호랑이", "곰돌이"], answer: 1 },
+  { q: "경북대학교 대구캠퍼스는 어느 구에 위치해 있을까요?", options: ["중구", "북구", "수성구", "달서구"], answer: 1 },
+  { q: "경북대학교가 개교한 연도는 언제일까요?", options: ["1946년", "1952년", "1965년", "1980년"], answer: 0 },
+  { q: "경북대 학생들이 줄여서 '센팍'이라고 부르는 장소는 어디일까요?", options: ["도서관", "센트럴파크", "북문", "대운동장"], answer: 1 },
+  { q: "경북대학교의 영문 약자는 무엇일까요?", options: ["KNU", "SNU", "PNU", "CNU"], answer: 0 },
+];
+const todayQuiz = () => QUIZ_BANK[Math.floor(Date.now() / 86400000) % QUIZ_BANK.length];
+
+function renderDailySection() {
+  const checkin = store.getDailyCheckin();
+  const quizState = store.getDailyQuizState();
+  const q = todayQuiz();
+  ui.renderDaily(checkin, quizState, q);
+
+  $("btn-daily-checkin")?.addEventListener("click", () => {
+    const res = store.doDailyCheckin(10);
+    if (res.ok) { ui.reward(res.pts); renderDailySection(); }
+  });
+
+  document.querySelectorAll("#daily-quiz-opts [data-i]").forEach((btn) => {
+    btn.onclick = () => {
+      const i = Number(btn.dataset.i);
+      const correct = i === q.answer;
+      if (!store.completeDailyQuiz(correct, 15)) return;
+      if (correct) ui.reward(15);
+      if ($("daily-quiz-result")) {
+        $("daily-quiz-result").textContent = correct
+          ? "정답이에요! 내일 또 도전해보세요."
+          : `아쉬워요! 정답은 "${q.options[q.answer]}"였어요.`;
+      }
+      document.querySelectorAll("#daily-quiz-opts [data-i]").forEach((b) => (b.disabled = true));
+    };
+  });
+}
+
 /* ================= 지도 타일 (라이트/다크 자동 전환) ================= */
 // Esri의 무료 회색 베이스맵: API 키 없이 쓸 수 있고, 라이트는 연한 회색(Light Gray),
 // 다크는 짙은 회색(Dark Gray) — 기존 OSM 반전 필터보다 훨씬 깔끔합니다.
@@ -122,6 +160,7 @@ async function goTab(tab, opts = {}) {
     ui.renderQuestShell(clearedCount, zones.length);
     ui.showView("quest");
     initCampusMap(openZone);
+    renderDailySection();
     wireQuestSegment();
     if (opts.mode === "rank") switchQuestPane("rank");
   } else if (tab === "community") {

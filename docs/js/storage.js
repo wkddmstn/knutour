@@ -13,7 +13,10 @@ const empty = () => ({
   score: 0,
   startedAt: null,
   chatLog: {},     // { zoneId: htmlString }  구역별 대화 기록 스냅샷 (새로고침해도 유지)
+  daily: { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null } },  // 데일리 출석체크 / 퀴즈
 });
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
 
 function load() {
   try { return { ...empty(), ...JSON.parse(STORE.getItem(KEY)) }; }
@@ -74,6 +77,46 @@ export function clearZoneChat(zoneId) {
   const s = load();
   delete s.chatLog[zoneId];
   save(s);
+}
+
+/* ---------- 데일리 출석체크 ---------- */
+export function getDailyCheckin() {
+  const s = load();
+  const c = s.daily?.checkin || { lastDate: null, streak: 0 };
+  return { ...c, done: c.lastDate === todayStr() };
+}
+
+// 오늘 처음이면 출석 처리하고 XP 지급, 이미 했으면 ok:false
+export function doDailyCheckin(pts = 10) {
+  const s = load();
+  s.daily = s.daily || { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null } };
+  const today = todayStr();
+  if (s.daily.checkin.lastDate === today) return { ok: false, streak: s.daily.checkin.streak };
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  s.daily.checkin.streak = s.daily.checkin.lastDate === yesterday ? s.daily.checkin.streak + 1 : 1;
+  s.daily.checkin.lastDate = today;
+  s.score += pts;
+  save(s);
+  return { ok: true, streak: s.daily.checkin.streak, pts };
+}
+
+/* ---------- 데일리 퀴즈 ---------- */
+export function getDailyQuizState() {
+  const s = load();
+  const q = s.daily?.quiz || { lastDate: null };
+  return { ...q, done: q.lastDate === todayStr() };
+}
+
+// 오늘 처음 푸는 거면 기록하고(정답이면 XP 지급), 이미 풀었으면 false
+export function completeDailyQuiz(correct, pts = 15) {
+  const s = load();
+  s.daily = s.daily || { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null } };
+  const today = todayStr();
+  if (s.daily.quiz.lastDate === today) return false;
+  s.daily.quiz.lastDate = today;
+  if (correct) s.score += pts;
+  save(s);
+  return true;
 }
 
 // 레벨: 250 XP마다 1레벨
