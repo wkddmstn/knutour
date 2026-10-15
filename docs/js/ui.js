@@ -8,12 +8,12 @@ export const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* ---------- 화면 전환 ---------- */
-const VIEWS = ["onboard", "home", "explore", "rank", "me", "zone"];
+const VIEWS = ["onboard", "home", "quest", "community", "me", "zone"];
 export function showView(name) {
   VIEWS.forEach((v) => $("view-" + v).classList.toggle("hidden", v !== name));
   document.body.dataset.view = name;
   document.querySelectorAll("#tabbar button").forEach((b) =>
-    b.classList.toggle("on", b.dataset.tab === (name === "rank" ? "me" : name)));
+    b.classList.toggle("on", b.dataset.tab === name));
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -72,53 +72,51 @@ export function renderOnboard(depts, onSubmit) {
   $("in-nick").onkeydown = (e) => { if (e.key === "Enter") submit(); };
 }
 
-/* ---------- 홈: 캠퍼스 지도 ---------- */
-export function renderCampusMap() {
-  $("view-home").innerHTML = `
-    <h1 class="sec campus-title">캠퍼스 지도</h1>
-    <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
-    <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>`;
-}
-
-/* ---------- 탐색: 구역 선택 ---------- */
-export function renderExplore(zones, onSelect) {
+/* ---------- 홈: 대시보드 ---------- */
+export function renderDashboard(zones, announcements, onGoQuest) {
   const st = getState();
   const lv = getLevel(st.score);
-  const cleared = (z) => z.missions.every((m) => isDone(m.id));
   const total = zones.reduce((a, z) => a + z.missions.length, 0);
   const done = zones.reduce((a, z) => a + z.missions.filter((m) => isDone(m.id)).length, 0);
+  const preview = announcements.slice(0, 2);
 
-  const el = $("view-explore");
-  el.innerHTML = `
+  $("view-home").innerHTML = `
+    <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
+    <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
     <div class="card">
-      <div class="sum-label">${esc(st.profile.nickname)}님의 진행 상황</div>
+      <div class="sum-label">진행 상황</div>
       <div class="sum-big">${done}<small> / ${total} 미션</small></div>
-      <div class="progress"><i style="width:${(done / total) * 100}%"></i></div>
-      <div class="stamps">
-        ${zones.map((z) => `<div class="stamp ${cleared(z) ? "on" : ""}" title="${esc(z.name)}">${z.emoji}</div>`).join("")}
-      </div>
-      <div class="sum-foot">${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
+      <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
+      <div class="sum-foot">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
     </div>
-    <h3 class="sec">구역</h3>
-    <div class="list-card" id="zone-list"></div>`;
-
-  const list = $("zone-list");
-  zones.forEach((z) => {
-    const d = z.missions.filter((m) => isDone(m.id)).length;
-    const full = d === z.missions.length;
-    const b = document.createElement("button");
-    b.className = "zone-card" + (full ? " clear" : "");
-    b.innerHTML = `
-      <div class="zc-emoji">${z.emoji}</div>
-      <div class="zc-body"><strong>${z.name}</strong><span>${z.desc}</span></div>
-      <div class="zc-side">${full ? "완료" : `${d}/${z.missions.length}`}</div>`;
-    b.onclick = () => onSelect(z);
-    list.appendChild(b);
-  });
+    <button id="btn-go-quest" class="btn">미션 하러 가기</button>
+    <h3 class="sec">공지사항</h3>
+    <div class="list-card">
+      ${preview.length ? preview.map((a) => `
+        <div class="zone-card" style="cursor:default">
+          <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
+        </div>`).join("") : `<div class="card" style="text-align:center;color:var(--mute)">아직 공지가 없어요</div>`}
+    </div>`;
+  $("btn-go-quest").onclick = onGoQuest;
 }
 
-/* ---------- 랭킹 ---------- */
-export function renderRank(rows, mode, onMode, onBack) {
+/* ---------- 퀘스트: 지도 + 랭킹 ---------- */
+export function renderQuestShell() {
+  $("view-quest").innerHTML = `
+    <div class="seg quest-seg">
+      <button data-m="map" class="on">지도</button>
+      <button data-m="rank">랭킹</button>
+    </div>
+    <div id="quest-map-pane">
+      <h1 class="sec campus-title">캠퍼스 지도</h1>
+      <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
+      <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
+    </div>
+    <div id="quest-rank-pane" class="hidden"></div>`;
+}
+
+export function renderRankInto(container, rows, mode, onMode) {
+  if (!container) return;
   const meIdx = rows.findIndex((r) => r.me);
   const unit = mode === "dept" ? "평균 XP" : "XP";
   const podium = [1, 0, 2]
@@ -138,10 +136,8 @@ export function renderRank(rows, mode, onMode, onBack) {
       <span class="pts">${r.score}</span>
     </li>`).join("");
 
-  const el = $("view-rank");
-  el.innerHTML = `
-    <button id="rank-back" class="text-btn rank-back">내 정보로 돌아가기</button>
-    <div class="seg">
+  container.innerHTML = `
+    <div class="seg" style="margin-top:12px">
       <button data-m="total" class="${mode === "total" ? "on" : ""}">개인</button>
       <button data-m="dept" class="${mode === "dept" ? "on" : ""}">소속</button>
     </div>
@@ -155,8 +151,20 @@ export function renderRank(rows, mode, onMode, onBack) {
     <div class="podium">${podium}</div>
     ${list ? `<ol class="ranklist">${list}</ol>` : ""}
     <p class="note">지금은 데모용 더미 순위예요. 서버를 연결하면 실제 참가자 순위가 표시돼요.</p>`;
-  el.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => onMode(b.dataset.m)));
-  $("rank-back").onclick = onBack;
+  container.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => onMode(b.dataset.m)));
+}
+
+/* ---------- 커뮤니티 ---------- */
+export function renderCommunity(announcements) {
+  $("view-community").innerHTML = `
+    <h1 class="sec" style="margin-top:4px">커뮤니티</h1>
+    <p class="map-guide">공지사항과 학교 소식을 확인해 보세요.</p>
+    <div class="list-card">
+      ${announcements.length ? announcements.map((a) => `
+        <div class="zone-card" style="cursor:default">
+          <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
+        </div>`).join("") : `<div class="card" style="text-align:center;color:var(--mute)">아직 공지가 없어요</div>`}
+    </div>`;
 }
 
 /* ---------- 내 정보 ---------- */

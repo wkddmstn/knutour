@@ -7,6 +7,7 @@ import { getRanking } from "./ranking.js";
 import { ensureProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
+import { listAnnouncements } from "./notifications.js";
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -38,7 +39,7 @@ async function init() {
   // 요소가 없어도(예: index.html이 구버전이라 특정 버튼이 빠져있어도) 전체가 멈추지 않도록
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
-  $("btn-back")?.addEventListener("click", () => goTab("explore"));
+  $("btn-back")?.addEventListener("click", () => goTab("quest"));
   $("btn-map")?.addEventListener("click", toggleMap);
   if ($("bell-btn")) {
     $("bell-btn").onclick = openNotifPanel;
@@ -46,7 +47,7 @@ async function init() {
     console.warn("[캠퍼스 퀘스트] #bell-btn 요소가 없어요 — index.html이 최신 버전인지 확인해 주세요. 알림 기능은 비활성화됩니다.");
   }
 
-   if (store.hasProfile()) {
+  if (store.hasProfile()) {
     await ensureProfile(store.getState().profile);   // Supabase 프로필 보장 (친구 코드 발급)
     setupNotifications();
     goTab("home");
@@ -72,9 +73,9 @@ function setupNotifications() {
 }
 
 function showOnboard() {
-  ui.renderOnboard(DEPTS, (profile) => {
+  ui.renderOnboard(DEPTS, async (profile) => {
     store.saveProfile(profile);
-    ensureProfile(profile);   // 이 탭의 신원 생성 (친구 코드 발급)
+    await ensureProfile(profile);   // Supabase 프로필 생성 (친구 코드 발급)
     setupNotifications();
     goTab("home");
   });
@@ -82,30 +83,48 @@ function showOnboard() {
 }
 
 /* ================= 탭 이동 ================= */
-async function goTab(tab) {
+async function goTab(tab, opts = {}) {
   leaveZone();
   ui.updateHud();
   clearCampusMap();
 
-  const destination = tab === "rank" ? "me" : tab;
-  if (destination === "home") {
-    ui.renderCampusMap();
+  if (tab === "home") {
+    const anns = await listAnnouncements();
+    ui.renderDashboard(zones, anns, () => goTab("quest"));
     ui.showView("home");
+  } else if (tab === "quest") {
+    ui.renderQuestShell();
+    ui.showView("quest");
     initCampusMap(openZone);
-  } else if (destination === "explore") {
-    ui.renderExplore(zones, openZone);
-    ui.showView("explore");
-  } else if (destination === "me") {
-    ui.renderMe(zones, onReset, () => showRank("total"));
+    wireQuestSegment();
+    if (opts.mode === "rank") switchQuestPane("rank");
+  } else if (tab === "community") {
+    const anns = await listAnnouncements();
+    ui.renderCommunity(anns);
+    ui.showView("community");
+  } else if (tab === "me") {
+    ui.renderMe(zones, onReset, () => goTab("quest", { mode: "rank" }));
     refreshBellBadge();
     ui.showView("me");
-    if (tab === "rank") await showRank("total");
   }
 }
 
-async function showRank(mode) {
-  ui.renderRank(await getRanking(mode), mode, showRank, () => ui.showView("me"));
-  ui.showView("rank");
+function wireQuestSegment() {
+  document.querySelectorAll(".quest-seg button").forEach((b) => {
+    b.onclick = () => switchQuestPane(b.dataset.m);
+  });
+}
+
+function switchQuestPane(mode) {
+  document.querySelectorAll(".quest-seg button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
+  $("quest-map-pane")?.classList.toggle("hidden", mode !== "map");
+  $("quest-rank-pane")?.classList.toggle("hidden", mode !== "rank");
+  if (mode === "rank") showQuestRank("total");
+}
+
+async function showQuestRank(mode) {
+  const rows = await getRanking(mode);
+  ui.renderRankInto($("quest-rank-pane"), rows, mode, showQuestRank);
 }
 
 function onReset() {
@@ -261,7 +280,7 @@ async function missionMenu(zone) {
       })),
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
-    if (pick === "__home") { goTab("explore"); return; }
+    if (pick === "__home") { goTab("quest"); return; }
     await runMission(zone.missions.find((m) => m.id === pick));
   }
 }
@@ -279,14 +298,15 @@ async function finishZone(zone) {
   if (allCleared() && store.grantBonus("all", 200)) {
     ui.reward(200);
     await chat.bot("우와, <b>전 구역 완주</b>했네!<br>완주 보너스 <b>200 XP</b>까지 챙겼어.");
-    ui.showFinale(() => goTab("rank"));
+    ui.showFinale(() => goTab("quest", { mode: "rank" }));
   }
 
   const next = await chat.choices([
-    { label: "다른 구역 보기", value: "explore" },
-    { label: "랭킹 보기", value: "rank" },
+    { label: "다른 구역 보기", value: "quest" },
+    { label: "랭킹 보기", value: "quest-rank" },
   ]);
-  goTab(next);
+  if (next === "quest-rank") goTab("quest", { mode: "rank" });
+  else goTab(next);
 }
 
 /* ================= 지도 ================= */
