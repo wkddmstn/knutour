@@ -327,3 +327,38 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
   font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
   border: 1.5px solid var(--primary);
 }
+/* ============ 다크 모드 ============ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1712;
+    --card: #2a241c;
+    --ink: #f3ead9;
+    --sub: #c9bba5;
+    --mute: #8f8370;
+    --line: #3c3426;
+    --primary: #ef4149;
+    --primary-dark: #c21119;
+    --primary-weak: #3a1a1b;
+    --cream: #cbb98f;
+    --cream-weak: #332b20;
+    --stripe: #a3936f;
+    --green: #35c689;
+    --green-weak: #16342a;
+    --amber: #e0a43c;
+    --amber-weak: #3a2c12;
+    --red: #ff6b74;
+  }
+
+  #topbar { background: rgba(27, 23, 18, .9); }
+  .zone-top { background: rgba(27, 23, 18, .92); }
+  .toast { background: rgba(243, 234, 217, .92); color: #1b1712; }
+  #modal { background: rgba(0, 0, 0, .65); }
+  .field input, .field select, .text-in { background: var(--card); color: var(--ink); }
+  .p3 .bar { color: #241c16; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card); color: var(--ink); }
+
+  /* 지도 타일만 어둡게 반전시키고, 우리가 그린 핀·원은 원래 색 그대로 유지 */
+  .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.8);
+  }
+}

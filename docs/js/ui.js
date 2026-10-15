@@ -108,7 +108,7 @@ export function renderDashboard(zones, announcements, onGoQuest) {
   $("btn-go-quest").onclick = onGoQuest;
 }
 /* ---------- 퀘스트: 지도 + 랭킹 ---------- */
-export function renderQuestShell() {
+export function renderQuestShell(cleared = 0, total = 0) {
   $("view-quest").innerHTML = `
     <div class="seg quest-seg">
       <button data-m="map" class="on">지도</button>
@@ -117,6 +117,13 @@ export function renderQuestShell() {
     <div id="quest-map-pane">
       <h1 class="sec campus-title">캠퍼스 지도</h1>
       <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
+      <div class="card" style="padding:14px 18px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="sum-label">캠퍼스 점령도</span>
+          <span style="font-weight:700;color:var(--primary)">${cleared} / ${total}</span>
+        </div>
+        <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
+      </div>
       <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
     </div>
     <div id="quest-rank-pane" class="hidden"></div>`;

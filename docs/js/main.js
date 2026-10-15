@@ -92,8 +92,9 @@ async function goTab(tab, opts = {}) {
     const anns = await listAnnouncements();
     ui.renderDashboard(zones, anns, () => goTab("quest"));
     ui.showView("home");
-  } else if (tab === "quest") {
-    ui.renderQuestShell();
+   } else if (tab === "quest") {
+    const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
+    ui.renderQuestShell(clearedCount, zones.length);
     ui.showView("quest");
     initCampusMap(openZone);
     wireQuestSegment();
@@ -326,11 +327,32 @@ function initCampusMap(onSelect) {
   }).addTo(campusMap);
   const bounds = [];
   zones.forEach((zone) => {
+    const cleared = zone.missions.every((m) => store.isDone(m.id));
     const position = [zone.lat, zone.lng];
     bounds.push(position);
-    const pin = L.marker(position).addTo(campusMap).bindPopup(`
+
+    L.circle(position, {
+      radius: Math.max(zone.radius, 40),
+      color: cleared ? "#d4121a" : "#9a8c7c",
+      weight: cleared ? 2 : 1,
+      fillColor: cleared ? "#d4121a" : "#9a8c7c",
+      fillOpacity: cleared ? 0.22 : 0.07,
+    }).addTo(campusMap);
+
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="zone-pin ${cleared ? "cleared" : ""}">
+               <span class="zone-pin-emoji">${ui.esc(zone.emoji)}</span>
+               ${cleared ? '<span class="zone-pin-check">✓</span>' : ""}
+             </div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -22],
+    });
+
+    const pin = L.marker(position, { icon }).addTo(campusMap).bindPopup(`
       <b>${ui.esc(zone.emoji)} ${ui.esc(zone.name)}</b>
-      <button type="button" class="map-zone-button">미션 보기</button>`);
+      <button type="button" class="map-zone-button">${cleared ? "다시 보기" : "미션 보기"}</button>`);
     pin.on("popupopen", (event) => {
       event.popup.getElement().querySelector(".map-zone-button").onclick = () => onSelect(zone);
     });
