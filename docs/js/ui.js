@@ -258,6 +258,9 @@ export function showFinale(onRank) {
 }
 
 /* ---------- 위치 상태 ---------- */
+const COMPASS_LABELS = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"];
+const compassText = (deg) => COMPASS_LABELS[Math.round(deg / 45) % 8];
+
 export function setStatus(r, pos) {
   const el = $("status");
   if (r.status === "weak") {
@@ -268,7 +271,7 @@ export function setStatus(r, pos) {
     el.textContent = `범위 안이에요. 인증하는 중이에요 (${r.streak}/3)`;
   } else {
     el.className = "pill";
-    el.textContent = `목표까지 약 ${Math.round(r.distance)}m 남았어요`;
+    el.innerHTML = `<span class="compass-arrow" style="transform:rotate(${Math.round(r.bearing)}deg)">➤</span> ${compassText(r.bearing)}쪽으로 더 이동해주세요 (약 ${Math.round(r.distance)}m)`;
   }
 }
 

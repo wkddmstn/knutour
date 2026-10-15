@@ -91,7 +91,7 @@ body[data-view="zone"] main { padding-bottom: 40px; }
 label.field { display: block; margin-bottom: 16px; color: var(--sub); font-size: 13px; font-weight: 600; }
 .field input, .field select, .text-in {
   display: block; width: 100%; margin-top: 8px; padding: 15px; font: inherit; font-size: 16px; color: var(--ink);
-  background: #fff; border: 1.5px solid var(--line); border-radius: 14px; outline: none;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; outline: none;
 }
 .field input:focus, .field select:focus, .text-in:focus { border-color: var(--primary); }
 
@@ -361,4 +361,12 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
   .leaflet-tile-pane {
     filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.8);
   }
+}
+.compass-arrow {
+  display: inline-block; margin-right: 4px; color: var(--primary);
+  font-weight: 800; animation: arrow-pulse 1s ease-in-out infinite;
+}
+@keyframes arrow-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
 }

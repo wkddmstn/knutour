@@ -180,7 +180,7 @@ async function runZone(zone) {
     await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>파란 원</b> 안으로 들어와 줘.");
 
     if (DEMO_MODE) {
-      chat.choices([{ label: "위치 이동하기 (데모)", value: "go" }])
+      chat.choices([{ label: "출발하기", value: "go" }])
         .then(() => demoMove(zone));
     }
 
@@ -215,15 +215,40 @@ async function showExtraInfo(info) {
 }
 
 // 데모: 미션 위치로 "이동한 것"처럼 연출하고 인증을 완료시킨다
+// 데모: 목표 지점까지의 경로를 보여주고, 실제로 걸어가듯 실시간으로 이동시킨다
 async function demoMove(zone) {
+  const target = { lat: zone.lat, lng: zone.lng };
+  const start = geo.offsetPoint(target, 180, Math.random() * 360); // 180m 떨어진 임의 지점에서 출발
+  const steps = 24;
+  const stepDelay = 350;
+
   if ($("status")) {
     $("status").className = "pill";
-    $("status").textContent = "미션 위치로 이동하는 중이에요...";
+    $("status").textContent = "출발했어요! 목표 지점으로 이동하는 중...";
   }
-  if (map) map.flyTo([zone.lat, zone.lng], 17);
-  updateMarker({ lat: zone.lat, lng: zone.lng });
-  await new Promise((r) => setTimeout(r, 900));
-  forceVerify?.();
+
+  if (map) {
+    L.polyline([[start.lat, start.lng], [target.lat, target.lng]], {
+      color: "#d4121a", weight: 3, dashArray: "6 8", opacity: .8,
+    }).addTo(map);
+    map.flyToBounds([[start.lat, start.lng], [target.lat, target.lng]], { padding: [30, 30] });
+  }
+  updateMarker({ ...start, accuracy: 5 });
+
+  for (let i = 1; i <= steps; i++) {
+    await new Promise((r) => setTimeout(r, stepDelay));
+    const pos = { ...geo.lerp(start, target, i / steps), accuracy: 5 };
+    updateMarker(pos);
+    const r2 = geo.evaluate(pos, zone);
+    if (r2.distance > 20) ui.setStatus({ ...r2, streak: 0 }, pos);
+    else break; // 20m 이내로 들어오면 자동 이동 멈춤
+  }
+
+  if ($("status")) {
+    $("status").className = "pill ok";
+    $("status").textContent = "목표 지점 근처에 도착했어요!";
+  }
+  chat.choices([{ label: "위치 인증하기", value: "verify" }]).then(() => forceVerify?.());
 }
 
 // 위치 인증이 끝나면 resolve되는 Promise

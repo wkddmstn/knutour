@@ -16,8 +16,9 @@ export function distanceM(a, b) {
 // 한 번의 위치값 판정: weak(부정확) / inside / outside
 export function evaluate(pos, zone) {
   const distance = distanceM(pos, zone);
-  if (pos.accuracy > MAX_ACCURACY) return { status: "weak", distance };
-  return { status: distance <= zone.radius ? "inside" : "outside", distance };
+  const bearing = bearingDeg(pos, zone);
+  if (pos.accuracy > MAX_ACCURACY) return { status: "weak", distance, bearing };
+  return { status: distance <= zone.radius ? "inside" : "outside", distance, bearing };
 }
 
 let watchId = null;
@@ -70,4 +71,23 @@ export function createVerifier(zone, needed = 3, onVerified) {
     if (streak >= needed) onVerified();
     return { ...result, streak };
   };
+}
+// 두 좌표 사이를 비율(t: 0~1)로 보간 — 애니메이션 이동에 사용
+export function lerp(a, b, t) {
+  return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+}
+
+// 중심점에서 distanceM(m)만큼, bearingDegVal(도) 방향으로 떨어진 좌표 계산 — 데모 출발점 생성용
+export function offsetPoint(center, distanceM, bearingDegVal) {
+  const br = toRad(bearingDegVal);
+  const angularDist = distanceM / EARTH_RADIUS;
+  const lat1 = toRad(center.lat), lng1 = toRad(center.lng);
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(angularDist) + Math.cos(lat1) * Math.sin(angularDist) * Math.cos(br)
+  );
+  const lng2 = lng1 + Math.atan2(
+    Math.sin(br) * Math.sin(angularDist) * Math.cos(lat1),
+    Math.cos(angularDist) - Math.sin(lat1) * Math.sin(lat2)
+  );
+  return { lat: (lat2 * 180) / Math.PI, lng: (lng2 * 180) / Math.PI };
 }
