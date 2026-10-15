@@ -20,6 +20,7 @@
   --topbar: 56px;
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
           "Malgun Gothic", system-ui, sans-serif;
+  --ease-toss: cubic-bezier(.22, 1, .36, 1);  /* 토스 느낌의 스프링감 있는 이징 */
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -53,7 +54,7 @@ body[data-view="onboard"] #topbar { display: none; }
 
 main { padding: 8px 16px 110px; }
 body[data-view="zone"] main { padding-bottom: 40px; }
-.view { animation: fade .2s; }
+.view { animation: viewIn .38s var(--ease-toss); }
 
 /* ============ 줄무늬 포인트 악센트 (호반우 무늬 모티브) ============ */
 .stripe-accent {
@@ -67,13 +68,14 @@ body[data-view="zone"] main { padding-bottom: 40px; }
 
 /* ============ 공통 ============ */
 .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 12px;
-        border: 1px solid var(--line); }
+        border: 1px solid var(--line); transition: transform .16s var(--ease-toss); }
+.card:active { transform: scale(.985); }
 .sec { margin: 24px 4px 12px; font-size: 18px; font-weight: 700; }
 .btn {
   display: block; width: 100%; padding: 16px; border-radius: 16px; background: var(--primary); color: #fff;
-  font-size: 16px; font-weight: 700; transition: transform .1s, background .15s;
+  font-size: 16px; font-weight: 700; transition: transform .15s var(--ease-toss), background .15s var(--ease-toss);
 }
-.btn:active { transform: scale(.98); background: var(--primary-dark); }
+.btn:active { transform: scale(.97); background: var(--primary-dark); }
 .btn.alt { background: var(--cream-weak); color: var(--sub); margin-top: 8px; }
 .icon-btn { width: 40px; height: 40px; margin-left: -10px; display: grid; place-items: center; border-radius: 12px; }
 .icon-btn svg { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2;
@@ -113,9 +115,9 @@ label.field { display: block; margin-bottom: 16px; color: var(--sub); font-size:
 
 .list-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid var(--line); }
 .zone-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; text-align: left;
-             background: var(--card); transition: background .12s; }
+             background: var(--card); transition: background .15s var(--ease-toss), transform .15s var(--ease-toss); }
 .zone-card + .zone-card { border-top: 1px solid var(--line); }
-.zone-card:active { background: var(--cream-weak); }
+.zone-card:active { background: var(--cream-weak); transform: scale(.985); }
 .zone-card::after { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--mute); border-top: 2px solid var(--mute);
                     transform: rotate(45deg); margin-left: -6px; flex: none; }
 .zc-emoji { width: 46px; height: 46px; flex: none; display: grid; place-items: center; font-size: 22px;
@@ -161,8 +163,8 @@ body[data-view="zone"] #chat-mascot {
 .widget-card { width: 100%; max-width: 100%; padding: 14px; background: var(--card); border-radius: 18px 18px 18px 6px;
                border: 1px solid var(--line); }
 .chip { padding: 14px 16px; text-align: left; font-size: 15px; font-weight: 600; color: var(--primary-dark);
-        background: var(--primary-weak); border-radius: 14px; transition: transform .1s, background .15s; }
-.chip:active:not(:disabled) { transform: scale(.98); }
+        background: var(--primary-weak); border-radius: 14px; transition: transform .15s var(--ease-toss), background .15s var(--ease-toss); }
+.chip:active:not(:disabled) { transform: scale(.96); }
 .chip:disabled { background: var(--line); color: var(--mute); }
 .chip.primary { background: var(--primary); color: #fff; text-align: center; }
 .chip.ghost { background: transparent; color: var(--mute); font-weight: 500; }
@@ -262,6 +264,7 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 
 /* ============ 애니메이션 ============ */
 @keyframes fade { from { opacity: 0; } }
+@keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes blink { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }
 @keyframes pop { 50% { transform: scale(1.12); } }
@@ -312,8 +315,26 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .acc-body { padding: 0 2px 14px; font-size: 13px; color: var(--sub); line-height: 1.5; }
 
 /* ============ 마스코트 일러스트 (온보딩/홈) ============ */
-.mascot-hero { display: block; width: 128px; height: auto; margin: 24px auto 0; }
-.mascot-corner { position: absolute; top: 0; right: -6px; width: 72px; height: auto; opacity: .95; pointer-events: none; }
+.mascot-hero { display: block; width: 128px; height: auto; margin: 24px auto 0; animation: float 3.4s ease-in-out infinite; }
+.mascot-corner { position: absolute; top: 0; right: -6px; width: 72px; height: auto; opacity: .95; pointer-events: none;
+                  animation: float 3s ease-in-out infinite; animation-delay: -1s; }
+
+/* 떠다니는 마스코트 (살짝 위아래로) */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+#chat-mascot { animation: float 3.4s ease-in-out infinite; }
+
+/* 이모지/아이콘이 살짝 까딱거리는 느낌 */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+.zone-pin-emoji { display: inline-block; animation: wiggle 2.8s ease-in-out infinite; }
+.zone-pin.cleared .zone-pin-emoji { animation-duration: 1.9s; }
+.zc-emoji { animation: wiggle 3.2s ease-in-out infinite; animation-delay: -.6s; }
 /* ============ 캠퍼스 지도 핀 (완료 상태 시각화) ============ */
 .zone-pin {
   position: relative; width: 40px; height: 40px; border-radius: 50%;
