@@ -12,7 +12,14 @@ export function distanceM(a, b) {
     Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS * Math.asin(Math.sqrt(h));
 }
-
+// a 지점에서 b 지점을 바라보는 방위각(도, 0=북/90=동/180=남/270=서)
+export function bearingDeg(a, b) {
+  const y = Math.sin(toRad(b.lng - a.lng)) * Math.cos(toRad(b.lat));
+  const x =
+    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lng - a.lng));
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
 // 한 번의 위치값 판정: weak(부정확) / inside / outside
 export function evaluate(pos, zone) {
   const distance = distanceM(pos, zone);
