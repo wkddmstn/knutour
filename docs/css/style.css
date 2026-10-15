@@ -307,3 +307,23 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 /* ============ 마스코트 일러스트 (온보딩/홈) ============ */
 .mascot-hero { display: block; width: 128px; height: auto; margin: 24px auto 0; }
 .mascot-corner { position: absolute; top: 0; right: -6px; width: 72px; height: auto; opacity: .95; pointer-events: none; }
+/* ============ 캠퍼스 지도 핀 (완료 상태 시각화) ============ */
+.zone-pin {
+  position: relative; width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 19px;
+  background: var(--cream-weak); border: 2px solid var(--line);
+  filter: grayscale(1); opacity: .6;
+  box-shadow: 0 2px 6px rgba(36, 28, 22, .18);
+  transition: transform .15s;
+}
+.zone-pin.cleared {
+  background: var(--primary); border-color: var(--primary-dark);
+  filter: none; opacity: 1;
+  box-shadow: 0 3px 10px rgba(212, 18, 26, .45);
+}
+.zone-pin-check {
+  position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+  border-radius: 50%; background: #fff; color: var(--primary);
+  font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--primary);
+}
