@@ -24,6 +24,12 @@ let map = null;
 let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
+let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
+
+// 오늘의 "메인 미션" = 아직 안 끝난 구역 중 첫 번째. 구역 목록에서는 이걸 빼고 나머지만 보여준다.
+function pickMainZone() {
+  return zones.find((z) => z.missions.some((m) => !store.isDone(m.id)));
+}
 
 /* ================= 데일리 퀴즈 문제 은행 ================= */
 // 날짜별로 문제가 바뀐다 (같은 날에는 모든 유저가 같은 문제를 봄)
@@ -112,6 +118,8 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 async function init() {
   try {
     zones = (await (await fetch("data/zones.json")).json()).zones;
+    // 이미 깨놓은 구역들을 기준점으로 잡아둬서, 첫 화면에서 "방금 깼다" 효과가 잘못 뜨지 않게 한다
+    lastClearedSet = new Set(zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
   } catch {
     $("view-explore").classList.remove("hidden");
     $("view-explore").innerHTML = `<div class="card">데이터를 불러오지 못했어요.<br>Live Server로 열었는지, data/zones.json 경로가 맞는지 확인해 주세요.</div>`;
@@ -122,7 +130,7 @@ async function init() {
   // 요소가 없어도(예: index.html이 구버전이라 특정 버튼이 빠져있어도) 전체가 멈추지 않도록
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
-  $("btn-back")?.addEventListener("click", () => goTab("quest"));
+  $("btn-back")?.addEventListener("click", () => goTab("quest", { enter: true }));
   $("btn-map")?.addEventListener("click", toggleMap);
   if ($("bell-btn")) {
     $("bell-btn").onclick = openNotifPanel;
@@ -173,16 +181,16 @@ async function goTab(tab, opts = {}) {
 
   if (tab === "home") {
     const anns = await listAnnouncements(store.getState().profile?.dept);
-    ui.renderDashboard(zones, anns, () => goTab("quest"));
+    ui.renderDashboard(zones, anns, () => goTab("quest", { enter: true }));
     ui.showView("home");
    } else if (tab === "quest") {
     const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
-    ui.renderQuestShell(clearedCount, zones.length);
+    const mainZone = pickMainZone();
+    ui.renderQuestShell(clearedCount, zones.length, mainZone);
     ui.showView("quest");
-    initCampusMap(openZone);
     renderDailySection();
-    wireQuestSegment();
-    if (opts.mode === "rank") switchQuestPane("rank");
+    wireQuestLanding();
+    if (opts.enter || opts.mode === "rank") enterQuestExplore(opts);
   } else if (tab === "community") {
     const anns = await listAnnouncements(store.getState().profile?.dept);
     ui.renderCommunity(anns);
@@ -192,6 +200,41 @@ async function goTab(tab, opts = {}) {
     refreshBellBadge();
     ui.showView("me");
   }
+}
+
+// 퀘스트 랜딩 화면: "메인 미션 시작하기" 버튼을 누르면 지도+목록이 있는 탐험 화면으로 들어간다
+function wireQuestLanding() {
+  $("btn-quest-enter")?.addEventListener("click", () => enterQuestExplore());
+  $("btn-quest-back")?.addEventListener("click", () => {
+    clearCampusMap();
+    $("quest-explore")?.classList.add("hidden");
+    $("quest-landing")?.classList.remove("hidden");
+  });
+}
+
+function enterQuestExplore(opts = {}) {
+  $("quest-landing")?.classList.add("hidden");
+  $("quest-explore")?.classList.remove("hidden");
+  initCampusMap(openZone);
+  renderZoneListSection();
+  wireQuestSegment();
+  if (opts.mode === "rank") switchQuestPane("rank");
+}
+
+// 메인 미션을 뺀 나머지 구역 목록. 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
+function renderZoneListSection() {
+  const mainZone = pickMainZone();
+  const rest = zones.filter((z) => z.id !== mainZone?.id);
+  const clearedNow = new Set(rest.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
+  const justCleared = new Set([...clearedNow].filter((id) => !lastClearedSet.has(id)));
+  ui.renderZoneList(rest, store.isDone, justCleared);
+  document.querySelectorAll("#zone-list .zone-row").forEach((btn) => {
+    btn.onclick = () => {
+      const zone = zones.find((z) => z.id === btn.dataset.zone);
+      if (zone) openZone(zone);
+    };
+  });
+  lastClearedSet = clearedNow;
 }
 
 function wireQuestSegment() {
@@ -456,7 +499,7 @@ async function missionMenu(zone) {
       })),
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
-    if (pick === "__home") { goTab("quest"); return; }
+    if (pick === "__home") { goTab("quest", { enter: true }); return; }
     await runMission(zone.missions.find((m) => m.id === pick));
   }
 }
@@ -482,7 +525,7 @@ async function finishZone(zone) {
     { label: "랭킹 보기", value: "quest-rank" },
   ]);
   if (next === "quest-rank") goTab("quest", { mode: "rank" });
-  else goTab(next);
+  else goTab("quest", { enter: true });
 }
 
 /* ================= 지도 ================= */

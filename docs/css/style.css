@@ -288,6 +288,38 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .modal-card .btn { margin-top: 20px; }
 .modal-card .btn + .btn { margin-top: 8px; }
 
+/* 데일리 퀴즈: 아래에서 올라오는 바텀시트 대신, 메인 미션처럼 화면 가운데로 '들어가는' 느낌 */
+#modal.modal-center { align-items: center; padding: 20px; }
+.modal-card.pop-in { border-radius: 24px; animation: popIn .32s var(--ease-toss); }
+@keyframes popIn { from { opacity: 0; transform: scale(.92) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+/* 퀘스트 탐험 화면의 구역 목록 */
+.back-link { display: inline-flex; align-items: center; gap: 2px; background: none; border: none; padding: 2px 0 14px;
+             color: var(--mute); font-size: 14px; font-weight: 700; cursor: pointer; }
+.back-link:active { color: var(--primary); }
+.zone-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; margin-bottom: 8px;
+            background: var(--card); border: 1px solid var(--line); border-radius: 16px; text-align: left;
+            transition: opacity .2s var(--ease-toss), background .2s var(--ease-toss), transform .15s var(--ease-toss); }
+.zone-row:active { transform: scale(.985); }
+.zr-emoji { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--cream-weak);
+            display: flex; align-items: center; justify-content: center; font-size: 19px; }
+.zone-row.cleared { opacity: .55; background: var(--cream-weak); }
+.zone-row.cleared .zr-emoji { filter: grayscale(1); }
+.zr-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.zr-body strong { font-size: 15px; }
+.zr-body span { color: var(--mute); font-size: 12px; }
+.zr-arrow { color: var(--mute); font-size: 18px; flex: none; }
+.zr-check { color: var(--green); font-weight: 700; font-size: 13px; flex: none; }
+@keyframes zoneClearPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.04); box-shadow: 0 8px 20px -6px rgba(10, 157, 99, .4); }
+  60% { transform: scale(.97); }
+  100% { transform: scale(1); }
+}
+.zone-row.just-cleared { animation: zoneClearPop .6s var(--ease-toss); }
+.zone-row.just-cleared .zr-check { animation: stampPop .5s var(--ease-toss) .1s backwards; }
+@keyframes stampPop { from { transform: scale(0) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(-8deg); opacity: 1; } }
+
 #debug { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3500; margin: 0; padding: 6px 10px;
          background: rgba(0, 0, 0, .85); color: #7dffb0; font-size: 11px; white-space: pre-wrap; }
 
@@ -413,6 +445,7 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
   .zone-top { background: rgba(27, 23, 18, .92); }
   .toast { background: rgba(243, 234, 217, .92); color: #1b1712; }
   #modal { background: rgba(0, 0, 0, .65); }
+  .zone-row.cleared { background: rgba(255, 255, 255, .04); }
   .field input, .field select, .text-in { background: var(--card); color: var(--ink); }
   .p3 .bar { color: #241c16; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card); color: var(--ink); }

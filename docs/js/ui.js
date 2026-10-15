@@ -109,27 +109,72 @@ export function renderDashboard(zones, announcements, onGoQuest) {
     </div>`;
   $("btn-go-quest").onclick = onGoQuest;
 }
-/* ---------- 퀘스트: 지도 + 랭킹 ---------- */
-export function renderQuestShell(cleared = 0, total = 0) {
+/* ---------- 퀘스트: 랜딩(메인 미션) + 탐험(지도·목록·랭킹) ---------- */
+// 퀘스트 탭을 열면 바로 지도가 아니라, "메인 미션"을 소개하는 꾸며진 랜딩 화면이 먼저 보인다.
+// 거기서 버튼을 눌러야 지도 + 구역 목록이 나오는 탐험 화면으로 들어간다.
+export function renderQuestShell(cleared = 0, total = 0, nextZone = null) {
   $("view-quest").innerHTML = `
-    <div class="seg quest-seg">
-      <button data-m="map" class="on">지도</button>
-      <button data-m="rank">랭킹</button>
-    </div>
-    <div id="quest-map-pane">
-      <h1 class="sec campus-title">캠퍼스 지도</h1>
-      <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
-      <div class="card" style="padding:14px 18px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span class="sum-label">캠퍼스 점령도</span>
-          <span style="font-weight:700;color:var(--primary)">${cleared} / ${total}</span>
-        </div>
-        <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
+    <div id="quest-landing">
+      <div style="position:relative">
+        <img class="mascot-corner" src="img/mascot/commute1.png" alt="호반우">
+        <h1 class="onb-title" style="font-size:22px">오늘의 캠퍼스 미션</h1>
+        <p class="map-guide">메인 미션부터 하나씩 깨러 가볼까요?</p>
       </div>
-      <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
+      <div class="card card-hero" style="text-align:center">
+        <img class="mascot-hero" style="width:104px;margin:0 auto 8px" src="img/mascot/badge-campus.png" alt="호반우">
+        <div class="sum-label">캠퍼스 점령도</div>
+        <div class="sum-big">${cleared}<small> / ${total} 구역</small></div>
+        <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
+        ${nextZone
+          ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">메인 미션 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>`
+          : `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">모든 구역을 클리어했어요!</div>`}
+        <button id="btn-quest-enter" class="btn cta-glow" style="margin-top:18px">${nextZone ? "메인 미션 시작하기" : "지도 둘러보기"}</button>
+      </div>
       <div id="daily-section"></div>
     </div>
-    <div id="quest-rank-pane" class="hidden"></div>`;
+    <div id="quest-explore" class="hidden">
+      <button type="button" id="btn-quest-back" class="back-link">‹ 미션 홈으로</button>
+      <div class="seg quest-seg">
+        <button data-m="map" class="on">지도</button>
+        <button data-m="rank">랭킹</button>
+      </div>
+      <div id="quest-map-pane">
+        <h1 class="sec campus-title">캠퍼스 지도</h1>
+        <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
+        <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
+        <h3 class="sec">나머지 구역</h3>
+        <div id="zone-list"></div>
+      </div>
+      <div id="quest-rank-pane" class="hidden"></div>
+    </div>`;
+}
+
+// 구역 목록(메인 미션 제외): 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과
+export function renderZoneList(zones, isDone, justCleared = new Set()) {
+  const el = $("zone-list");
+  if (!el) return;
+  const rows = zones
+    .map((z) => ({
+      zone: z,
+      done: z.missions.every((m) => isDone(m.id)),
+      doneCnt: z.missions.filter((m) => isDone(m.id)).length,
+    }))
+    .sort((a, b) => Number(a.done) - Number(b.done));
+
+  if (!rows.length) {
+    el.innerHTML = `<p class="map-guide" style="text-align:center">메인 미션 외에 다른 구역은 없어요.</p>`;
+    return;
+  }
+
+  el.innerHTML = rows.map(({ zone: z, done, doneCnt }) => `
+    <button type="button" class="zone-row ${done ? "cleared" : ""} ${justCleared.has(z.id) ? "just-cleared" : ""}" data-zone="${z.id}">
+      <span class="zr-emoji">${esc(z.emoji)}</span>
+      <span class="zr-body">
+        <strong>${esc(z.name)}</strong>
+        <span>${doneCnt}/${z.missions.length} 미션</span>
+      </span>
+      ${done ? '<span class="zr-check">✓ 통과</span>' : '<span class="zr-arrow">›</span>'}
+    </button>`).join("");
 }
 
 /* ---------- 데일리 출석체크 / 퀴즈 ---------- */
@@ -162,12 +207,15 @@ export function renderDaily(checkin, quiz) {
     </div>`;
 }
 
-// 퀴즈 풀기 버튼을 누르면 열리는 팝업. onAnswer(선택한 인덱스)는 정답 여부(boolean)를 돌려줘야 한다
+// 퀴즈 풀기 버튼을 누르면 열리는 화면. 아래에서 올라오는 시트가 아니라, 메인 미션처럼
+// 화면 가운데로 "들어가는" 느낌의 팝업으로 연다. onAnswer(선택한 인덱스)는 정답 여부(boolean)를 돌려줘야 한다
 export function showDailyQuiz(q, onAnswer) {
   const m = $("modal");
   m.classList.remove("hidden");
+  m.classList.add("modal-center");
   m.innerHTML = `
-    <div class="modal-card" style="text-align:center">
+    <div class="modal-card pop-in" style="text-align:center">
+      <img class="mascot-hero" style="width:64px;margin:0 auto 10px" src="img/mascot/badge-campus.png" alt="호반우">
       <h2 style="font-size:19px">오늘의 퀴즈</h2>
       <p style="font-weight:600;margin:14px 0 18px;line-height:1.5">${esc(q.q)}</p>
       <div id="quiz-modal-opts" style="display:flex;flex-direction:column;gap:8px;text-align:left">
@@ -176,7 +224,7 @@ export function showDailyQuiz(q, onAnswer) {
       <p id="quiz-modal-result" class="sum-foot" style="margin-top:12px"></p>
       <button id="quiz-modal-close" class="btn alt hidden" style="margin-top:12px">닫기</button>
     </div>`;
-  const close = () => { m.classList.add("hidden"); m.innerHTML = ""; };
+  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
   m.querySelectorAll("#quiz-modal-opts [data-i]").forEach((btn) => {
     btn.onclick = () => {
       const i = Number(btn.dataset.i);
