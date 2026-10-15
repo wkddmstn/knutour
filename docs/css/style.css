@@ -1,6 +1,6 @@
 /* ============ 디자인 토큰 (경북대 호반우 테마) ============ */
 :root {
-  --bg: #faf6f1;
+  --bg: #ffffff;
   --card: #ffffff;
   --ink: #241c16;
   --sub: #6b5f52;
@@ -38,7 +38,7 @@ h1, h2, h3 { margin: 0; }
 #topbar {
   position: sticky; top: 0; z-index: 1100; height: var(--topbar);
   display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
-  background: rgba(250, 246, 241, .94); backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, .94); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
 .brand { font-size: 17px; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; }
