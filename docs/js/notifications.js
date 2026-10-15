@@ -1,31 +1,52 @@
-import { _readDB, _writeDB, getCachedProfile } from "./localdb.js";
+import { client, getCachedProfile } from "./supa.js";
 
 export async function listNotifications() {
   const me = getCachedProfile();
-  return _readDB().notifications
-    .filter((n) => n.user_id === me.id)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 30);
+  const { data, error } = await client
+    .from("notifications")
+    .select("*")
+    .eq("user_id", me.id)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (error) return [];
+  return data;
 }
 
 export async function markNotificationRead(id) {
-  const db = _readDB();
-  const n = db.notifications.find((x) => x.id === id);
-  if (n) { n.is_read = true; _writeDB(db); }
+  await client.from("notifications").update({ is_read: true }).eq("id", id);
 }
 
 export async function unreadCount() {
   const me = getCachedProfile();
-  return _readDB().notifications.filter((n) => n.user_id === me.id && !n.is_read).length;
+  const { count } = await client
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", me.id)
+    .eq("is_read", false);
+  return count || 0;
 }
 
-// ---------- 공지사항 ----------
+export function subscribeNotifications(onNew) {
+  const me = getCachedProfile();
+  const channel = client
+    .channel("notifications_" + me.id)
+    .on("postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${me.id}` },
+      (payload) => onNew(payload.new))
+    .subscribe();
+  return () => client.removeChannel(channel);
+}
+
 const SEEN_KEY = "knu-quest-announcements-seen-at";
 
 export async function listAnnouncements() {
-  return _readDB().announcements
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 20);
+  const { data, error } = await client
+    .from("announcements")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) return [];
+  return data;
 }
 
 export function getAnnouncementsSeenAt() {
@@ -38,5 +59,9 @@ export function markAnnouncementsSeenNow() {
 
 export async function unreadAnnouncementCount() {
   const seenAt = getAnnouncementsSeenAt();
-  return _readDB().announcements.filter((a) => a.created_at > seenAt).length;
+  const { count } = await client
+    .from("announcements")
+    .select("id", { count: "exact", head: true })
+    .gt("created_at", seenAt);
+  return count || 0;
 }

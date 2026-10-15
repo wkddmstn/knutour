@@ -3,8 +3,6 @@ import {
   listAnnouncements, unreadAnnouncementCount, markAnnouncementsSeenNow,
 } from "./notifications.js";
 import { confirmFriendRequest } from "./friend.js";
-import { completeMission } from "./storage.js";
-import { reward } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -28,17 +26,14 @@ export async function refreshBellBadge() {
 
 export async function openNotifPanel() {
   const panel = $("notif-panel");
-  if (!panel) {
-    console.warn("[캠퍼스 퀘스트] #notif-panel 요소가 없어요 — index.html이 최신 버전인지 확인해 주세요.");
-    return;
-  }
+  if (!panel) { console.warn("notif-panel missing"); return; }
   panel.classList.remove("hidden");
   panel.innerHTML = `<div class="notif-head">알림</div><div class="notif-empty">불러오는 중...</div>`;
 
   const [notifs, anns] = await Promise.all([listNotifications(), listAnnouncements()]);
   const items = [
     ...notifs.map((n) => ({ ...n, _kind: "personal" })),
-    ...anns.map((a) => ({ ...a, _kind: "announcement" })),
+    ...anns.map((a) => ({ ...a, _kind: "announcement", title: a.title, created_at: a.created_at })),
   ].sort((x, y) => new Date(y.created_at) - new Date(x.created_at));
 
   markAnnouncementsSeenNow();
@@ -49,12 +44,15 @@ export async function openNotifPanel() {
   } else {
     panel.innerHTML = `
       <div class="notif-head">알림<button class="notif-close" id="notif-close">✕</button></div>
-      <div class="notif-list">${items.map(renderItem).join("")}</div>`;
+      <div class="notif-list">
+        ${items.map(renderItem).join("")}
+      </div>`;
   }
   $("notif-close").onclick = closeNotifPanel;
 
-  panel.querySelectorAll('.notif-item[data-kind="personal"]').forEach((el) => {
-    if (!el.dataset.read) markNotificationRead(el.dataset.id);
+  panel.querySelectorAll(".notif-item").forEach((el) => {
+    const id = el.dataset.id;
+    if (el.dataset.kind === "personal" && !el.dataset.read) markNotificationRead(id);
   });
 
   panel.querySelectorAll(".notif-accept").forEach((btn) => {
@@ -64,13 +62,8 @@ export async function openNotifPanel() {
       btn.textContent = "수락하는 중...";
       const ok = await confirmFriendRequest(btn.dataset.requestId);
       btn.textContent = ok ? "수락 완료" : "오류, 다시 시도";
-      if (ok) {
-        btn.closest(".notif-item").classList.add("notif-handled");
-        // 수락한 사람(나)도 자기 행동이라 실시간 알림이 자기 화면엔 안 뜨므로, 여기서 바로 완료 처리한다.
-        if (completeMission(btn.dataset.missionId, 100)) reward(100);
-      } else {
-        btn.disabled = false;
-      }
+      if (ok) btn.closest(".notif-item").classList.add("notif-handled");
+      else btn.disabled = false;
     };
   });
 
@@ -98,7 +91,7 @@ function renderItem(it) {
     <div class="notif-body">
       <div class="notif-title">${esc(it.title)}</div>
       <div class="notif-time">${timeAgo(it.created_at)}</div>
-      ${isFriendReq ? `<button class="notif-accept" data-request-id="${it.payload.request_id}" data-mission-id="${esc(it.payload.mission_id)}">수락하기</button>` : ""}
+      ${isFriendReq ? `<button class="notif-accept" data-request-id="${it.payload.request_id}">수락하기</button>` : ""}
     </div>
   </div>`;
 }

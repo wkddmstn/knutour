@@ -4,7 +4,7 @@ import * as store from "./storage.js";
 import * as ui from "./ui.js";
 import { runMission, icon } from "./missions.js";
 import { getRanking } from "./ranking.js";
-import { ensureProfile } from "./localdb.js";
+import { ensureProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 
@@ -46,8 +46,8 @@ async function init() {
     console.warn("[캠퍼스 퀘스트] #bell-btn 요소가 없어요 — index.html이 최신 버전인지 확인해 주세요. 알림 기능은 비활성화됩니다.");
   }
 
-  if (store.hasProfile()) {
-    ensureProfile(store.getState().profile);   // 이 탭의 신원 보장 (친구 코드 발급)
+   if (store.hasProfile()) {
+    await ensureProfile(store.getState().profile);   // Supabase 프로필 보장 (친구 코드 발급)
     setupNotifications();
     goTab("home");
   } else {

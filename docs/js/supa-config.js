@@ -1,0 +1,3 @@
+// Supabase 프로젝트 설정
+export const SUPABASE_URL = "https://rbiuvhbtkbtxflduppbc.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJiaXV2aGJ0a2J0eGZsZHVwcGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjk1OTUsImV4cCI6MjEwNzY0NTU5NX0.qZ0WiOfI6MwYWnoeKQBkwDN1-zxwGd43_DL3haIHlG4";
