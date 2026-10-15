@@ -25,6 +25,31 @@ let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 
+/* ================= 지도 타일 (라이트/다크 자동 전환) ================= */
+// CARTO의 무료 베이스맵: 라이트는 미니멀한 Positron, 다크는 세련된 Dark Matter.
+// 기존 OSM 기본 타일을 CSS invert로 반전시키던 방식보다 훨씬 깔끔합니다.
+const TILE_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
+const isDarkMode = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+const tileUrl = () =>
+  isDarkMode()
+    ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
+    : "https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png";
+
+function addBaseTiles(targetMap) {
+  const layer = L.tileLayer(tileUrl(), {
+    maxZoom: 20, subdomains: "abcd", attribution: TILE_ATTR,
+  }).addTo(targetMap);
+  return layer;
+}
+
+// 시스템 다크모드가 실시간으로 바뀌면(설정 변경 등) 열려 있는 지도 타일도 같이 바꿔준다
+let tileLayers = []; // { map, layer } 목록
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  tileLayers.forEach(({ targetMap, layer }) => {
+    layer.setUrl(tileUrl());
+  });
+});
+
 /* ================= 시작 ================= */
 async function init() {
   try {
@@ -137,11 +162,17 @@ function onReset() {
 function leaveZone() {
   geo.stopWatch();
   chat.clear();
-  if (map) { map.remove(); map = null; marker = null; }
+  if (map) {
+    tileLayers = tileLayers.filter((t) => t.targetMap !== map);
+    map.remove(); map = null; marker = null;
+  }
 }
 
 function clearCampusMap() {
-  if (campusMap) { campusMap.remove(); campusMap = null; }
+  if (campusMap) {
+    tileLayers = tileLayers.filter((t) => t.targetMap !== campusMap);
+    campusMap.remove(); campusMap = null;
+  }
 }
 
 function openZone(zone) {
@@ -214,9 +245,7 @@ async function showExtraInfo(info) {
   });
 }
 
-// 데모: 미션 위치로 "이동한 것"처럼 연출하고 인증을 완료시킨다
 // 데모: 목표 지점까지의 경로를 보여주고, 실제로 걸어가듯 실시간으로 이동시킨다
-// OSRM(보행자 경로) API로 실제 걸을 수 있는 경로를 받아온다. 실패하면 직선 경로로 대체.
 // 브라우저 GPS로 현재 위치를 한 번 가져온다 (실패하면 reject)
 function getCurrentPositionOnce() {
   return new Promise((resolve, reject) => {
@@ -395,9 +424,9 @@ function initCampusMap(onSelect) {
     zones.reduce((sum, zone) => sum + zone.lng, 0) / zones.length,
   ];
   campusMap = L.map("campus-map").setView(center, 16);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19, attribution: "© OpenStreetMap",
-  }).addTo(campusMap);
+  const layer = addBaseTiles(campusMap);
+  tileLayers.push({ targetMap: campusMap, layer });
+
   const bounds = [];
   zones.forEach((zone) => {
     const cleared = zone.missions.every((m) => store.isDone(m.id));
@@ -435,9 +464,9 @@ function initCampusMap(onSelect) {
 
 function initMap(zone) {
   map = L.map("map").setView([zone.lat, zone.lng], 17);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19, attribution: "© OpenStreetMap",
-  }).addTo(map);
+  const layer = addBaseTiles(map);
+  tileLayers.push({ targetMap: map, layer });
+
   L.circle([zone.lat, zone.lng], { radius: zone.radius, color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
   L.marker([zone.lat, zone.lng]).addTo(map).bindPopup(zone.name);
 
