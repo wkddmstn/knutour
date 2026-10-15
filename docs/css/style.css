@@ -134,7 +134,7 @@ label.field { display: block; margin-bottom: 16px; color: var(--sub); font-size:
 #map { position: relative; z-index: 0; height: 150px; margin-top: 8px; border-radius: 16px; overflow: hidden;
        transition: height .25s, margin .25s; }
 .zone-top.collapsed #map { height: 0; margin-top: 0; }
-.pill { margin-top: 8px; padding: 11px 14px; background: #fff; border-radius: 12px; color: var(--sub);
+.pill { margin-top: 8px; padding: 11px 14px; background: var(--card); border-radius: 12px; color: var(--sub);
         font-size: 13px; font-weight: 500; line-height: 1.45; border: 1px solid var(--line); }
 .pill.ok { background: var(--green-weak); color: var(--green); border-color: transparent; }
 .pill.warn { background: var(--amber-weak); color: var(--amber); border-color: transparent; }
@@ -149,7 +149,7 @@ body[data-view="zone"] #chat-mascot {
   display: block; width: 100px; height: 132px; object-fit: contain; object-position: bottom; pointer-events: none;
 }
 .bubble { max-width: 100%; padding: 11px 15px; font-size: 15px; line-height: 1.55; border-radius: 18px; }
-.bot .bubble { background: #fff; border-bottom-left-radius: 6px; border: 1px solid var(--line); }
+.bot .bubble { background: var(--card); border-bottom-left-radius: 6px; border: 1px solid var(--line); }
 .user .bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 6px; }
 .typing { display: flex; gap: 5px; padding: 15px 16px; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); animation: blink 1s infinite; }
@@ -158,12 +158,12 @@ body[data-view="zone"] #chat-mascot {
 
 .row.choices { flex-direction: column; align-items: stretch; gap: 8px; padding-left: 104px; }
 .row.widget { padding-left: 104px; }
-.widget-card { width: 100%; max-width: 100%; padding: 14px; background: #fff; border-radius: 18px 18px 18px 6px;
+.widget-card { width: 100%; max-width: 100%; padding: 14px; background: var(--card); border-radius: 18px 18px 18px 6px;
                border: 1px solid var(--line); }
 .chip { padding: 14px 16px; text-align: left; font-size: 15px; font-weight: 600; color: var(--primary-dark);
         background: var(--primary-weak); border-radius: 14px; transition: transform .1s, background .15s; }
 .chip:active:not(:disabled) { transform: scale(.98); }
-.chip:disabled { background: #eceef1; color: #b0b8c1; }
+.chip:disabled { background: var(--line); color: var(--mute); }
 .chip.primary { background: var(--primary); color: #fff; text-align: center; }
 .chip.ghost { background: transparent; color: var(--mute); font-weight: 500; }
 
@@ -184,7 +184,7 @@ body[data-view="zone"] #chat-mascot {
 /* ============ 랭킹 ============ */
 .seg { display: flex; padding: 3px; margin-bottom: 14px; background: var(--cream-weak); border-radius: 12px; }
 .seg button { flex: 1; padding: 10px; border-radius: 10px; color: var(--sub); font-size: 14px; font-weight: 600; }
-.seg button.on { background: #fff; color: var(--primary-dark); box-shadow: 0 1px 3px rgba(36, 28, 22, .12); }
+.seg button.on { background: var(--card); color: var(--primary-dark); box-shadow: 0 1px 3px rgba(36, 28, 22, .12); }
 .my-rank { display: flex; justify-content: space-between; align-items: center; }
 .my-big { margin-top: 2px; color: var(--primary); font-size: 30px; font-weight: 700; }
 .my-side { text-align: right; color: var(--sub); font-size: 14px; }
@@ -227,7 +227,7 @@ body[data-view="zone"] #chat-mascot {
 
 /* ============ 하단 탭 ============ */
 #tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
-          display: flex; z-index: 1100; background: #fff; border-top: 1px solid var(--line);
+          display: flex; z-index: 1100; background: var(--card); border-top: 1px solid var(--line);
           padding-bottom: env(safe-area-inset-bottom); }
 #tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 9px;
                  color: var(--mute); font-size: 11px; font-weight: 600; }
@@ -243,7 +243,7 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 #modal { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: flex-end; justify-content: center;
          background: rgba(36, 28, 22, .5); }
 .modal-card { width: 100%; max-width: 480px; padding: 32px 20px calc(20px + env(safe-area-inset-bottom));
-              text-align: center; background: #fff; border-radius: 24px 24px 0 0; animation: sheet .3s; }
+              text-align: center; background: var(--card); border-radius: 24px 24px 0 0; animation: sheet .3s; }
 .modal-card h2 { font-size: 24px; font-weight: 800; margin-bottom: 8px; color: var(--primary-dark); }
 .modal-card p { margin: 0; color: var(--sub); line-height: 1.6; }
 .final-score { margin: 18px 0 6px; color: var(--primary); font-size: 42px; font-weight: 800; }
@@ -275,10 +275,10 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 
 #notif-panel { position: fixed; top: var(--topbar); left: 50%; transform: translateX(-50%);
                width: 100%; max-width: 480px; max-height: 70vh; overflow-y: auto; z-index: 1400;
-               background: #fff; border-radius: 0 0 20px 20px; box-shadow: 0 12px 28px rgba(36, 28, 22, .18);
+               background: var(--card); border-radius: 0 0 20px 20px; box-shadow: 0 12px 28px rgba(36, 28, 22, .18);
                animation: sheet .2s; }
 .notif-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center;
-              padding: 14px 18px; font-weight: 700; font-size: 15px; background: #fff; border-bottom: 1px solid var(--line); }
+              padding: 14px 18px; font-weight: 700; font-size: 15px; background: var(--card); border-bottom: 1px solid var(--line); }
 .notif-close { font-size: 14px; color: var(--mute); }
 .notif-empty { padding: 32px 18px; text-align: center; color: var(--mute); font-size: 14px; }
 .notif-list { display: flex; flex-direction: column; }
@@ -323,7 +323,7 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 }
 .zone-pin-check {
   position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
-  border-radius: 50%; background: #fff; color: var(--primary);
+  border-radius: 50%; background: var(--card); color: var(--primary);
   font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
   border: 1.5px solid var(--primary);
 }
