@@ -51,6 +51,7 @@ export function reward(pts) {
 /* ---------- 온보딩 ---------- */
 export function renderOnboard(depts, onSubmit) {
   $("view-onboard").innerHTML = `
+    <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
     <h1 class="onb-title">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
     <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
     <div class="card">
@@ -73,33 +74,29 @@ export function renderOnboard(depts, onSubmit) {
 }
 
 /* ---------- 홈: 대시보드 ---------- */
-export function renderDashboard(zones, announcements, onGoQuest) {
-  const st = getState();
-  const lv = getLevel(st.score);
-  const total = zones.reduce((a, z) => a + z.missions.length, 0);
-  const done = zones.reduce((a, z) => a + z.missions.filter((m) => isDone(m.id)).length, 0);
-  const preview = announcements.slice(0, 2);
-
-  $("view-home").innerHTML = `
-    <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
-    <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
+export function renderOnboard(depts, onSubmit) {
+  $("view-onboard").innerHTML = `
+    <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
+    <h1 class="onb-title">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
+    <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
     <div class="card">
-      <div class="sum-label">진행 상황</div>
-      <div class="sum-big">${done}<small> / ${total} 미션</small></div>
-      <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
-      <div class="sum-foot">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
-    </div>
-    <button id="btn-go-quest" class="btn">미션 하러 가기</button>
-    <h3 class="sec">공지사항</h3>
-    <div class="list-card">
-      ${preview.length ? preview.map((a) => `
-        <div class="zone-card" style="cursor:default">
-          <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
-        </div>`).join("") : `<div class="card" style="text-align:center;color:var(--mute)">아직 공지가 없어요</div>`}
+      <label class="field">닉네임
+        <input id="in-nick" maxlength="10" placeholder="2~10자로 입력해 주세요" autocomplete="off">
+      </label>
+      <label class="field">소속
+        <select id="in-dept">${depts.map((d) => `<option>${esc(d)}</option>`).join("")}</select>
+      </label>
+      <p id="onb-err" class="err"></p>
+      <button id="btn-start" class="btn">시작하기</button>
     </div>`;
-  $("btn-go-quest").onclick = onGoQuest;
+  const submit = () => {
+    const nickname = $("in-nick").value.trim();
+    if (nickname.length < 2) { $("onb-err").textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
+    onSubmit({ nickname, dept: $("in-dept").value });
+  };
+  $("btn-start").onclick = submit;
+  $("in-nick").onkeydown = (e) => { if (e.key === "Enter") submit(); };
 }
-
 /* ---------- 퀘스트: 지도 + 랭킹 ---------- */
 export function renderQuestShell() {
   $("view-quest").innerHTML = `
@@ -163,7 +160,11 @@ export function renderCommunity(announcements) {
       ${announcements.length ? announcements.map((a) => `
         <div class="zone-card" style="cursor:default">
           <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
-        </div>`).join("") : `<div class="card" style="text-align:center;color:var(--mute)">아직 공지가 없어요</div>`}
+        </div>`).join("") : `
+        <div class="card" style="text-align:center;margin:0">
+          <img src="img/mascot/polarbear-friends.png" alt="호반우와 친구들" style="width:140px;margin:0 auto 10px">
+          <p style="color:var(--mute);margin:0">아직 공지가 없어요</p>
+        </div>`}
     </div>`;
 }
 
@@ -187,7 +188,8 @@ export function renderMe(zones, onReset, onRanking) {
 
   const el = $("view-me");
   el.innerHTML = `
-    <div class="card">
+    <div class="card" style="position:relative">
+      <img class="mascot-corner" src="img/mascot/badge-campus.png" alt="호반우" style="width:64px">
       <div class="sum-label">${esc(st.profile.dept)}</div>
       <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>
       <div class="sum-foot" style="margin-top:6px">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
@@ -225,6 +227,7 @@ export function showFinale(onRank) {
   m.classList.remove("hidden");
   m.innerHTML = `
     <div class="modal-card">
+      <img class="mascot-hero" style="width:96px;margin:0 auto 12px" src="img/mascot/grad-bachelor.png" alt="졸업한 호반우">
       <h2>캠퍼스를 완주했어요</h2>
       <p>${esc(st.profile.nickname)}님이 모든 구역을 클리어했어요.</p>
       <div class="final-score">${st.score} XP</div>
