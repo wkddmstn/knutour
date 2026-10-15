@@ -1,5 +1,5 @@
 import { getState, isDone, getLevel } from "./storage.js";
-import { getCachedProfile } from "./localdb.js";
+import { getCachedProfile } from "./supa.js";
 
 const $ = (id) => document.getElementById(id);
 
