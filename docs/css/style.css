@@ -91,11 +91,20 @@ body[data-view="zone"] main { padding-bottom: 40px; }
   box-shadow: var(--shadow-hero);
   border-color: transparent;
 }
-/* 히어로 카드 안의 첫 숫자(총 XP)만 그라데이션으로 — 꾸밈을 한 군데에만 몰아줌 */
-.card-hero .stats .stat:first-child b {
+/* 히어로 카드 안의 대표 숫자만 그라데이션으로 — 꾸밈을 한 군데에만 몰아줌 */
+.card-hero .stats .stat:first-child b,
+.card-hero .sum-big {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+.card-hero .sum-big small { -webkit-text-fill-color: var(--mute); color: var(--mute); }
+
+/* 메인 CTA 버튼이 은은하게 펄스 — 홈 화면에서 다음 행동을 자연스럽게 유도 */
+@keyframes ctaGlow {
+  0%, 100% { box-shadow: var(--shadow-btn); }
+  50% { box-shadow: 0 12px 28px -6px rgba(212, 18, 26, .55); }
+}
+.btn.cta-glow { animation: ctaGlow 2.4s ease-in-out infinite; }
 .btn.alt { background: var(--cream-weak); color: var(--sub); margin-top: 8px; }
 .icon-btn { width: 40px; height: 40px; margin-left: -10px; display: grid; place-items: center; border-radius: 12px; }
 .icon-btn svg { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2;

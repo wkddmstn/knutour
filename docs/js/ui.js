@@ -80,6 +80,7 @@ export function renderDashboard(zones, announcements, onGoQuest) {
   const total = zones.reduce((a, z) => a + z.missions.length, 0);
   const done = zones.reduce((a, z) => a + z.missions.filter((m) => isDone(m.id)).length, 0);
   const preview = announcements.slice(0, 2);
+  const nextZone = zones.find((z) => z.missions.some((m) => !isDone(m.id)));
 
   $("view-home").innerHTML = `
     <div style="position:relative">
@@ -87,13 +88,14 @@ export function renderDashboard(zones, announcements, onGoQuest) {
       <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
       <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
     </div>
-    <div class="card">
+    <div class="card card-hero">
       <div class="sum-label">진행 상황</div>
       <div class="sum-big">${done}<small> / ${total} 미션</small></div>
       <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
       <div class="sum-foot">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
+      ${nextZone ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>` : ""}
+      <button id="btn-go-quest" class="btn cta-glow" style="margin-top:18px">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
-    <button id="btn-go-quest" class="btn">미션 하러 가기</button>
     <h3 class="sec">공지사항</h3>
     <div class="list-card">
       ${preview.length ? preview.map((a) => `
