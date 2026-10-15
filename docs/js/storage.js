@@ -12,6 +12,7 @@ const empty = () => ({
   bonus: {},       // { "zone:zone-1": 50, "all": 200 ... }  받은 보너스
   score: 0,
   startedAt: null,
+  chatLog: {},     // { zoneId: htmlString }  구역별 대화 기록 스냅샷 (새로고침해도 유지)
 });
 
 function load() {
@@ -59,6 +60,21 @@ export function grantBonus(key, pts) {
 }
 
 export const resetAll = () => STORE.removeItem(KEY);
+
+// 구역 대화 기록 저장/복원 (새로고침하거나 다른 화면 갔다 와도 유지)
+export function getZoneChat(zoneId) {
+  return load().chatLog[zoneId] || null;
+}
+export function saveZoneChat(zoneId, html) {
+  const s = load();
+  s.chatLog[zoneId] = html;
+  save(s);
+}
+export function clearZoneChat(zoneId) {
+  const s = load();
+  delete s.chatLog[zoneId];
+  save(s);
+}
 
 // 레벨: 250 XP마다 1레벨
 const STEP = 250;

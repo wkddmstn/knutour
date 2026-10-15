@@ -203,6 +203,11 @@ export function renderMe(zones, onReset, onRanking) {
     { e: "🏅", n: "캠퍼스 마스터", ok: doneCnt === missions.length },
   ];
 
+  // 가입한 지 며칠째인지 (개인 정보 한 줄 요약에 사용)
+  const joinedAt = st.startedAt || Date.now();
+  const daysWith = Math.max(1, Math.floor((Date.now() - joinedAt) / 86400000) + 1);
+  const joinedDateText = new Date(joinedAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+
   const el = $("view-me");
   el.innerHTML = `
     <div class="card" style="position:relative">
@@ -213,13 +218,14 @@ export function renderMe(zones, onReset, onRanking) {
       <div class="progress"><i style="width:${lv.pct}%"></i></div>
       <div class="stats">
         <div class="stat"><b>${st.score}</b><span>총 XP</span></div>
-        <div class="stat"><b>${doneCnt}/${missions.length}</b><span>미션</span></div>
-        <div class="stat"><b>${clearCnt}/${zones.length}</b><span>스탬프</span></div>
+        <div class="stat"><b>${doneCnt}/${missions.length}</b><span>완료한 미션 · ${clearCnt}개 구역</span></div>
+        <div class="stat"><b>D+${daysWith}</b><span>함께한 지</span></div>
       </div>
+      <div class="sum-foot" style="margin-top:10px">${joinedDateText}에 캠퍼스 퀘스트를 시작했어요</div>
     </div>
-    <button id="btn-ranking" class="btn">랭킹 보기</button>
+    <button id="btn-ranking" class="btn" style="margin-top:16px">랭킹 보기</button>
     ${myCode ? `
-    <div class="card" style="text-align:center">
+    <div class="card" style="text-align:center;margin-top:16px">
       <div class="sum-label">내 친구 코드</div>
       <div class="sum-big" style="font-size:30px;letter-spacing:4px">${esc(myCode)}</div>
       <div class="sum-foot">'함께하기' 미션에서 친구에게 이 코드를 알려주세요</div>

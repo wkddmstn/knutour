@@ -184,6 +184,15 @@ function openZone(zone) {
   if ($("btn-map")) $("btn-map").textContent = "지도 접기";
   initMap(zone);
 
+  // 이 구역의 대화 기록을 저장해 뒀다가, 새로고침하거나 다른 화면 갔다 와도 복원한다
+  chat.setPersist((html) => store.saveZoneChat(zone.id, html));
+  const savedChat = store.getZoneChat(zone.id);
+  const resuming = !!savedChat;
+  if (resuming) {
+    $("chat").innerHTML = savedChat;
+    requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+  }
+
   // 데모 모드에서는 이전에 인증한 구역이어도 매번 이동 버튼을 누르게 한다
   const verified = !DEMO_MODE && store.isVerified(zone.id);
   $("btn-skip")?.classList.add("hidden");   // 디버그 버튼은 위치 인증 단계가 시작되면 나타남
@@ -193,22 +202,27 @@ function openZone(zone) {
     $("status").textContent = DEMO_MODE ? "데모 모드예요. 아래 버튼을 눌러 미션 위치로 이동해 보세요." : "위치를 확인하는 중이에요...";
   }
 
-  runZone(zone);
+  runZone(zone, resuming);
 }
 
 // 구역 대화의 전체 흐름: 인사 → 위치 인증 → 미션 메뉴 → 구역 클리어
-async function runZone(zone) {
-  const introLine = zone.intro ? `<br>${zone.intro}` : "";
-  await chat.bot(`오, 여기가 <b>${zone.name}</b>이구나!${introLine}`);
+// resuming이 true면(저장된 대화가 있으면) 이미 봤던 인사말은 다시 보여주지 않는다
+async function runZone(zone, resuming = false) {
+  if (!resuming) {
+    const introLine = zone.intro ? `<br>${zone.intro}` : "";
+    await chat.bot(`오, 여기가 <b>${zone.name}</b>이구나!${introLine}`);
 
-  // 장소에 부가정보(extraInfo)가 있으면 "더 알아보기" 버튼을 띄운다 (누르지 않아도 흐름은 계속 진행됨)
-  if (zone.extraInfo) {
-    chat.choices([{ label: zone.extraInfo.buttonLabel || "더 알아보기", value: "info", ghost: true }])
-      .then(() => showExtraInfo(zone.extraInfo));
+    // 장소에 부가정보(extraInfo)가 있으면 "더 알아보기" 버튼을 띄운다 (누르지 않아도 흐름은 계속 진행됨)
+    if (zone.extraInfo) {
+      chat.choices([{ label: zone.extraInfo.buttonLabel || "더 알아보기", value: "info", ghost: true }])
+        .then(() => showExtraInfo(zone.extraInfo));
+    }
   }
 
   if (DEMO_MODE || !store.isVerified(zone.id)) {
-    await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>파란 원</b> 안으로 들어와 줘.");
+    if (!resuming) {
+      await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>파란 원</b> 안으로 들어와 줘.");
+    }
 
     if (DEMO_MODE) {
       chat.choices([{ label: "출발하기", value: "go" }])

@@ -23,12 +23,31 @@ function scrollDown() {
   });
 }
 
+/* ---------- 대화 기록 저장 (새로고침/다른 화면 이동 후에도 유지) ---------- */
+// 아직 답하지 않은 선택지·위젯·"입력 중..." 표시는 저장하지 않는다
+// (저장된 HTML을 그대로 복원하면 버튼에 클릭 이벤트가 안 붙어서 눌러도 반응이 없기 때문)
+let persistFn = null;
+export function setPersist(fn) { persistFn = fn; }
+
+function snapshot() {
+  const clone = $("chat").cloneNode(true);
+  clone.querySelectorAll(".row.choices, .row.widget, .bubble.typing").forEach((el) => {
+    (el.closest(".row") || el).remove();
+  });
+  return clone.innerHTML;
+}
+
+function persist() {
+  if (persistFn) persistFn(snapshot());
+}
+
 function row(cls, html) {
   const d = document.createElement("div");
   d.className = "row " + cls;
   d.innerHTML = html;
   $("chat").appendChild(d);
   scrollDown();
+  persist();
   return d;
 }
 

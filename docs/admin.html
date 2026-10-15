@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 - 경북대학교 캠퍼스 퀘스트</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { max-width: 560px; margin: 0 auto; padding: 24px 20px 80px; }
+  .admin-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+  .admin-card h2 { font-size: 15px; margin-bottom: 12px; color: var(--sub); }
+  .stat-num { font-size: 36px; font-weight: 800; color: var(--primary); }
+  .ann-item { padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+  .ann-item h3 { font-size: 15px; margin-bottom: 4px; }
+  .ann-item p { font-size: 13px; color: var(--sub); white-space: pre-wrap; }
+  .ann-item .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .ann-item time { font-size: 12px; color: var(--mute); }
+  .ann-item button { color: var(--red); font-size: 13px; font-weight: 600; }
+  .admin-form input, .admin-form textarea {
+    display: block; width: 100%; padding: 12px; margin-bottom: 8px; border: 1.5px solid var(--line);
+    border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; box-sizing: border-box;
+  }
+  .admin-form textarea { min-height: 90px; resize: vertical; }
+  #lock-screen { max-width: 320px; margin: 80px auto; text-align: center; }
+  #lock-screen input {
+    width: 100%; padding: 14px; margin: 16px 0; border-radius: 12px; border: 1.5px solid var(--line);
+    background: var(--card); color: var(--ink); font: inherit; text-align: center; box-sizing: border-box;
+  }
+  .hidden { display: none !important; }
+  .admin-err { color: var(--red); font-size: 13px; min-height: 18px; }
+</style>
+</head>
+<body>
+  <div id="lock-screen">
+    <h1 style="font-size:20px;font-weight:800">🔒 관리자 페이지</h1>
+    <p style="color:var(--sub);font-size:14px">비밀번호를 입력하세요</p>
+    <input type="password" id="pw-input" placeholder="비밀번호">
+    <button class="btn" id="pw-submit">입장</button>
+    <p class="admin-err" id="pw-err"></p>
+  </div>
+
+  <div id="admin-app" class="hidden">
+    <h1 style="font-size:20px;font-weight:800;margin-bottom:16px">📊 관리자 대시보드</h1>
+
+    <div class="admin-card">
+      <h2>가입자 수</h2>
+      <div class="stat-num" id="stat-users">-</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>공지사항 등록</h2>
+      <div class="admin-form">
+        <input type="text" id="ann-title" placeholder="제목">
+        <textarea id="ann-body" placeholder="내용"></textarea>
+        <button class="btn" id="ann-submit">등록하기</button>
+        <p class="admin-err" id="ann-err"></p>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h2>공지사항 관리</h2>
+      <div id="ann-list">불러오는 중...</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
