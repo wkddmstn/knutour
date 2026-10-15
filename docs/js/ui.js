@@ -261,7 +261,7 @@ export function renderMe(zones, onReset, onRanking) {
 
   const el = $("view-me");
   el.innerHTML = `
-    <div class="card" style="position:relative">
+    <div class="card card-hero" style="position:relative">
       <img class="mascot-corner" src="img/mascot/badge-campus.png" alt="호반우" style="width:64px">
       <div class="sum-label">${esc(st.profile.dept)}</div>
       <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>

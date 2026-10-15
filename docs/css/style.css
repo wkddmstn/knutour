@@ -21,6 +21,9 @@
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
           "Malgun Gothic", system-ui, sans-serif;
   --ease-toss: cubic-bezier(.22, 1, .36, 1);  /* 토스 느낌의 스프링감 있는 이징 */
+  --shadow-card: 0 1px 2px rgba(212, 18, 26, .04), 0 10px 24px -10px rgba(212, 18, 26, .14);
+  --shadow-hero: 0 2px 4px rgba(212, 18, 26, .06), 0 18px 36px -14px rgba(212, 18, 26, .22);
+  --shadow-btn: 0 8px 18px -8px rgba(212, 18, 26, .45);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -67,15 +70,32 @@ body[data-view="zone"] main { padding-bottom: 40px; }
 }
 
 /* ============ 공통 ============ */
+/* 카드 = "떠있는" 정보 단위(프로필, 진행상황, 데일리 등). 목록(.list-card, .ranklist)은 일부러 평평하게 둬서
+   뭐가 중요한 정보고 뭐가 훑어보는 목록인지 구분되게 한다. */
 .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 12px;
-        border: 1px solid var(--line); transition: transform .16s var(--ease-toss); }
-.card:active { transform: scale(.985); }
+        border: 1px solid var(--line); box-shadow: var(--shadow-card);
+        transition: transform .16s var(--ease-toss), box-shadow .16s var(--ease-toss); }
+.card:active { transform: scale(.985); box-shadow: var(--shadow-card); }
 .sec { margin: 24px 4px 12px; font-size: 18px; font-weight: 700; }
 .btn {
   display: block; width: 100%; padding: 16px; border-radius: 16px; background: var(--primary); color: #fff;
-  font-size: 16px; font-weight: 700; transition: transform .15s var(--ease-toss), background .15s var(--ease-toss);
+  font-size: 16px; font-weight: 700; box-shadow: var(--shadow-btn);
+  transition: transform .15s var(--ease-toss), background .15s var(--ease-toss), box-shadow .15s var(--ease-toss);
 }
-.btn:active { transform: scale(.97); background: var(--primary-dark); }
+.btn:active { transform: scale(.97) translateY(1px); background: var(--primary-dark); box-shadow: 0 4px 10px -6px rgba(212, 18, 26, .4); }
+.btn.alt { box-shadow: none; }
+
+/* 히어로 카드 — 화면당 딱 하나, 가장 중요한 카드에만 쓴다 (예: 내 정보 프로필 카드) */
+.card-hero {
+  background: linear-gradient(160deg, var(--card) 0%, var(--primary-weak) 150%);
+  box-shadow: var(--shadow-hero);
+  border-color: transparent;
+}
+/* 히어로 카드 안의 첫 숫자(총 XP)만 그라데이션으로 — 꾸밈을 한 군데에만 몰아줌 */
+.card-hero .stats .stat:first-child b {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
 .btn.alt { background: var(--cream-weak); color: var(--sub); margin-top: 8px; }
 .icon-btn { width: 40px; height: 40px; margin-left: -10px; display: grid; place-items: center; border-radius: 12px; }
 .icon-btn svg { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2;
@@ -375,6 +395,9 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
     --amber: #e0a43c;
     --amber-weak: #3a2c12;
     --red: #ff6b74;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 24px -10px rgba(0, 0, 0, .55);
+    --shadow-hero: 0 2px 6px rgba(0, 0, 0, .35), 0 20px 42px -16px rgba(239, 65, 73, .35);
+    --shadow-btn: 0 10px 22px -10px rgba(239, 65, 73, .5);
   }
 
   #topbar { background: rgba(27, 23, 18, .9); }
