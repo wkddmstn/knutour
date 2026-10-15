@@ -74,28 +74,38 @@ export function renderOnboard(depts, onSubmit) {
 }
 
 /* ---------- 홈: 대시보드 ---------- */
-export function renderOnboard(depts, onSubmit) {
-  $("view-onboard").innerHTML = `
-    <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
-    <h1 class="onb-title">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
-    <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
+export function renderDashboard(zones, announcements, onGoQuest) {
+  const st = getState();
+  const lv = getLevel(st.score);
+  const total = zones.reduce((a, z) => a + z.missions.length, 0);
+  const done = zones.reduce((a, z) => a + z.missions.filter((m) => isDone(m.id)).length, 0);
+  const preview = announcements.slice(0, 2);
+
+  $("view-home").innerHTML = `
+    <div style="position:relative">
+      <img class="mascot-corner" src="img/mascot/cheer.png" alt="응원하는 호반우">
+      <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
+      <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
+    </div>
     <div class="card">
-      <label class="field">닉네임
-        <input id="in-nick" maxlength="10" placeholder="2~10자로 입력해 주세요" autocomplete="off">
-      </label>
-      <label class="field">소속
-        <select id="in-dept">${depts.map((d) => `<option>${esc(d)}</option>`).join("")}</select>
-      </label>
-      <p id="onb-err" class="err"></p>
-      <button id="btn-start" class="btn">시작하기</button>
+      <div class="sum-label">진행 상황</div>
+      <div class="sum-big">${done}<small> / ${total} 미션</small></div>
+      <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
+      <div class="sum-foot">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
+    </div>
+    <button id="btn-go-quest" class="btn">미션 하러 가기</button>
+    <h3 class="sec">공지사항</h3>
+    <div class="list-card">
+      ${preview.length ? preview.map((a) => `
+        <div class="zone-card" style="cursor:default">
+          <div class="zc-body"><strong>${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
+        </div>`).join("") : `
+        <div class="card" style="text-align:center;margin:0">
+          <img src="img/mascot/save-earth.png" alt="호반우" style="width:100px;margin:0 auto 10px">
+          <p style="color:var(--mute);margin:0">아직 공지가 없어요</p>
+        </div>`}
     </div>`;
-  const submit = () => {
-    const nickname = $("in-nick").value.trim();
-    if (nickname.length < 2) { $("onb-err").textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
-    onSubmit({ nickname, dept: $("in-dept").value });
-  };
-  $("btn-start").onclick = submit;
-  $("in-nick").onkeydown = (e) => { if (e.key === "Enter") submit(); };
+  $("btn-go-quest").onclick = onGoQuest;
 }
 /* ---------- 퀘스트: 지도 + 랭킹 ---------- */
 export function renderQuestShell() {
