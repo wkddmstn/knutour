@@ -26,18 +26,18 @@ let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 
 /* ================= 지도 타일 (라이트/다크 자동 전환) ================= */
-// CARTO의 무료 베이스맵: 라이트는 미니멀한 Positron, 다크는 세련된 Dark Matter.
-// 기존 OSM 기본 타일을 CSS invert로 반전시키던 방식보다 훨씬 깔끔합니다.
-const TILE_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
+// Esri의 무료 회색 베이스맵: API 키 없이 쓸 수 있고, 라이트는 연한 회색(Light Gray),
+// 다크는 짙은 회색(Dark Gray) — 기존 OSM 반전 필터보다 훨씬 깔끔합니다.
+const TILE_ATTR = 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, GIS User Community';
 const isDarkMode = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
 const tileUrl = () =>
   isDarkMode()
-    ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png";
+    ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+    : "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 
 function addBaseTiles(targetMap) {
   const layer = L.tileLayer(tileUrl(), {
-    maxZoom: 20, subdomains: "abcd", attribution: TILE_ATTR,
+    maxZoom: 19, maxNativeZoom: 16, attribution: TILE_ATTR,
   }).addTo(targetMap);
   return layer;
 }

@@ -356,11 +356,6 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
   .field input, .field select, .text-in { background: var(--card); color: var(--ink); }
   .p3 .bar { color: #241c16; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card); color: var(--ink); }
-
-  /* 지도 타일만 어둡게 반전시키고, 우리가 그린 핀·원은 원래 색 그대로 유지 */
-  .leaflet-tile-pane {
-    filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.8);
-  }
 }
 .compass-arrow {
   display: inline-block; margin-right: 4px; color: var(--primary);
