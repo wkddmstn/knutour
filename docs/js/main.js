@@ -32,25 +32,38 @@ function pickMainZone() {
 }
 
 /* ================= 구역별 배경 테마 ================= */
-// zones.json을 따로 건드릴 필요 없이, 구역 순서대로 색을 돌려서 목적지마다 분위기를 다르게 준다.
-const ZONE_THEMES = [
-  { accent: "#d4121a", wash: "rgba(212, 18, 26, .10)" },
-  { accent: "#0a9d63", wash: "rgba(10, 157, 99, .10)" },
-  { accent: "#2f6fed", wash: "rgba(47, 111, 237, .10)" },
-  { accent: "#a86400", wash: "rgba(168, 100, 0, .10)" },
-  { accent: "#8d5fd3", wash: "rgba(141, 95, 211, .10)" },
-  { accent: "#d1538a", wash: "rgba(209, 83, 138, .10)" },
-  { accent: "#1aa6a6", wash: "rgba(26, 166, 166, .10)" },
+// zones.json을 따로 건드릴 필요 없이, 구역 순서대로 색을 돌려서 그 구역만의 분위기를 준다.
+// 작은 패턴 대신, 부드럽게 번진 색 덩어리(블롭) 2개를 화면 구석에 은은하게 깔아서 장소 느낌을 표현한다.
+const ZONE_ACCENTS = ["#d4121a", "#0a9d63", "#2f6fed", "#a86400", "#8d5fd3", "#d1538a", "#1aa6a6"];
+// 블롭이 매번 같은 자리에 있지 않도록 구역마다 위치를 돌려가며 쓴다
+const BLOB_LAYOUTS = [
+  ["6% -8%", "94% 22%"],
+  ["-6% 20%", "100% 74%"],
+  ["14% 98%", "90% -6%"],
+  ["96% 4%", "2% 60%"],
 ];
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function buildZoneBlobs(idx, accent) {
+  const { r, g, b } = hexToRgb(accent);
+  const [p1, p2] = BLOB_LAYOUTS[idx % BLOB_LAYOUTS.length];
+  return `radial-gradient(420px 420px at ${p1}, rgba(${r},${g},${b},.24), transparent 72%),` +
+         `radial-gradient(360px 360px at ${p2}, rgba(${r},${g},${b},.16), transparent 72%)`;
+}
+
 function applyZoneTheme(zone) {
   const idx = Math.max(0, zones.findIndex((z) => z.id === zone.id));
-  const theme = ZONE_THEMES[idx % ZONE_THEMES.length];
-  document.documentElement.style.setProperty("--zone-accent", theme.accent);
-  document.documentElement.style.setProperty("--zone-wash", theme.wash);
+  const accent = ZONE_ACCENTS[idx % ZONE_ACCENTS.length];
+  document.documentElement.style.setProperty("--zone-accent", accent);
+  document.documentElement.style.setProperty("--zone-blobs", buildZoneBlobs(idx, accent));
 }
 function resetZoneTheme() {
   document.documentElement.style.removeProperty("--zone-accent");
-  document.documentElement.style.removeProperty("--zone-wash");
+  document.documentElement.style.removeProperty("--zone-blobs");
 }
 
 /* ================= 데일리 퀴즈 문제 은행 ================= */

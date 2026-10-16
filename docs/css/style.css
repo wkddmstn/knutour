@@ -3,7 +3,6 @@
 /* ============ 디자인 토큰 (경북대 호반우 테마) ============ */
 :root {
   --zone-accent: var(--primary);
-  --zone-wash: rgba(212, 18, 26, .10);
   --bg: #ffffff;
   --card: #ffffff;
   --ink: #241c16;
@@ -177,13 +176,14 @@ label.field { display: block; margin-bottom: 16px; color: var(--sub); font-size:
 .zone-card.clear .zc-side { color: var(--primary); }
 
 /* ============ 구역(채팅) 화면 ============ */
-/* 구역마다 메인 JS에서 --zone-accent/--zone-wash를 다르게 지정해서, 들어간 구역에 맞게 배경 색감이 살짝 바뀐다 */
-body[data-view="zone"] main {
-  background: radial-gradient(ellipse 140% 280px at 50% 0%, var(--zone-wash), transparent 72%);
-  transition: background .35s var(--ease-toss);
+/* 구역마다 메인 JS에서 --zone-blobs를 그 구역 색의 부드러운 블롭(번진 색 덩어리) 2개로 지정해서,
+   화면 구석에 은은하게 번져 보이며 장소 느낌을 표현한다 */
+body[data-view="zone"] {
+  background-color: var(--bg);
+  background-image: var(--zone-blobs, none);
+  background-repeat: no-repeat;
+  transition: background-image .4s var(--ease-toss);
 }
-body[data-view="zone"] #zone-name { color: var(--zone-accent); transition: color .35s var(--ease-toss); }
-body[data-view="zone"] .compass-arrow { color: var(--zone-accent); }
 
 .zone-top { position: sticky; top: var(--topbar); z-index: 1000; margin: -8px -16px 12px; padding: 4px 16px 12px;
             background: rgba(255, 255, 255, .96); backdrop-filter: blur(10px); }
