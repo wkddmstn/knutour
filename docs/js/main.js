@@ -31,6 +31,28 @@ function pickMainZone() {
   return zones.find((z) => z.missions.some((m) => !store.isDone(m.id)));
 }
 
+/* ================= 구역별 배경 테마 ================= */
+// zones.json을 따로 건드릴 필요 없이, 구역 순서대로 색을 돌려서 목적지마다 분위기를 다르게 준다.
+const ZONE_THEMES = [
+  { accent: "#d4121a", wash: "rgba(212, 18, 26, .10)" },
+  { accent: "#0a9d63", wash: "rgba(10, 157, 99, .10)" },
+  { accent: "#2f6fed", wash: "rgba(47, 111, 237, .10)" },
+  { accent: "#a86400", wash: "rgba(168, 100, 0, .10)" },
+  { accent: "#8d5fd3", wash: "rgba(141, 95, 211, .10)" },
+  { accent: "#d1538a", wash: "rgba(209, 83, 138, .10)" },
+  { accent: "#1aa6a6", wash: "rgba(26, 166, 166, .10)" },
+];
+function applyZoneTheme(zone) {
+  const idx = Math.max(0, zones.findIndex((z) => z.id === zone.id));
+  const theme = ZONE_THEMES[idx % ZONE_THEMES.length];
+  document.documentElement.style.setProperty("--zone-accent", theme.accent);
+  document.documentElement.style.setProperty("--zone-wash", theme.wash);
+}
+function resetZoneTheme() {
+  document.documentElement.style.removeProperty("--zone-accent");
+  document.documentElement.style.removeProperty("--zone-wash");
+}
+
 /* ================= 데일리 퀴즈 문제 은행 ================= */
 // 날짜별로 문제가 바뀐다 (같은 날에는 모든 유저가 같은 문제를 봄)
 const QUIZ_BANK = [
@@ -264,6 +286,7 @@ function onReset() {
 function leaveZone() {
   geo.stopWatch();
   chat.clear();
+  resetZoneTheme();
   if (map) {
     tileLayers = tileLayers.filter((t) => t.targetMap !== map);
     map.remove(); map = null; marker = null;
@@ -280,6 +303,7 @@ function clearCampusMap() {
 function openZone(zone) {
   clearCampusMap();
   leaveZone();
+  applyZoneTheme(zone);
   ui.showView("zone");
   if ($("zone-name")) $("zone-name").textContent = zone.name;
   $("zone-top")?.classList.remove("collapsed");
@@ -403,8 +427,9 @@ async function startJourney(zone) {
   }
 
   if (map) {
+    const routeColor = getComputedStyle(document.documentElement).getPropertyValue("--zone-accent").trim() || "#d4121a";
     L.polyline(route.map((p) => [p.lat, p.lng]), {
-      color: "#d4121a", weight: 4, opacity: .85, lineCap: "round",
+      color: routeColor, weight: 4, opacity: .85, lineCap: "round",
     }).addTo(map);
     map.flyToBounds(route.map((p) => [p.lat, p.lng]), { padding: [30, 30] });
   }

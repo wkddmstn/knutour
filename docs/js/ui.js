@@ -51,8 +51,20 @@ export function reward(pts) {
 /* ---------- 온보딩 ---------- */
 export function renderOnboard(depts, onSubmit) {
   $("view-onboard").innerHTML = `
-    <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
-    <h1 class="onb-title">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
+    <div class="onb-scene">
+      <svg class="onb-skyline" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,90 L0,55 L22,55 L22,32 L48,32 L48,55 L74,55 L74,14 L86,14 L86,4 L98,14 L98,55 L134,55
+                 L134,40 L162,40 L162,55 L196,55 L196,22 L210,22 L210,10 L224,22 L224,55 L258,55
+                 L258,36 L284,36 L284,55 L320,55 L320,46 L346,46 L346,55 L400,55 L400,90 Z"
+              fill="none" stroke="var(--primary)" stroke-opacity="0.16" stroke-width="2"/>
+      </svg>
+      <div class="onb-badge">
+        <span class="onb-badge-ring">KNU</span>
+        <strong>캠퍼스 퀘스트</strong>
+      </div>
+      <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
+    </div>
+    <h1 class="onb-title onb-title-display">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
     <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
     <div class="card">
       <label class="field">닉네임
