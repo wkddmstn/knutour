@@ -108,6 +108,7 @@ export function renderDashboard(zones, announcements, onGoQuest) {
       ${nextZone ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>` : ""}
       <button id="btn-go-quest" class="btn cta-glow" style="margin-top:18px">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
+    <div id="daily-section"></div>
     <h3 class="sec">공지사항</h3>
     <div class="list-card">
       ${preview.length ? preview.map((a) => `
@@ -121,47 +122,33 @@ export function renderDashboard(zones, announcements, onGoQuest) {
     </div>`;
   $("btn-go-quest").onclick = onGoQuest;
 }
-/* ---------- 퀘스트: 랜딩(메인 미션) + 탐험(지도·목록·랭킹) ---------- */
-// 퀘스트 탭을 열면 바로 지도가 아니라, "메인 미션"을 소개하는 꾸며진 랜딩 화면이 먼저 보인다.
-// 거기서 버튼을 눌러야 지도 + 구역 목록이 나오는 탐험 화면으로 들어간다.
-export function renderQuestShell(cleared = 0, total = 0, nextZone = null) {
+/* ---------- 퀘스트: 지도 · 구역 목록 · 랭킹 ---------- */
+// 탭을 열면 바로 지도+구역 목록이 보인다. "오늘 할 일(메인 미션/데일리)"은 홈 탭이 전담하고,
+// 여기는 순수하게 캠퍼스를 탐험하는 화면으로만 쓴다.
+export function renderQuestShell(cleared = 0, total = 0) {
   $("view-quest").innerHTML = `
-    <div id="quest-landing">
-      <div style="position:relative">
-        <img class="mascot-corner" src="img/mascot/commute1.png" alt="호반우">
-        <h1 class="onb-title" style="font-size:22px">오늘의 캠퍼스 미션</h1>
-        <p class="map-guide">메인 미션부터 하나씩 깨러 가볼까요?</p>
-      </div>
-      <div class="card card-hero" style="text-align:center">
-        <img class="mascot-hero" style="width:104px;margin:0 auto 8px" src="img/mascot/badge-campus.png" alt="호반우">
-        <div class="sum-label">캠퍼스 점령도</div>
-        <div class="sum-big">${cleared}<small> / ${total} 구역</small></div>
-        <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
-        ${nextZone
-          ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">메인 미션 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>`
-          : `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">모든 구역을 클리어했어요!</div>`}
-        <button id="btn-quest-enter" class="btn cta-glow" style="margin-top:18px">${nextZone ? "메인 미션 시작하기" : "지도 둘러보기"}</button>
-      </div>
-      <div id="daily-section"></div>
+    <div class="seg quest-seg">
+      <button data-m="map" class="on">지도</button>
+      <button data-m="rank">랭킹</button>
     </div>
-    <div id="quest-explore" class="hidden">
-      <button type="button" id="btn-quest-back" class="back-link">‹ 미션 홈으로</button>
-      <div class="seg quest-seg">
-        <button data-m="map" class="on">지도</button>
-        <button data-m="rank">랭킹</button>
+    <div id="quest-map-pane">
+      <h1 class="sec campus-title">캠퍼스 지도</h1>
+      <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
+      <div class="card" style="padding:14px 18px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="sum-label">캠퍼스 점령도</span>
+          <span style="font-weight:700;color:var(--primary)">${cleared} / ${total}</span>
+        </div>
+        <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
       </div>
-      <div id="quest-map-pane">
-        <h1 class="sec campus-title">캠퍼스 지도</h1>
-        <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
-        <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
-        <h3 class="sec">나머지 구역</h3>
-        <div id="zone-list"></div>
-      </div>
-      <div id="quest-rank-pane" class="hidden"></div>
-    </div>`;
+      <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
+      <h3 class="sec">구역 목록</h3>
+      <div id="zone-list"></div>
+    </div>
+    <div id="quest-rank-pane" class="hidden"></div>`;
 }
 
-// 구역 목록(메인 미션 제외): 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과
+// 구역 목록: 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과
 export function renderZoneList(zones, isDone, justCleared = new Set()) {
   const el = $("zone-list");
   if (!el) return;
@@ -172,11 +159,6 @@ export function renderZoneList(zones, isDone, justCleared = new Set()) {
       doneCnt: z.missions.filter((m) => isDone(m.id)).length,
     }))
     .sort((a, b) => Number(a.done) - Number(b.done));
-
-  if (!rows.length) {
-    el.innerHTML = `<p class="map-guide" style="text-align:center">메인 미션 외에 다른 구역은 없어요.</p>`;
-    return;
-  }
 
   el.innerHTML = rows.map(({ zone: z, done, doneCnt }) => `
     <button type="button" class="zone-row ${done ? "cleared" : ""} ${justCleared.has(z.id) ? "just-cleared" : ""}" data-zone="${z.id}">
@@ -308,7 +290,7 @@ export function renderCommunity(announcements) {
 }
 
 /* ---------- 내 정보 ---------- */
-export function renderMe(zones, onReset, onRanking) {
+export function renderMe(zones, onReset) {
   const st = getState();
   const myCode = getCachedProfile()?.code;
   const lv = getLevel(st.score);
@@ -336,7 +318,6 @@ export function renderMe(zones, onReset, onRanking) {
       </div>
       <div class="sum-foot" style="margin-top:10px">${joinedDateText}에 캠퍼스 퀘스트를 시작했어요</div>
     </div>
-    <button id="btn-ranking" class="btn" style="margin-top:16px">랭킹 보기</button>
     ${myCode ? `
     <div class="card" style="text-align:center;margin-top:16px">
       <div class="sum-label">내 친구 코드</div>
@@ -348,7 +329,6 @@ export function renderMe(zones, onReset, onRanking) {
   $("btn-reset").onclick = () => {
     if (confirm("모든 점수와 기록을 지우고 처음부터 시작할까요?")) onReset();
   };
-  $("btn-ranking").onclick = onRanking;
 }
 
 /* ---------- 완주 시트 ---------- */

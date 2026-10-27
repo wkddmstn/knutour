@@ -8,6 +8,10 @@ import { ensureProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
+import { openArEncounter } from "./ar.js";
+
+// AR로 호반우를 만날 수 있는 구역 이름들. 여기에 이름만 추가하면 그 구역에서도 AR 버튼이 떠요.
+const AR_ZONE_NAMES = ["일청담"];
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -25,11 +29,6 @@ let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
-
-// 오늘의 "메인 미션" = 아직 안 끝난 구역 중 첫 번째. 구역 목록에서는 이걸 빼고 나머지만 보여준다.
-function pickMainZone() {
-  return zones.find((z) => z.missions.some((m) => !store.isDone(m.id)));
-}
 
 /* ================= 구역별 배경 테마 ================= */
 // zones.json을 따로 건드릴 필요 없이, 구역 순서대로 색을 돌려서 그 구역만의 분위기를 준다.
@@ -165,7 +164,7 @@ async function init() {
   // 요소가 없어도(예: index.html이 구버전이라 특정 버튼이 빠져있어도) 전체가 멈추지 않도록
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
-  $("btn-back")?.addEventListener("click", () => goTab("quest", { enter: true }));
+  $("btn-back")?.addEventListener("click", () => goTab("quest"));
   $("btn-map")?.addEventListener("click", toggleMap);
   if ($("bell-btn")) {
     $("bell-btn").onclick = openNotifPanel;
@@ -216,53 +215,33 @@ async function goTab(tab, opts = {}) {
 
   if (tab === "home") {
     const anns = await listAnnouncements(store.getState().profile?.dept);
-    ui.renderDashboard(zones, anns, () => goTab("quest", { enter: true }));
+    ui.renderDashboard(zones, anns, () => goTab("quest"));
     ui.showView("home");
+    renderDailySection();
    } else if (tab === "quest") {
     const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
-    const mainZone = pickMainZone();
-    ui.renderQuestShell(clearedCount, zones.length, mainZone);
+    ui.renderQuestShell(clearedCount, zones.length);
     ui.showView("quest");
-    renderDailySection();
-    wireQuestLanding();
-    if (opts.enter || opts.mode === "rank") enterQuestExplore(opts);
+    initCampusMap(openZone);
+    renderZoneListSection();
+    wireQuestSegment();
+    if (opts.mode === "rank") switchQuestPane("rank");
   } else if (tab === "community") {
     const anns = await listAnnouncements(store.getState().profile?.dept);
     ui.renderCommunity(anns);
     ui.showView("community");
   } else if (tab === "me") {
-    ui.renderMe(zones, onReset, () => goTab("quest", { mode: "rank" }));
+    ui.renderMe(zones, onReset);
     refreshBellBadge();
     ui.showView("me");
   }
 }
 
-// 퀘스트 랜딩 화면: "메인 미션 시작하기" 버튼을 누르면 지도+목록이 있는 탐험 화면으로 들어간다
-function wireQuestLanding() {
-  $("btn-quest-enter")?.addEventListener("click", () => enterQuestExplore());
-  $("btn-quest-back")?.addEventListener("click", () => {
-    clearCampusMap();
-    $("quest-explore")?.classList.add("hidden");
-    $("quest-landing")?.classList.remove("hidden");
-  });
-}
-
-function enterQuestExplore(opts = {}) {
-  $("quest-landing")?.classList.add("hidden");
-  $("quest-explore")?.classList.remove("hidden");
-  initCampusMap(openZone);
-  renderZoneListSection();
-  wireQuestSegment();
-  if (opts.mode === "rank") switchQuestPane("rank");
-}
-
-// 메인 미션을 뺀 나머지 구역 목록. 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
+// 구역 목록: 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
 function renderZoneListSection() {
-  const mainZone = pickMainZone();
-  const rest = zones.filter((z) => z.id !== mainZone?.id);
-  const clearedNow = new Set(rest.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
+  const clearedNow = new Set(zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
   const justCleared = new Set([...clearedNow].filter((id) => !lastClearedSet.has(id)));
-  ui.renderZoneList(rest, store.isDone, justCleared);
+  ui.renderZoneList(zones, store.isDone, justCleared);
   document.querySelectorAll("#zone-list .zone-row").forEach((btn) => {
     btn.onclick = () => {
       const zone = zones.find((z) => z.id === btn.dataset.zone);
@@ -378,6 +357,15 @@ async function runZone(zone, resuming = false) {
       "좋아, <b>위치 인증 완료</b>!<br>" +
       (first ? "도착 보너스 10 XP 챙겼어. " : "") + "이제 미션 시작해볼까?"
     );
+
+    // 이 구역이 AR 지원 구역이면, 미션 메뉴 전에 "AR로 만나기" 버튼을 한 번 띄워준다 (안 눌러도 흐름은 계속됨)
+    if (!resuming && AR_ZONE_NAMES.includes(zone.name)) {
+      chat.choices([{ label: "📸 AR로 호반우 만나기", value: "ar", ghost: true }])
+        .then(() => openArEncounter({
+          title: `${zone.name}에서 호반우를 만났어요!`,
+          mascotSrc: "img/mascot/cheer.png",
+        }));
+    }
   }
   await missionMenu(zone);
 }
@@ -537,7 +525,7 @@ async function missionMenu(zone) {
       })),
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
-    if (pick === "__home") { goTab("quest", { enter: true }); return; }
+    if (pick === "__home") { goTab("quest"); return; }
     await runMission(zone.missions.find((m) => m.id === pick));
   }
 }
@@ -563,7 +551,7 @@ async function finishZone(zone) {
     { label: "랭킹 보기", value: "quest-rank" },
   ]);
   if (next === "quest-rank") goTab("quest", { mode: "rank" });
-  else goTab("quest", { enter: true });
+  else goTab("quest");
 }
 
 /* ================= 지도 ================= */
