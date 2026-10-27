@@ -5,7 +5,7 @@ export const MASCOTS = {
   library:      { name: "중앙도서관",      img: IMG + "library.png",      lines: ["쉿! 도서관이야 📚", "열람실은 신관, 책은 구관에 있어!", "자리는 도서관 앱으로 예약해!"] },
   stadium:      { name: "대운동장·백호관", img: IMG + "stadium.png",      lines: ["여기가 축제 무대야! 🎤", "올해는 누가 올까? 두근두근!", "백호관엔 중앙동아리방이 모여 있어!"] },
   gongstaurant: { name: "공식당",          img: IMG + "gongstaurant.png", lines: ["배고프지? 🍚", "치즈알밥이랑 육회비빔밥 강추!", "개강 시즌엔 일찍 와야 해!"] },
-  loveroad:     { name: "벚꽃길(백양로)",  img: IMG + "loveroad.png",     lines: ["벚꽃길에 온 걸 환영해 🌸", "손잡고 정문에서 본관까지 걸으면… 전설 알지? 💕"] },
+  loveroad:     { name: "러브로드",  img: IMG + "loveroad.png",     lines: ["러브로드에 온 걸 환영해 🌸", "손잡고 정문에서 본관까지 걸으면… 전설 알지? 💕"] },
   bokji:        { name: "복지관",          img: IMG + "bokji.png",        lines: ["복지관엔 뭐가 있을까? 🛍️", "퀴즈 맞힐 수 있겠어?"] },
 };
 const DEFAULT = { name: "캠퍼스", img: IMG + "react-hi.png", lines: ["반가워! 나는 호반우야!"] };

@@ -1,4 +1,4 @@
-import { getState, isDone, getLevel } from "./storage.js";
+import { getState, isDone, getLevel, getLevelTable, getLevelLog } from "./storage.js";
 import { getCachedProfile } from "./supa.js";
 
 const $ = (id) => document.getElementById(id);
@@ -309,7 +309,10 @@ export function renderMe(zones, onReset) {
       <img class="mascot-corner" src="img/mascot/badge-campus.png" alt="호반우" style="width:64px">
       <div class="sum-label">${esc(st.profile.dept)}</div>
       <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>
-      <div class="sum-foot" style="margin-top:6px">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
+      <div class="sum-foot" style="margin-top:6px">
+        Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP
+        <button id="btn-level-info" class="level-info-btn" type="button" aria-label="레벨 기준 보기">ⓘ</button>
+      </div>
       <div class="progress"><i style="width:${lv.pct}%"></i></div>
       <div class="stats">
         <div class="stat"><b>${st.score}</b><span>총 XP</span></div>
@@ -329,6 +332,37 @@ export function renderMe(zones, onReset) {
   $("btn-reset").onclick = () => {
     if (confirm("모든 점수와 기록을 지우고 처음부터 시작할까요?")) onReset();
   };
+  $("btn-level-info").onclick = () => showLevelInfo(lv.level);
+}
+
+// 레벨 기준표 + 내가 실제로 각 레벨을 언제 찍었는지 보여주는 작은 팝업
+function showLevelInfo(myLevel) {
+  const m = $("modal");
+  const table = getLevelTable();
+  const log = getLevelLog();
+  const logByLevel = Object.fromEntries(log.map((e) => [e.level, e.at]));
+  const fmt = (ts) => new Date(ts).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+
+  m.classList.remove("hidden");
+  m.classList.add("modal-center");
+  m.innerHTML = `
+    <div class="modal-card pop-in" style="text-align:left">
+      <h2 style="font-size:18px;text-align:center">레벨 기준</h2>
+      <p class="sum-foot" style="text-align:center;margin:4px 0 14px">레벨이 오를수록 다음 레벨까지 필요한 XP가 점점 늘어나요</p>
+      <div class="level-table">
+        ${table.map((r) => `
+          <div class="level-row ${r.level === myLevel ? "me" : ""} ${logByLevel[r.level] ? "reached" : ""}">
+            <span class="lv-num">Lv.${r.level}</span>
+            <span class="lv-title">${esc(r.title)}</span>
+            <span class="lv-need">${r.from}+ XP</span>
+            <span class="lv-date">${logByLevel[r.level] ? fmt(logByLevel[r.level]) + " 달성" : (r.level === myLevel ? "현재" : "")}</span>
+          </div>`).join("")}
+      </div>
+      <button id="level-info-close" class="btn alt" style="margin-top:14px">닫기</button>
+    </div>`;
+  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
+  $("level-info-close").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
 }
 
 /* ---------- 완주 시트 ---------- */

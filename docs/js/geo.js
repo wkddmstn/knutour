@@ -37,15 +37,48 @@ export function pointInPolygon(point, poly) {
   return inside;
 }
 
+// 점 → 선분 사이 최단 거리(평면 근사, 위경도를 미터 단위 x/y로 바꿔서 계산). 작은 범위(캠퍼스 규모)에서는 충분히 정확하다.
+function toXY(p, ref) {
+  const mPerDegLat = 111320;
+  const mPerDegLng = 111320 * Math.cos(toRad(ref.lat));
+  return { x: (p.lng - ref.lng) * mPerDegLng, y: (p.lat - ref.lat) * mPerDegLat };
+}
+function pointToSegmentDist(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+// 점에서 다각형 "테두리"까지의 최단 거리(m). polygonBuffer로 다각형 바깥쪽에 여유를 줄 때 쓴다.
+export function distanceToPolygonM(point, poly) {
+  const ref = poly[0];
+  const p = toXY(point, ref);
+  const pts = poly.map((q) => toXY(q, ref));
+  let min = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    min = Math.min(min, pointToSegmentDist(p, a, b));
+  }
+  return min;
+}
+
 // 한 번의 위치값 판정: weak(부정확) / inside / outside
 // zone.polygon(건물/길 윤곽 꼭짓점 배열)이 있으면 그 모양 기준으로, 없으면 zone.radius 원 기준으로 판정한다.
+// zone.polygonBuffer(m)가 있으면 다각형 바깥이어도 테두리에서 그 거리 이내면 inside로 봐준다.
 export function evaluate(pos, zone) {
   const distance = distanceM(pos, zone);
   const bearing = bearingDeg(pos, zone);
   if (pos.accuracy > MAX_ACCURACY) return { status: "weak", distance, bearing };
-  const inside = zone.polygon && zone.polygon.length >= 3
-    ? pointInPolygon(pos, zone.polygon)
-    : distance <= zone.radius;
+  let inside;
+  if (zone.polygon && zone.polygon.length >= 3) {
+    inside = pointInPolygon(pos, zone.polygon);
+    if (!inside && zone.polygonBuffer) {
+      inside = distanceToPolygonM(pos, zone.polygon) <= zone.polygonBuffer;
+    }
+  } else {
+    inside = distance <= zone.radius;
+  }
   return { status: inside ? "inside" : "outside", distance, bearing };
 }
 

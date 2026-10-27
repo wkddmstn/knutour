@@ -325,6 +325,23 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .modal-card .btn { margin-top: 20px; }
 .modal-card .btn + .btn { margin-top: 8px; }
 
+/* 내 정보 탭 - 레벨 옆 작은 안내 버튼 + 레벨 기준/기록 팝업 */
+.level-info-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+  margin-left: 2px; padding: 0; border: none; border-radius: 50%; background: var(--line);
+  color: var(--sub); font-size: 11px; font-weight: 700; vertical-align: middle; line-height: 1;
+}
+.level-table { display: flex; flex-direction: column; gap: 4px; max-height: 50vh; overflow-y: auto; }
+.level-row {
+  display: grid; grid-template-columns: 44px 1fr auto auto; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 10px; font-size: 13px; color: var(--sub);
+}
+.level-row.reached { background: var(--primary-weak); color: var(--ink); }
+.level-row.me { outline: 2px solid var(--primary); background: var(--primary-weak); color: var(--ink); font-weight: 700; }
+.level-row .lv-num { font-weight: 800; color: var(--primary-dark); }
+.level-row .lv-need { color: var(--mute); font-size: 12px; white-space: nowrap; }
+.level-row .lv-date { font-size: 11px; color: var(--mute); white-space: nowrap; min-width: 64px; text-align: right; }
+
 /* 데일리 퀴즈: 아래에서 올라오는 바텀시트 대신, 메인 미션처럼 화면 가운데로 '들어가는' 느낌 */
 #modal.modal-center { align-items: center; padding: 20px; }
 .modal-card.pop-in { border-radius: 24px; animation: popIn .32s var(--ease-toss); }

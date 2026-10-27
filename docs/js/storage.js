@@ -14,6 +14,7 @@ const empty = () => ({
   startedAt: null,
   chatLog: {},     // { zoneId: htmlString }  구역별 대화 기록 스냅샷 (새로고침해도 유지)
   daily: { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null, correct: false } },  // 데일리 출석체크 / 퀴즈
+  levelLog: [],    // [{ level, at }]  레벨업할 때마다 기록 (내 정보 탭의 "레벨 기록"에 사용)
 });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -42,12 +43,21 @@ export function setVerified(zoneId) {
   save(s);
 }
 
+// 점수를 더하면서, 그 사이에 레벨이 오르면 levelLog에 "언제 몇 레벨을 찍었는지" 기록해 둔다
+function addScore(s, amt) {
+  const before = getLevel(s.score).level;
+  s.score += amt;
+  const after = getLevel(s.score).level;
+  s.levelLog = s.levelLog || [];
+  for (let lv = before + 1; lv <= after; lv++) s.levelLog.push({ level: lv, at: Date.now() });
+}
+
 // 미션 완료 기록 + 점수 반영 (중복 득점 방지)
 export function completeMission(missionId, pts) {
   const s = load();
   if (s.done[missionId]) return false;
   s.done[missionId] = { at: Date.now(), pts };
-  s.score += pts;
+  addScore(s, pts);
   save(s);
   return true;
 }
@@ -57,7 +67,7 @@ export function grantBonus(key, pts) {
   const s = load();
   if (s.bonus[key]) return false;
   s.bonus[key] = pts;
-  s.score += pts;
+  addScore(s, pts);
   save(s);
   return true;
 }
@@ -95,7 +105,7 @@ export function doDailyCheckin(pts = 10) {
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   s.daily.checkin.streak = s.daily.checkin.lastDate === yesterday ? s.daily.checkin.streak + 1 : 1;
   s.daily.checkin.lastDate = today;
-  s.score += pts;
+  addScore(s, pts);
   save(s);
   return { ok: true, streak: s.daily.checkin.streak, pts };
 }
@@ -115,20 +125,50 @@ export function completeDailyQuiz(correct, pts = 15) {
   if (s.daily.quiz.lastDate === today) return false;
   s.daily.quiz.lastDate = today;
   s.daily.quiz.correct = !!correct;
-  if (correct) s.score += pts;
+  if (correct) addScore(s, pts);
   save(s);
   return true;
 }
 
-// 레벨: 250 XP마다 1레벨
-const STEP = 250;
+// 레벨: 처음엔 적은 XP로 금방 오르다가, 레벨이 오를수록 다음 레벨까지 필요한 XP가 점점 늘어난다.
+// Lv1→2는 50 XP면 충분하고, 레벨이 하나 오를 때마다 필요량이 30씩 더 커진다 (50, 80, 110, 140 ...).
+const BASE_STEP = 50;
+const STEP_GROWTH = 30;
 const TITLES = ["새내기", "길잡이", "캠퍼스 탐험가", "캠퍼스 러너", "투어 마스터", "캠퍼스 레전드", "KNU 전설"];
+
+// 레벨 n에서 n+1로 가는 데 필요한 XP
+function stepFor(level) {
+  return BASE_STEP + (level - 1) * STEP_GROWTH;
+}
+
 export function getLevel(score) {
-  const level = Math.floor(score / STEP) + 1;
+  let level = 1, floor = 0, step = stepFor(1);
+  while (score >= floor + step) {
+    floor += step;
+    level++;
+    step = stepFor(level);
+  }
   return {
     level,
     title: TITLES[Math.min(level - 1, TITLES.length - 1)],
-    pct: ((score % STEP) / STEP) * 100,
-    next: STEP - (score % STEP),
+    pct: ((score - floor) / step) * 100,
+    next: step - (score - floor),
   };
+}
+
+// 레벨별 필요 XP 기준표 (내 정보 탭의 "레벨 기준 보기"에 사용)
+export function getLevelTable(maxLevel = 12) {
+  const rows = [];
+  let floor = 0;
+  for (let lv = 1; lv <= maxLevel; lv++) {
+    const step = stepFor(lv);
+    rows.push({ level: lv, title: TITLES[Math.min(lv - 1, TITLES.length - 1)], from: floor, need: step });
+    floor += step;
+  }
+  return rows;
+}
+
+// 내가 실제로 각 레벨을 언제 찍었는지 기록 (레벨업 시점에 저장됨)
+export function getLevelLog() {
+  return load().levelLog || [];
 }
