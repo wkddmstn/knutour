@@ -355,11 +355,6 @@ async function runZone(zone, resuming = false) {
       (first ? "도착 보너스 10 XP 챙겼어. " : "") + "이제 미션 시작해볼까?"
     );
 
-    // 이 구역에 호반우 캐릭터가 등록돼 있으면, 미션 메뉴 전에 "호반우 만나기(AR)" 버튼을 한 번 띄워준다 (안 눌러도 흐름은 계속됨)
-    if (!resuming && MASCOTS[zone.id]) {
-      chat.choices([{ label: "🐮 호반우 만나기 (AR)", value: "ar", ghost: true }])
-        .then(() => startAR(zone));
-    }
   }
   await missionMenu(zone);
 }
@@ -517,9 +512,11 @@ async function missionMenu(zone) {
         value: m.id,
         disabled: store.isDone(m.id),
       })),
+      ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
+    if (pick === "__ar") { await startAR(zone); continue; }
     await runMission(zone.missions.find((m) => m.id === pick));
   }
 }
