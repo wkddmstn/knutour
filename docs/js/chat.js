@@ -41,10 +41,18 @@ function persist() {
   if (persistFn) persistFn(snapshot());
 }
 
+// 봇 말풍선에 붙는 호반우 아바타. 인스타그램 DM처럼 "연속된 봇 메시지 중 마지막"에만
+// 보이도록 하는데, 실제 보일지 말지는 style.css의 :not(:has(+ .row.bot)) 규칙이 처리한다.
+// (고정된 위치가 아니라 매 메시지 안에 들어가므로 스크롤하면 같이 따라간다)
+function avatarHtml() {
+  const src = document.getElementById("chat-mascot")?.getAttribute("src") || "img/mascot/cheer.png";
+  return `<img class="row-avatar" src="${src}" alt="">`;
+}
+
 function row(cls, html) {
   const d = document.createElement("div");
   d.className = "row " + cls;
-  d.innerHTML = html;
+  d.innerHTML = (cls === "bot" ? avatarHtml() : "") + html;
   $("chat").appendChild(d);
   scrollDown();
   persist();

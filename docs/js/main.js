@@ -27,6 +27,36 @@ let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 
+/* ================= 구역 이탈 감지(지오펜스) ================= */
+// 위치 인증이 끝난 뒤에도 계속 위치를 지켜보다가, 구역 밖으로 나가면 배너로 알려주고
+// 미션 시도도 막는다. 실내 GPS 오차 등으로 "weak" 판정이면 무시하고 이전 상태를 유지한다.
+let geofenceOn = false;
+let inZone = true;
+function startZoneGeofence(zone) {
+  geofenceOn = true;
+  inZone = true;
+  geo.startWatch(
+    (pos) => {
+      if (!geofenceOn) return;
+      const r = geo.evaluate(pos, zone);
+      updateMarker(pos);
+      if (DEBUG) ui.updateDebug(pos, r);
+      if (r.status === "weak") return;
+      const nowInside = r.status === "inside";
+      if (nowInside !== inZone) {
+        inZone = nowInside;
+        ui.setGeofenceWarning(!inZone, zone.name);
+      }
+    },
+    () => {} // 위치 권한이 없거나 실패해도 흐름이 끊기지 않도록 조용히 무시
+  );
+}
+function stopZoneGeofence() {
+  geofenceOn = false;
+  inZone = true;
+  ui.setGeofenceWarning(false);
+}
+
 /* ================= 구역별 배경 테마 ================= */
 // zones.json을 따로 건드릴 필요 없이, 구역 순서대로 색을 돌려서 그 구역만의 분위기를 준다.
 // 작은 패턴 대신, 부드럽게 번진 색 덩어리(블롭) 2개를 화면 구석에 은은하게 깔아서 장소 느낌을 표현한다.
@@ -274,6 +304,7 @@ function onReset() {
 /* ================= 구역 화면 ================= */
 function leaveZone() {
   geo.stopWatch();
+  stopZoneGeofence();
   chat.clear();
   resetZoneTheme();
   if (map) {
@@ -308,8 +339,8 @@ function openZone(zone) {
     requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
   }
 
-  // 데모 모드에서는 이전에 인증한 구역이어도 매번 이동 버튼을 누르게 한다
-  const verified = !DEMO_MODE && store.isVerified(zone.id);
+  // 한 번 인증한 구역은 (데모 모드여도) 다시 들어올 때 재인증을 요구하지 않는다
+  const verified = store.isVerified(zone.id);
   $("btn-skip")?.classList.add("hidden");   // 디버그 버튼은 위치 인증 단계가 시작되면 나타남
   if (verified) ui.setVerified();
   else if ($("status")) {
@@ -334,7 +365,7 @@ async function runZone(zone, resuming = false) {
     }
   }
 
-  if (DEMO_MODE || !store.isVerified(zone.id)) {
+  if (!store.isVerified(zone.id)) {
     if (!resuming) {
       await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>파란 원</b> 안으로 들어와 줘.");
     }
@@ -356,6 +387,8 @@ async function runZone(zone, resuming = false) {
     );
 
   }
+  // 인증 이후에도 계속 위치를 지켜보다가, 구역(반경) 밖으로 나가면 배너로 알리고 미션 진행을 막는다
+  startZoneGeofence(zone);
   await missionMenu(zone);
 }
 
@@ -517,6 +550,10 @@ async function missionMenu(zone) {
     ]);
     if (pick === "__home") { goTab("quest"); return; }
     if (pick === "__ar") { await startAR(zone); continue; }
+    if (!inZone) {
+      ui.toast(`${zone.name}에서 멀어졌어요. 구역 안으로 들어와서 다시 시도해 주세요.`);
+      continue;
+    }
     await runMission(zone.missions.find((m) => m.id === pick));
   }
 }
@@ -600,7 +637,12 @@ function initMap(zone) {
   const { baseLayer, refLayer } = addBaseTiles(map);
   tileLayers.push({ targetMap: map, baseLayer, refLayer });
 
-  L.circle([zone.lat, zone.lng], { radius: zone.radius, color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
+  // zone.polygon(건물/길 윤곽 좌표 배열)이 있으면 그 모양 그대로, 없으면 원형 반경으로 표시
+  if (zone.polygon && zone.polygon.length >= 3) {
+    L.polygon(zone.polygon.map((p) => [p.lat, p.lng]), { color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
+  } else {
+    L.circle([zone.lat, zone.lng], { radius: zone.radius, color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
+  }
   L.marker([zone.lat, zone.lng]).addTo(map).bindPopup(zone.name);
 
   // 디버그: 지도 클릭 = 그 위치로 순간이동

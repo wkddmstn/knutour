@@ -185,6 +185,13 @@ body[data-view="zone"] {
   transition: background-image .4s var(--ease-toss);
 }
 
+.geofence-banner {
+  position: sticky; top: var(--topbar); z-index: 900; margin: -8px -16px 12px;
+  padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 700;
+  color: #fff; background: var(--amber); transform: translateY(-130%);
+  transition: transform .25s var(--ease-toss);
+}
+.geofence-banner.show { transform: translateY(0); }
 .zone-top { position: sticky; top: var(--topbar); z-index: 1000; margin: -8px -16px 12px; padding: 4px 16px 12px;
             background: rgba(255, 255, 255, .96); backdrop-filter: blur(10px); }
 .zone-bar { display: flex; align-items: center; gap: 6px; }
@@ -199,12 +206,15 @@ body[data-view="zone"] {
 
 #chat { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
 .row { display: flex; gap: 8px; align-items: flex-end; animation: rise .22s; }
-.row.bot { justify-content: flex-start; padding-left: 104px; }
+.row.bot { justify-content: flex-start; padding-left: 104px; position: relative; }
 .row.user { justify-content: flex-end; }
 #chat-mascot { display: none; }
-body[data-view="zone"] #chat-mascot {
-  position: fixed; left: max(12px, calc((100vw - 480px) / 2 + 12px)); bottom: 12px; z-index: 1050;
-  display: block; width: 100px; height: 132px; object-fit: contain; object-position: bottom; pointer-events: none;
+/* 메시지별 아바타: 연속된 봇 메시지 중 '마지막' 말풍선에만 붙여서(인스타그램 DM 스타일)
+   스크롤하면 같이 따라가게 한다. 다음 형제가 .row.bot이 아닌(=런의 마지막) 경우에만 보인다. */
+.row.bot .row-avatar { display: none; }
+.row.bot:not(:has(+ .row.bot)) .row-avatar {
+  display: block; position: absolute; left: 0; bottom: 0; z-index: 1;
+  width: 84px; height: 110px; object-fit: contain; object-position: bottom; pointer-events: none;
 }
 .bubble { max-width: 100%; padding: 11px 15px; font-size: 15px; line-height: 1.55; border-radius: 18px; }
 .bot .bubble { background: var(--card); border-bottom-left-radius: 6px; border: 1px solid var(--line); }

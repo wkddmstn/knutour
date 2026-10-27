@@ -388,6 +388,21 @@ export function showLocationError(code) {
   el.textContent = ERR[code] || "알 수 없는 위치 오류가 발생했어요.";
 }
 
+/* ---------- 구역 이탈 배너 ---------- */
+// 위치 인증 후에도 계속 위치를 지켜보다가 구역 밖으로 나가면 상단에 고정 배너로 알려준다.
+let geoBanner = null;
+export function setGeofenceWarning(show, zoneName = "") {
+  if (!geoBanner) {
+    geoBanner = document.createElement("div");
+    geoBanner.id = "geofence-banner";
+    geoBanner.className = "geofence-banner";
+    const zoneView = $("view-zone");
+    zoneView?.insertBefore(geoBanner, zoneView.firstChild);
+  }
+  geoBanner.textContent = `📍 ${zoneName ? zoneName + "에서 " : ""}멀어졌어요. 구역 안으로 들어와 주세요.`;
+  geoBanner.classList.toggle("show", !!show);
+}
+
 export function updateDebug(pos, r) {
   $("debug").textContent =
     `lat ${pos.lat.toFixed(5)} lng ${pos.lng.toFixed(5)} ` +
