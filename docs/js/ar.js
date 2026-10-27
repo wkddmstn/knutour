@@ -20,7 +20,7 @@ const REACT = { love: IMG + "react-love.png", hi: IMG + "react-hi.png", proud: I
 const SNACKS = {
   gongstaurant: [
     { img: "img/food/albap.jpg",  n: "치즈알밥" },
-    { img: "img/food/yukhoe.jpg", n: "육회비빔밥" },
+    { img: "img/food/yukhoe-v2.jpg", n: "육회비빔밥" },
   ],
 };
 const PET_LINES = ["기분 좋아~ 💕", "헤헤, 간지러워!", "더 쓰다듬어 줘!", "너 좋은 사람이구나!"];
@@ -193,6 +193,39 @@ function injectStyle() {
   .ps-rv-hint{margin:0;font-size:12px;color:#ddd;text-align:center;line-height:1.5;max-width:320px}
   .ps-toast{position:absolute;left:50%;top:45%;transform:translateX(-50%);z-index:6;padding:10px 18px;border-radius:14px;
     background:rgba(25,31,40,.85);color:#fff;font-size:15px;font-weight:700;white-space:nowrap;animation:ar-toast 1.8s forwards}
+  /* ---- 가로 모드: 도구는 왼쪽, 호반우 목록·셔터는 오른쪽 세로 줄, 줌은 셔터 옆 ---- */
+  #ps-root.land .ps-rail{right:auto;left:max(14px,env(safe-area-inset-left));top:calc(max(12px,env(safe-area-inset-top)) + 52px);gap:8px}
+  #ps-root.land .ps-tool{font-size:10px}
+  #ps-root.land .ps-tool i{width:36px;height:36px;font-size:16px}
+  #ps-root.land .ps-topbar{right:150px}
+  #ps-root.land .ps-tip{left:calc(50% - 75px)}
+  #ps-root.land .ps-bottom{left:auto;top:0;right:0;bottom:0;width:150px;
+    padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) 12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.6))}
+  #ps-root.land .ps-zooms{position:absolute;right:calc(100% - 4px);top:50%;transform:translateY(-50%);flex-direction:column;margin:0;gap:6px}
+  #ps-root.land .ps-zchip{min-width:34px;height:34px;font-size:11px}
+  #ps-root.land .ps-carousel{flex-direction:column;overflow-x:hidden;overflow-y:auto;max-height:calc(100% - 140px);padding:8px 6px;gap:10px;scroll-snap-type:y mandatory}
+  #ps-root.land .ps-item{width:44px;height:44px}
+  #ps-root.land .ps-name{display:none}
+  #ps-root.land .ps-shootrow{flex-direction:column;gap:10px;padding:0}
+  #ps-root.land .ps-shootrow .ps-spacer{display:none}
+  #ps-root.land #ps-shutter{width:66px;height:66px}
+  #ps-root.land #ps-shutter::after{width:50px;height:50px}
+  #ps-root.land .ps-thumb{width:40px;height:40px;order:2}
+  #ps-root.land .ps-rv-bar{padding-top:12px}
+  #ps-root.land .ps-rv-hint{display:none}
+  /* ---- 가로 모드: AR 만나기 화면 ---- */
+  @media (orientation:landscape) and (max-height:520px){
+    #ar-stage{top:60%;width:160px;height:180px;margin:-90px 0 0 -80px}
+    #ar-hob{height:155px}
+    #ar-bubble{font-size:14px;padding:8px 12px}
+    #ar-shadow{width:120px;margin-left:-60px}
+    #ar-top{top:max(10px,env(safe-area-inset-top))}
+    #ar-tray{left:auto;right:max(16px,env(safe-area-inset-right));width:300px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 56px)}
+    #ar-bar{bottom:max(12px,env(safe-area-inset-bottom))}
+    .ar-btn{padding:10px 16px;font-size:15px}
+    .ar-snack img{width:40px;height:40px}
+  }
   @keyframes ps-tip{0%,80%{opacity:1}100%{opacity:0}}
   @keyframes ps-flash{0%{opacity:.9}100%{opacity:0}}`;
   document.head.appendChild(s);
@@ -515,7 +548,7 @@ export function openPhotoStudio({ items, start } = {}) {
         <button class="ps-tool" id="ps-smaller"><i class="ps-glass">➖</i>작게</button>
         <button class="ps-tool" id="ps-reset"><i class="ps-glass">↺</i>원위치</button>
       </div>
-      <div class="ps-tip ps-glass">🐮 끌어서 옮기고 · 두 손가락으로 크기 조절</div>
+      <div class="ps-tip ps-glass">끌어서 옮기고 · 두 손가락으로 크기 조절</div>
       <div class="ps-bottom">
         <div class="ps-zooms" id="ps-zooms"></div>
         <div class="ps-carousel" id="ps-carousel"></div>
@@ -557,7 +590,7 @@ export function openPhotoStudio({ items, start } = {}) {
       root.querySelectorAll(".ps-rail,.ps-tip,.ps-bottom,#ps-ratio,#ps-frame").forEach((n) => n.classList.add("ar-hidden"));
       const msg = el("div");
       msg.className = "ps-empty";
-      msg.innerHTML = "아직 모은 호반우가 없어요 🐮<br>캠퍼스 곳곳에서 호반우를 만나면<br>여기서 같이 사진을 찍을 수 있어요!";
+      msg.innerHTML = "아직 모은 호반우가 없어요<br>캠퍼스 곳곳에서 호반우를 만나면<br>여기서 같이 사진을 찍을 수 있어요!";
       root.appendChild(msg);
       return;
     }
@@ -581,7 +614,9 @@ export function openPhotoStudio({ items, start } = {}) {
       car.querySelectorAll(".ps-item").forEach((b) => {
         const on = b.dataset.id === current.id;
         b.classList.toggle("on", on);
-        if (on && scroll) b.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        if (on && scroll) b.scrollIntoView(root.classList.contains("land")
+          ? { behavior: "smooth", block: "center", inline: "nearest" }
+          : { behavior: "smooth", inline: "center", block: "nearest" });
       });
     }
     hob.onload = render;
@@ -590,12 +625,16 @@ export function openPhotoStudio({ items, start } = {}) {
     /* ---------- 사진 비율 (전체 / 3:4 / 1:1 / 4:3) ---------- */
     function fit() {
       const W = window.innerWidth, H = window.innerHeight;
+      const land = W > H;                         // 휴대폰을 가로로 돌렸을 때
+      root.classList.toggle("land", land);
       const { w, h } = RATIOS[ratio];
+      const AW = land && w ? W - 150 : W;         // 가로 모드: 오른쪽 셔터 줄(150px)을 뺀 영역에 맞춤
       let fw = W, fh = H;
-      if (w) { fw = W; fh = W * h / w; if (fh > H) { fh = H; fw = H * w / h; } }
+      if (w) { fw = AW; fh = AW * h / w; if (fh > H) { fh = H; fw = H * w / h; } }
       FW = fw; FH = fh;
-      const top = w ? Math.max(0, (H - fh) / 2 - (fh < H - 160 ? 50 : 0)) : 0;
-      Object.assign(frame.style, { width: fw + "px", height: fh + "px", left: (W - fw) / 2 + "px", top: top + "px" });
+      const top = !w ? 0 : land ? (H - fh) / 2 : Math.max(0, (H - fh) / 2 - (fh < H - 160 ? 50 : 0));
+      const left = !w ? 0 : (AW - fw) / 2;
+      Object.assign(frame.style, { width: fw + "px", height: fh + "px", left: left + "px", top: top + "px" });
       $("ps-ratio").textContent = "📐 " + RATIOS[ratio].label;
       render();
     }
@@ -830,7 +869,7 @@ export function openDex() {
   box.onclick = (e) => { if (e.target === box) box.remove(); };
 }
 
-// 탐색 화면의 "🐮 호반우" 탭: 사진 찍기 버튼 + 도감을 container 안에 그린다
+// 탐색 화면의 "호반우" 탭: 사진 찍기 버튼 + 도감을 container 안에 그린다
 export function renderHobanuPane(container) {
   if (!container) return;
   injectStyle();
@@ -840,7 +879,7 @@ export function renderHobanuPane(container) {
       <div class="hob-pane">
         <button class="hob-photo-cta" type="button">
           <img src="${REACT.hi}" alt="">
-          <span><b>📸 모은 호반우와 사진 찍기</b><small>${b.n ? `${b.n}마리와 찍을 수 있어요` : "장소에서 호반우를 만나면 열려요"}</small></span>
+          <span><b>📸 모은 호반우와 사진 찍기</b><small>${b.n ? "지금까지 모은 호반우와 함께 찍어 보세요" : "장소에서 호반우를 만나면 열려요"}</small></span>
         </button>
         <div class="dex-inline">
           <div class="dex-head"><b>📖 호반우 도감</b><span>${b.n} / ${b.total}</span></div>
