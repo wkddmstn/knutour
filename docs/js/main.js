@@ -8,10 +8,7 @@ import { ensureProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
-import { openArEncounter } from "./ar.js";
-
-// AR로 호반우를 만날 수 있는 구역 이름들. 여기에 이름만 추가하면 그 구역에서도 AR 버튼이 떠요.
-const AR_ZONE_NAMES = ["일청담"];
+import { startAR, MASCOTS } from "./ar.js";
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -358,13 +355,10 @@ async function runZone(zone, resuming = false) {
       (first ? "도착 보너스 10 XP 챙겼어. " : "") + "이제 미션 시작해볼까?"
     );
 
-    // 이 구역이 AR 지원 구역이면, 미션 메뉴 전에 "AR로 만나기" 버튼을 한 번 띄워준다 (안 눌러도 흐름은 계속됨)
-    if (!resuming && AR_ZONE_NAMES.includes(zone.name)) {
-      chat.choices([{ label: "📸 AR로 호반우 만나기", value: "ar", ghost: true }])
-        .then(() => openArEncounter({
-          title: `${zone.name}에서 호반우를 만났어요!`,
-          mascotSrc: "img/mascot/cheer.png",
-        }));
+    // 이 구역에 호반우 캐릭터가 등록돼 있으면, 미션 메뉴 전에 "호반우 만나기(AR)" 버튼을 한 번 띄워준다 (안 눌러도 흐름은 계속됨)
+    if (!resuming && MASCOTS[zone.id]) {
+      chat.choices([{ label: "🐮 호반우 만나기 (AR)", value: "ar", ghost: true }])
+        .then(() => startAR(zone));
     }
   }
   await missionMenu(zone);
