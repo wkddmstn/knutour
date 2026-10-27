@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>호반우 AR 테스트</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; background: #f2f4f6; color: #191f28; }
+  h1 { font-size: 20px; }
+  button { display: block; width: 100%; margin: 8px 0; padding: 14px; font-size: 16px;
+           border: none; border-radius: 12px; background: #fff; color: #191f28; text-align: left; }
+  .row { display: flex; gap: 8px; }
+  .row button { text-align: center; font-weight: 600; }
+  #log { margin-top: 16px; color: #555; }
+</style>
+</head>
+<body>
+<h1>호반우 AR 테스트 (개발용)</h1>
+<p>장소를 눌러 AR을 열어보세요. 앱 본체와 상관없이 AR만 따로 확인하는 페이지예요.<br>
+   공식당에서는 호반우를 한 번 누르면 학식 미션이 나와요.</p>
+<div class="row">
+  <button id="dex">📖 도감</button>
+  <button id="photo">📸 포토</button>
+  <button id="reset">🗑 초기화</button>
+</div>
+<div id="list"></div>
+<p id="log"></p>
+<h2 style="font-size:17px;margin-top:24px">탐색 탭 미리보기</h2>
+<p style="color:#666;font-size:13px">앱의 퀘스트 → 탐색 화면에 들어갈 "호반우" 탭 모습이에요.</p>
+<div id="pane"></div>
+<script type="module">
+  import { startAR, openDex, openPhotoStudio, renderHobanuPane, MASCOTS } from "./js/ar.js";
+  const pane = document.getElementById("pane");
+  const refresh = () => renderHobanuPane(pane);
+  refresh();
+  const list = document.getElementById("list");
+  const log = document.getElementById("log");
+  Object.entries(MASCOTS).forEach(([id, m]) => {
+    const b = document.createElement("button");
+    b.textContent = m.name;
+    b.onclick = async () => {
+      const r = await startAR({ id, name: m.name });
+      refresh();
+      log.textContent = `${m.name}: ${r.met ? "호반우와 놀았어요 ✅" : "그냥 닫았어요"}${r.fed ? " · 학식 미션 완료 🍚" : ""}`;
+    };
+    list.appendChild(b);
+  });
+  document.getElementById("dex").onclick = openDex;
+  document.getElementById("photo").onclick = () => openPhotoStudio();
+  document.getElementById("reset").onclick = () => {
+    localStorage.removeItem("knu-hobanu-dex");
+    log.textContent = "도감을 초기화했어요.";
+    refresh();
+  };
+</script>
+</body>
+</html>
