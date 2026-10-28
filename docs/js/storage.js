@@ -130,40 +130,51 @@ export function completeDailyQuiz(correct, pts = 15) {
   return true;
 }
 
-// 레벨: 처음엔 적은 XP로 금방 오르다가, 레벨이 오를수록 다음 레벨까지 필요한 XP가 점점 늘어난다.
-// Lv1→2는 50 XP면 충분하고, 레벨이 하나 오를 때마다 필요량이 30씩 더 커진다 (50, 80, 110, 140 ...).
-const BASE_STEP = 50;
-const STEP_GROWTH = 30;
-const TITLES = ["새내기", "길잡이", "캠퍼스 탐험가", "캠퍼스 러너", "투어 마스터", "캠퍼스 레전드", "KNU 전설"];
+// 레벨: 총 10단계, 마지막 Lv.10은 누적 2000 XP에서 달성한다.
+// 레벨이 오를수록 다음 레벨까지 필요한 XP가 점점 커지고(50→70→100→...→490), 레벨마다 고유한 이름을 가진다.
+// need는 "이 레벨에서 다음 레벨로 가는 데 필요한 XP"(마지막 레벨은 더 오를 데가 없어서 0).
+const LEVELS = [
+  { title: "새내기",        need: 50 },  // Lv.1
+  { title: "길잡이",        need: 70 },  // Lv.2
+  { title: "캠퍼스 탐험가",  need: 100 }, // Lv.3
+  { title: "캠퍼스 러너",    need: 140 }, // Lv.4
+  { title: "투어 마스터",    need: 190 }, // Lv.5
+  { title: "캠퍼스 레전드",  need: 250 }, // Lv.6
+  { title: "호반우 조련사",  need: 320 }, // Lv.7
+  { title: "경북대 수호자",  need: 390 }, // Lv.8
+  { title: "캠퍼스 정복자",  need: 490 }, // Lv.9
+  { title: "KNU 전설",      need: 0 },   // Lv.10 (최고 레벨, 누적 2000 XP에서 달성)
+];
+const MAX_LEVEL = LEVELS.length;
 
 // 레벨 n에서 n+1로 가는 데 필요한 XP
 function stepFor(level) {
-  return BASE_STEP + (level - 1) * STEP_GROWTH;
+  return LEVELS[level - 1]?.need ?? 0;
 }
 
 export function getLevel(score) {
-  let level = 1, floor = 0, step = stepFor(1);
-  while (score >= floor + step) {
-    floor += step;
+  let level = 1, floor = 0;
+  while (level < MAX_LEVEL && score >= floor + stepFor(level)) {
+    floor += stepFor(level);
     level++;
-    step = stepFor(level);
   }
+  const step = stepFor(level);
   return {
     level,
-    title: TITLES[Math.min(level - 1, TITLES.length - 1)],
-    pct: ((score - floor) / step) * 100,
-    next: step - (score - floor),
+    title: LEVELS[level - 1].title,
+    pct: step ? Math.min(100, ((score - floor) / step) * 100) : 100,
+    next: step ? Math.max(0, step - (score - floor)) : 0,
+    maxed: level >= MAX_LEVEL,   // 최고 레벨(Lv.10)에 도달했는지
   };
 }
 
 // 레벨별 필요 XP 기준표 (내 정보 탭의 "레벨 기준 보기"에 사용)
-export function getLevelTable(maxLevel = 12) {
+export function getLevelTable() {
   const rows = [];
   let floor = 0;
-  for (let lv = 1; lv <= maxLevel; lv++) {
-    const step = stepFor(lv);
-    rows.push({ level: lv, title: TITLES[Math.min(lv - 1, TITLES.length - 1)], from: floor, need: step });
-    floor += step;
+  for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+    rows.push({ level: lv, title: LEVELS[lv - 1].title, from: floor, need: stepFor(lv) });
+    floor += stepFor(lv);
   }
   return rows;
 }

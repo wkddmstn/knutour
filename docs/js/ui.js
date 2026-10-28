@@ -89,8 +89,10 @@ export function renderOnboard(depts, onSubmit) {
 export function renderDashboard(zones, announcements, onGoQuest) {
   const st = getState();
   const lv = getLevel(st.score);
-  const total = zones.reduce((a, z) => a + z.missions.length, 0);
-  const done = zones.reduce((a, z) => a + z.missions.filter((m) => isDone(m.id)).length, 0);
+  // AR 미션이 생기면서 구역마다 미션 개수가 달라져서(1개 또는 2개), 미션 개수 합으로 세면 숫자가 헷갈린다.
+  // 그래서 "진행 상황"은 미션 개수가 아니라 구역 단위(그 구역의 미션을 다 깼는지)로 센다 — 퀘스트 탭의 "캠퍼스 점령도"와 동일한 기준.
+  const total = zones.length;
+  const done = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
   const preview = announcements.slice(0, 2);
   const nextZone = zones.find((z) => z.missions.some((m) => !isDone(m.id)));
 
@@ -102,9 +104,9 @@ export function renderDashboard(zones, announcements, onGoQuest) {
     </div>
     <div class="card card-hero">
       <div class="sum-label">진행 상황</div>
-      <div class="sum-big">${done}<small> / ${total} 미션</small></div>
+      <div class="sum-big">${done}<small> / ${total} 구역</small></div>
       <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
-      <div class="sum-foot">Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP</div>
+      <div class="sum-foot">Lv.${lv.level} ${lv.title} · ${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}</div>
       ${nextZone ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>` : ""}
       <button id="btn-go-quest" class="btn cta-glow" style="margin-top:18px">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
@@ -310,7 +312,7 @@ export function renderMe(zones, onReset) {
       <div class="sum-label">${esc(st.profile.dept)}</div>
       <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>
       <div class="sum-foot" style="margin-top:6px">
-        Lv.${lv.level} ${lv.title} · 다음 레벨까지 ${lv.next} XP
+        Lv.${lv.level} ${lv.title} · ${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}
         <button id="btn-level-info" class="level-info-btn" type="button" aria-label="레벨 기준 보기">ⓘ</button>
       </div>
       <div class="progress"><i style="width:${lv.pct}%"></i></div>
