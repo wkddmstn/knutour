@@ -1,5 +1,6 @@
 // js/ar-stickers.js — 사진 꾸미기 아이템 (담당: 장주연)
-// 프레임·위치 스탬프·글자 스티커는 코드(SVG)로 직접 그린다 → 화질이 안 깨지고, 장소·날짜가 자동으로 들어간다.
+// 프레임·위치 스탬프는 코드(SVG)로 직접 그린다 → 화질이 안 깨지고, 장소·날짜가 자동으로 들어간다.
+// 글자 스티커·경북대 로고(캐릭터마크)는 이미지(img/stickers/)를 쓴다. 로고는 모양은 그대로, 색만 규정 색으로 바꾼 파일.
 // 색은 호반우 이미지에서 뽑은 색을 쓴다.
 export const KNU = {
   red: "#B21B1D",     // 호반우 점퍼 빨강
@@ -32,36 +33,6 @@ function stampSVG(place) {
     </g>
     <text x="118" y="58" font-family="${FONT}" font-size="36" font-weight="900" fill="${KNU.ink}">${esc(title)}</text>
     <text x="120" y="92" font-family="${FONT}" font-size="22" font-weight="700" fill="${KNU.brown}">${today()}</text>
-  </svg>`;
-}
-
-/* ---------------- 글자 스티커 3종 ---------------- */
-function freshmanSVG() {   // "2027 새내기" 빨간 라벨
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="150" viewBox="0 0 420 150">
-    <rect x="14" y="20" width="392" height="116" rx="30" fill="${KNU.ink}"/>
-    <rect x="6" y="8" width="392" height="116" rx="30" fill="${KNU.red}" stroke="${KNU.ink}" stroke-width="7"/>
-    <text x="202" y="62" text-anchor="middle" font-family="${FONT}" font-size="28" font-weight="900" fill="${KNU.ochre}" letter-spacing="6">2027</text>
-    <text x="202" y="106" text-anchor="middle" font-family="${FONT}" font-size="50" font-weight="900" fill="#fff">새내기</text>
-    <circle cx="44" cy="66" r="9" fill="${KNU.cream}"/><circle cx="360" cy="66" r="9" fill="${KNU.cream}"/>
-  </svg>`;
-}
-function loveKnuSVG() {    // "I ♥ KNU" 둥근 배지
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260" viewBox="0 0 260 260">
-    <circle cx="136" cy="136" r="118" fill="${KNU.ink}"/>
-    <circle cx="128" cy="128" r="118" fill="${KNU.cream}" stroke="${KNU.ink}" stroke-width="8"/>
-    <circle cx="128" cy="128" r="96" fill="none" stroke="${KNU.beige}" stroke-width="5" stroke-dasharray="10 9"/>
-    <text x="98" y="138" text-anchor="middle" font-family="${FONT}" font-size="58" font-weight="900" fill="${KNU.ink}">I</text>
-    <path d="M128 150 C96 128 86 112 86 98 A20 20 0 0 1 128 90 A20 20 0 0 1 170 98 C170 112 160 128 128 150 Z"
-      transform="translate(152 116) scale(0.72) translate(-128 -116)" fill="${KNU.red}" stroke="${KNU.ink}" stroke-width="6"/>
-    <text x="128" y="200" text-anchor="middle" font-family="${FONT}" font-size="50" font-weight="900" fill="${KNU.red}" letter-spacing="2">KNU</text>
-  </svg>`;
-}
-function arrivedSVG() {    // "경대 왔다!" 말풍선
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="380" height="200" viewBox="0 0 380 200">
-    <path d="M40 14 H340 A28 28 0 0 1 368 42 V122 A28 28 0 0 1 340 150 H150 L104 192 L110 150 H40 A28 28 0 0 1 12 122 V42 A28 28 0 0 1 40 14 Z"
-      fill="#fff" stroke="${KNU.ink}" stroke-width="8" stroke-linejoin="round"/>
-    <text x="190" y="102" text-anchor="middle" font-family="${FONT}" font-size="54" font-weight="900" fill="${KNU.red}">경대 왔다!</text>
-    <path d="M330 34 l6 14 l14 6 l-14 6 l-6 14 l-6 -14 l-14 -6 l14 -6 Z" fill="${KNU.ochre}" stroke="${KNU.ink}" stroke-width="3"/>
   </svg>`;
 }
 
@@ -111,6 +82,28 @@ const COLLEGES = [
   ["17", "첨단기술융합대학"], ["18", "생태환경대학"], ["19", "과학기술대학"], ["20", "행정학부"], ["21", "자율전공학부"],
 ];
 
+/* ---------------- 경북대 로고: 언어 × 색상 ---------------- */
+// 파일 이름: img/stickers/logo-{언어}-{색}.png
+export const LOGO = {
+  langs: [
+    { id: "mark", name: "마크만" },
+    { id: "ko", name: "한글" },
+    { id: "hanja", name: "한자" },
+    { id: "en", name: "영문" },
+  ],
+  colors: [   // 01 캐릭터마크(색상규정) 기준
+    { id: "basic", name: "기본", sw: "linear-gradient(135deg,#D41117 55%,#555051 55%)" },
+    { id: "red", name: "빨강", sw: "#D41117" },
+    { id: "gold", name: "금색", sw: "#C99235" },
+    { id: "gray", name: "회색", sw: "#969492" },
+    { id: "black", name: "검정", sw: "#1D1A17" },
+    { id: "white", name: "흰색", sw: "#FFFFFF" },
+  ],
+};
+export const logoItem = (lang, color) => ({
+  id: `logo-${lang.id}-${color.id}`, name: lang.name, src: STK + `logo-${lang.id}-${color.id}.png`, w: lang.id === "mark" ? 0.3 : 0.28,
+});
+
 /* ---------------- 꾸미기 서랍에 보여 줄 목록 ---------------- */
 // w: 처음 붙일 때 크기(사진 틀 대비 비율)
 export function stickerCatalog(place) {
@@ -118,6 +111,7 @@ export function stickerCatalog(place) {
     tabs: [
       { id: "frame", name: "프레임" },
       { id: "text", name: "글자·스탬프" },
+      { id: "logo", name: "경북대 로고" },
       { id: "deco", name: "스티커" },
       { id: "college", name: "단대 호반우" },
     ],
@@ -128,9 +122,8 @@ export function stickerCatalog(place) {
     ],
     text: [
       { id: "stamp", name: "위치 스탬프", src: svgUrl(stampSVG(place)), w: 0.62 },
-      { id: "freshman", name: "2027 새내기", src: svgUrl(freshmanSVG()), w: 0.46 },
-      { id: "loveknu", name: "I ♥ KNU", src: svgUrl(loveKnuSVG()), w: 0.3 },
-      { id: "arrived", name: "경대 왔다!", src: svgUrl(arrivedSVG()), w: 0.44 },
+      { id: "freshman", name: "2027 새내기", src: STK + "text-freshman.png", w: 0.6 },
+      { id: "cheomseong", name: "첨성인", src: STK + "text-cheomseong.png", w: 0.5 },
     ],
     deco: [
       { id: "star", name: "별", src: STK + "star.png", w: 0.22 },

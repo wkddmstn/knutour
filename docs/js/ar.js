@@ -5,7 +5,7 @@
 //   openDex() / renderHobanuPane(div) / hasMet(id) / photoItemsFor(zoneId)
 // AR 미니 미션(돌림판·책 찾기·꽃잎·응원)은 ar-missions.js에 있다.
 import { runArMission } from "./ar-missions.js";
-import { stickerCatalog, frameSVG } from "./ar-stickers.js";   // 사진 꾸미기 아이템
+import { stickerCatalog, frameSVG, LOGO, logoItem } from "./ar-stickers.js";   // 사진 꾸미기 아이템
 
 const IMG = "img/hobanu/";
 export const MASCOTS = {
@@ -273,6 +273,13 @@ function injectStyle() {
   .ps-deco-item:has(.ps-frameprev),.ps-deco-item:has(.ps-deco-none){justify-content:flex-end;min-height:112px}
   .ps-deco-item.on{box-shadow:inset 0 0 0 2px #B21B1D;background:#fff1f1}
   .ps-deco-none{height:56px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#b0b8c1}
+  .ps-logo-colors{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px}
+  .ps-logo-sw{width:auto;flex:none;border:none;background:none;padding:2px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:11px;font-weight:700;color:#4e5968;font-family:inherit}
+  .ps-logo-sw i{width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+  .ps-logo-sw.on i{box-shadow:0 0 0 2px #fff,0 0 0 4px #B21B1D}
+  .ps-logo-sw.on{color:#B21B1D}
+  .ps-deco-item.dark{background:#4e5968;color:#fff}
   .ps-deco-hint{font-size:11px;color:#8b95a1;margin:0}
   @keyframes ps-tip{0%,80%{opacity:1}100%{opacity:0}}
   @keyframes ps-flash{0%{opacity:.9}100%{opacity:0}}`;
@@ -813,6 +820,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
     let sel = "hob";              // 선택된 대상: "hob" · 스티커 · null(아무것도 선택 안 함)
     let frameId = "none";
     let decoTab = "frame";
+    let logoColor = LOGO.colors[0];   // 로고 탭에서 고른 색
     const frameImg = $("ps-frameimg");
     function setFrame(id) {
       frameId = id;
@@ -847,14 +855,21 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
         `<button class="ps-deco-done" id="ps-deco-done">완료</button>`;
       $("ps-deco-tabs").querySelectorAll(".ps-deco-tab").forEach((b) => { b.onclick = () => { decoTab = b.dataset.t; drawDeco(); }; });
       $("ps-deco-done").onclick = () => $("ps-deco").classList.add("ar-hidden");
-      const list = cat[decoTab];
-      $("ps-deco-grid").innerHTML = list.map((it, i) => {
+      // 로고 탭: 위에 색 고르기 → 아래에 언어별 로고 (고른 색으로)
+      const list = decoTab === "logo" ? LOGO.langs.map((l) => logoItem(l, logoColor)) : cat[decoTab];
+      const colorRow = decoTab !== "logo" ? "" : `<div class="ps-logo-colors">${LOGO.colors.map((c) =>
+        `<button class="ps-logo-sw ${c === logoColor ? "on" : ""}" data-c="${c.id}" title="${c.name}"><i style="background:${c.sw}"></i>${c.name}</button>`).join("")}</div>`;
+      $("ps-deco-grid").innerHTML = colorRow + list.map((it, i) => {
         if (decoTab === "frame") {
           const prev = it.id === "none" ? `<div class="ps-deco-none">⦸</div>` : `<img class="ps-frameprev" style="width:min(100%,${Math.round(84 * (FW || 360) / (FH || 640))}px)" src="${frameSVG(it.id, FW || 360, FH || 640, place)}" alt="">`;
           return `<button class="ps-deco-item ${it.id === frameId ? "on" : ""}" data-i="${i}">${prev}${it.name}</button>`;
         }
-        return `<button class="ps-deco-item" data-i="${i}"><img src="${it.src}" alt="">${it.name}</button>`;
+        const dark = decoTab === "logo" && logoColor.id === "white" ? " dark" : "";   // 흰 로고는 어두운 바탕에서 보이게
+        return `<button class="ps-deco-item${dark}" data-i="${i}"><img src="${it.src}" alt="">${it.name}</button>`;
       }).join("");
+      $("ps-deco-grid").querySelectorAll(".ps-logo-sw").forEach((b) => {
+        b.onclick = () => { logoColor = LOGO.colors.find((c) => c.id === b.dataset.c); drawDeco(); };
+      });
       $("ps-deco-grid").querySelectorAll(".ps-deco-item").forEach((b) => {
         b.onclick = () => {
           const it = list[+b.dataset.i];
