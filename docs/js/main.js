@@ -35,6 +35,8 @@ let inZone = true;
 function startZoneGeofence(zone) {
   geofenceOn = true;
   inZone = true;
+  // 데모 모드에서는 "위치 이동하기"로 가상 이동한 것이라 실제 GPS와 다르다 → 이탈 감지를 하지 않는다 (장주연)
+  if (DEMO_MODE) return;
   geo.startWatch(
     (pos) => {
       if (!geofenceOn) return;

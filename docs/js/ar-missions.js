@@ -4,7 +4,8 @@
 //   find     : 중앙도서관 — 주위에 숨은 추천 도서 찾기 (표지는 직접 그리거나 사진)
 //   petals   : 벚꽃길 — 호반우 뒤 벚꽃 나무에서 흩날리는 꽃잎 잡기
 //   cheer    : 대운동장 — 휴대폰 흔들어 응원 게이지 채우기
-// (snack: 공식당 학식 주기, pet: 러브로드 쓰다듬기는 ar.js 안에서 처리)
+//   heart    : 러브로드 — 화면에 손가락으로 하트를 그려 호반우에게 마음 전하기
+// (snack: 공식당 학식 주기, pet: 쓰다듬기는 ar.js 안에서 처리)
 //
 // ctx: startAR가 넘겨주는 도구 모음
 //   root, inner(호반우 묶음), hob, tray, PX, VIEW
@@ -68,6 +69,15 @@ function injectStyle() {
   .arm-gauge{width:100%;height:16px;border-radius:8px;background:#f2f4f6;overflow:hidden}
   .arm-gauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb703,#d4121a);border-radius:8px;transition:width .15s}
   .arm-confetti{position:absolute;top:-30px;font-size:26px;z-index:4;pointer-events:none;animation:arm-fall var(--dur) linear forwards}
+  /* 하트 그리기 */
+  .arm-draw{position:absolute;inset:0;width:100%;height:100%;z-index:3;touch-action:none;transition:opacity .5s}
+  .arm-draw.fade{opacity:0}
+  .arm-guide{position:absolute;left:50%;top:50%;width:min(62vw,260px);transform:translate(-50%,-58%);z-index:3;pointer-events:none;opacity:.75;
+    transition:opacity .6s;animation:arm-pulse 1.8s ease-in-out infinite}
+  .arm-guide.off{opacity:0;animation:none}
+  .arm-fly{position:absolute;z-index:4;font-size:54px;pointer-events:none;transform:translate(-50%,-50%);
+    transition:left .7s cubic-bezier(.5,0,.6,1),top .7s cubic-bezier(.5,0,.6,1),transform .7s,opacity .7s}
+  @keyframes arm-pulse{0%,100%{transform:translate(-50%,-58%) scale(1)}50%{transform:translate(-50%,-58%) scale(1.04)}}
   @keyframes arm-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes arm-got{0%{transform:scale(1);opacity:1}60%{transform:scale(1.6);opacity:1}100%{transform:scale(.2) translateY(-60px);opacity:0}}
   @keyframes arm-fall{to{transform:translate(var(--dx),calc(100vh + 80px)) rotate(var(--rot))}}
@@ -523,9 +533,201 @@ function cheer(ctx) {
   return () => window.removeEventListener("devicemotion", onMotion);
 }
 
+/* ============================================================
+   💗 러브로드: 화면에 하트 그려서 호반우에게 마음 전하기
+   ============================================================ */
+// 하트 판정: 그린 선을 64개 점으로 고르게 나눈 뒤
+//  ① 수학 하트 곡선과 얼마나 가까운지(평균 거리) ② 위 가운데 홈 + 양쪽 볼록 + 아래 뾰족 끝이 있는지 ③ 닫혀 있는지를 본다.
+function heartTemplate(n = 64) {
+  const p = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / n * Math.PI * 2;
+    p.push({ x: 16 * Math.sin(t) ** 3, y: -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) });
+  }
+  return p;
+}
+function resample(strokes, n) {
+  let L = 0;
+  strokes.forEach((s) => { for (let i = 1; i < s.length; i++) L += Math.hypot(s[i].x - s[i - 1].x, s[i].y - s[i - 1].y); });
+  const out = [];
+  if (!L) return out;
+  const step = L / (n - 1);
+  strokes.forEach((s) => {
+    if (!s.length) return;
+    out.push({ ...s[0] });
+    let prev = s[0], acc = 0;
+    for (let i = 1; i < s.length; i++) {
+      const q = s[i];
+      let d = Math.hypot(q.x - prev.x, q.y - prev.y);
+      while (acc + d >= step && d > 0) {
+        const k = (step - acc) / d;
+        prev = { x: prev.x + k * (q.x - prev.x), y: prev.y + k * (q.y - prev.y) };
+        out.push(prev);
+        d = Math.hypot(q.x - prev.x, q.y - prev.y);
+        acc = 0;
+      }
+      acc += d;
+      prev = q;
+    }
+  });
+  return out;
+}
+function normBox(p) {
+  const xs = p.map((a) => a.x), ys = p.map((a) => a.y);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys);
+  const w = Math.max(...xs) - x0 || 1, h = Math.max(...ys) - y0 || 1;
+  return { pts: p.map((a) => ({ x: (a.x - x0) / w, y: (a.y - y0) / h })), w, h, cx: x0 + w / 2, cy: y0 + h / 2 };
+}
+let HEART_TPL = null;
+export function judgeHeart(strokes) {
+  HEART_TPL = HEART_TPL || normBox(heartTemplate(64)).pts;
+  strokes = strokes.filter((s) => s.length > 1);
+  const raw = resample(strokes, 64);
+  if (raw.length < 20) return { ok: false, why: "small" };
+  const { pts, w, h, cx, cy } = normBox(raw);
+  if (Math.min(w, h) < 50) return { ok: false, why: "small" };
+  if (w / h > 2.2 || h / w > 2.2) return { ok: false, why: "shape" };
+  const md = (a, set) => { let m = 9; for (const b of set) m = Math.min(m, Math.hypot(a.x - b.x, a.y - b.y)); return m; };
+  const score = (pts.reduce((s, a) => s + md(a, HEART_TPL), 0) / pts.length
+    + HEART_TPL.reduce((s, a) => s + md(a, pts), 0) / HEART_TPL.length) / 2;
+  const minY = (f) => { const q = pts.filter(f); return q.length ? Math.min(...q.map((a) => a.y)) : 1; };
+  const notch = minY((a) => a.x > 0.42 && a.x < 0.58) - Math.max(minY((a) => a.x < 0.35), minY((a) => a.x > 0.65));
+  const bottom = pts.reduce((b, a) => (a.y > b.y ? a : b));
+  const feats = notch > 0.035 && bottom.x > 0.25 && bottom.x < 0.75;
+  let closed = true;
+  if (strokes.length === 1) closed = Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) < 0.4;
+  const ok = closed && feats && score < 0.08;
+  return { ok, why: ok ? "" : !closed ? "open" : "shape", score, cx, cy, w, h };
+}
+
+function heart(ctx) {
+  const GOAL = ctx.mission.goal || 3;
+  let count = 0, strokes = [], cur = null, judgeT = 0, busy = false;
+
+  const cv = el("canvas", "arm-draw");
+  ctx.root.appendChild(cv);
+  const g = cv.getContext("2d");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const resize = () => { cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; redraw(); };
+
+  // 처음에는 점선 하트 가이드를 보여 준다 (첫 성공 후 사라짐)
+  const guide = el("div", "arm-guide");
+  guide.innerHTML = `<svg viewBox="-18 -14 36 33" xmlns="http://www.w3.org/2000/svg"><path d="${
+    heartTemplate(48).map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join("")}Z"
+    fill="rgba(255,111,165,.12)" stroke="#fff" stroke-width=".9" stroke-dasharray="2 1.6" stroke-linecap="round"/></svg>`;
+  ctx.root.appendChild(guide);
+
+  function redraw(color = "#ff5c93", fill = false) {
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, innerWidth, innerHeight);
+    g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath();
+    strokes.forEach((s) => s.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))));
+    if (fill) { g.fillStyle = "rgba(255,92,147,.55)"; g.fill(); }
+    g.shadowColor = color; g.shadowBlur = 14;
+    g.strokeStyle = "#fff"; g.lineWidth = 11; g.stroke();
+    g.shadowBlur = 0;
+    g.strokeStyle = color; g.lineWidth = 6; g.stroke();
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const pos = (e) => ({ x: e.clientX, y: e.clientY });
+  cv.addEventListener("pointerdown", (e) => {
+    if (busy) return;
+    clearTimeout(judgeT);
+    cv.classList.remove("fade");
+    cv.setPointerCapture?.(e.pointerId);
+    cur = [pos(e)];
+    strokes.push(cur);
+    e.preventDefault();
+  });
+  cv.addEventListener("pointermove", (e) => {
+    if (!cur) return;
+    const p = pos(e), l = cur[cur.length - 1];
+    if (Math.hypot(p.x - l.x, p.y - l.y) < 2) return;
+    cur.push(p);
+    redraw();
+  });
+  const up = () => {
+    if (!cur) return;
+    cur = null;
+    clearTimeout(judgeT);
+    judgeT = setTimeout(judge, 450);   // 두 번에 나눠 그리는 사람도 있어서 잠깐 기다렸다가 판정
+  };
+  cv.addEventListener("pointerup", up);
+  cv.addEventListener("pointercancel", up);
+
+  const FAIL = {
+    small: "조금 더 크게 그려 줘! 💗",
+    open: "끝을 처음 점이랑 이어 줘! 💗",
+    shape: "위는 볼록볼록, 아래는 뾰족하게! 💗",
+  };
+  const LINES = ["고마워! 나도 좋아 💕", "심쿵… 💘", "하트 받았다! 💗", "우리 완전 단짝이야! 💞"];
+
+  function clear(delay) {
+    cv.classList.add("fade");
+    setTimeout(() => { strokes = []; redraw(); cv.classList.remove("fade"); busy = false; }, delay);
+  }
+  function judge() {
+    const r = judgeHeart(strokes);
+    busy = true;
+    if (!r.ok) {
+      redraw("#9aa4b1");
+      ctx.say(FAIL[r.why] || FAIL.shape);
+      navigator.vibrate?.(60);
+      clear(500);
+      return;
+    }
+    // 성공: 그린 하트를 채우고, 하트가 호반우에게 날아간다
+    redraw("#ff2d78", true);
+    navigator.vibrate?.([30, 40, 30]);
+    count++;
+    guide.classList.add("off");
+    const fly = el("div", "arm-fly");
+    fly.textContent = "💗";
+    fly.style.left = r.cx + "px"; fly.style.top = r.cy + "px";
+    fly.style.fontSize = Math.max(40, Math.min(120, r.w * 0.6)) + "px";
+    ctx.root.appendChild(fly);
+    clear(350);
+    const hb = ctx.hob.getBoundingClientRect();
+    const hx = hb.width ? hb.left + hb.width / 2 : innerWidth / 2, hy = hb.height ? hb.top + hb.height * 0.4 : innerHeight / 2;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fly.style.left = hx + "px"; fly.style.top = hy + "px";
+      fly.style.transform = "translate(-50%,-50%) scale(.4)"; fly.style.opacity = ".2";
+    }));
+    setTimeout(() => {
+      fly.remove();
+      for (let i = 0; i < 6; i++) setTimeout(() => ctx.spawnHeart(hx + (Math.random() * 80 - 40), hy + (Math.random() * 40 - 20), ["💗", "💕", "💘"][i % 3]), i * 70);
+      if (count >= GOAL && count === GOAL) {
+        ctx.react("love", "마음 다 전해졌어! 우리 이제 단짝 💞", 3000);
+        ctx.info(`💗 하트 ${GOAL}/${GOAL} · 마음이 전해졌어!`);
+        ctx.complete();
+        ctx.tray.innerHTML = `<div class="arm-card"><div class="t">💞 하트 ${GOAL}개 전달 성공!</div>
+          <div class="s">더 그려도 돼요. 다 했으면 아래 완료를 눌러 주세요</div></div>`;
+      } else {
+        ctx.react("love", LINES[(count - 1) % LINES.length], 1600);
+        if (count < GOAL) update();
+      }
+    }, 720);
+  }
+  function update() { ctx.info(`💗 하트 ${count}/${GOAL} · 화면에 하트를 그려 줘!`); }
+
+  ctx.tray.innerHTML = `<div class="arm-card"><div class="t">💗 화면에 손가락으로 하트를 그려서<br>호반우에게 마음을 전해 줘!</div>
+    <div class="s">한 번에 이어서 그리면 더 잘 알아봐요 · ${GOAL}번 성공하면 완료</div></div>`;
+  ctx.tray.classList.remove("ar-hidden");
+  ctx.say("나한테 하트 그려 줄래? 💕");
+  update();
+  return () => {
+    clearTimeout(judgeT);
+    window.removeEventListener("resize", resize);
+    cv.remove(); guide.remove();
+  };
+}
+
 /* ---------------- 공통 ---------------- */
 const $stage = (ctx) => ctx.root.querySelector("#ar-stage");
-const MISSIONS = { roulette, find, petals, cheer };
+const MISSIONS = { roulette, find, petals, cheer, heart };
 
 // startAR가 호반우를 처음 보여줄 때 부른다. 정리 함수(cleanup)를 돌려준다.
 export async function runArMission(type, ctx) {

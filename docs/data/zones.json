@@ -181,8 +181,8 @@
       "missions": [
         { "id": "m-loveroad-together", "type": "together", "title": "러브로드 함께 돌기",
           "desc": "친구와 함께 백양로를 걸어보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 },
-        { "id": "m-loveroad-ar", "type": "ar", "ar": "pet", "title": "호반우 쓰다듬기 (AR)",
-          "desc": "러브로드의 하트 호반우를 쓰다듬어 친해져 보세요.", "points": 100 }
+        { "id": "m-loveroad-ar", "type": "ar", "ar": "heart", "goal": 3, "title": "호반우에게 하트 그리기 (AR)",
+          "desc": "화면에 손가락으로 하트를 그려서 러브로드의 호반우에게 마음을 전해 보세요.", "points": 100 }
       ]
     },
     {

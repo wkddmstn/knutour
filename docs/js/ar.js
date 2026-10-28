@@ -268,6 +268,9 @@ function injectStyle() {
   .ps-deco-item{width:auto;border:none;background:#f7f8fa;border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;
     font-size:10px;font-weight:600;color:#4e5968;line-height:1.2;text-align:center}
   .ps-deco-item img{width:100%;height:56px;object-fit:contain;pointer-events:none}
+  .ps-deco-item img.ps-frameprev{height:auto;object-fit:fill;background:linear-gradient(160deg,#8b95a1,#4e5968);border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  .ps-deco-item .ps-deco-none{height:84px}
+  .ps-deco-item:has(.ps-frameprev),.ps-deco-item:has(.ps-deco-none){justify-content:flex-end;min-height:112px}
   .ps-deco-item.on{box-shadow:inset 0 0 0 2px #B21B1D;background:#fff1f1}
   .ps-deco-none{height:56px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#b0b8c1}
   .ps-deco-hint{font-size:11px;color:#8b95a1;margin:0}
@@ -807,7 +810,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
     /* ---------- 꾸미기: 스티커·프레임 ---------- */
     const cat = stickerCatalog(place);
     const stickers = [];          // { id, el, x, y, w, w0 }
-    let sel = "hob";              // 선택된 대상: "hob" 또는 스티커
+    let sel = "hob";              // 선택된 대상: "hob" · 스티커 · null(아무것도 선택 안 함)
     let frameId = "none";
     let decoTab = "frame";
     const frameImg = $("ps-frameimg");
@@ -847,7 +850,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
       const list = cat[decoTab];
       $("ps-deco-grid").innerHTML = list.map((it, i) => {
         if (decoTab === "frame") {
-          const prev = it.id === "none" ? `<div class="ps-deco-none">⦸</div>` : `<img src="${frameSVG(it.id, 90, 120, place)}" alt="">`;
+          const prev = it.id === "none" ? `<div class="ps-deco-none">⦸</div>` : `<img class="ps-frameprev" style="width:min(100%,${Math.round(84 * (FW || 360) / (FH || 640))}px)" src="${frameSVG(it.id, FW || 360, FH || 640, place)}" alt="">`;
           return `<button class="ps-deco-item ${it.id === frameId ? "on" : ""}" data-i="${i}">${prev}${it.name}</button>`;
         }
         return `<button class="ps-deco-item" data-i="${i}"><img src="${it.src}" alt="">${it.name}</button>`;
@@ -884,13 +887,15 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
         const top = [...stickers].reverse().find((sk) => hit(e.clientX, e.clientY, sk.el));
         if (top) sel = top;
         else if (hit(e.clientX, e.clientY, hob)) sel = "hob";
+        else sel = stickers.length ? null : "hob";   // 빈 곳을 누르면 선택 해제 (스티커가 없을 땐 예전처럼 호반우 이동)
+        render();
       }
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       snap();
       e.preventDefault();
     });
     frame.addEventListener("pointermove", (e) => {
-      if (!pts.has(e.pointerId) || !g0) return;
+      if (!pts.has(e.pointerId) || !g0 || sel === null) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const p = [...pts.values()];
       const t = T();
