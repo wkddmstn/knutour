@@ -169,7 +169,7 @@ async function photo(m, zone) {
     card.querySelector(".hob-cam")?.addEventListener("click", () => done("__hob"));
   });
   if (file === "__hob") {
-    const shot = await openPhotoStudio({ items: photoItemsFor(zone.id), start: zone.id, submit: true });
+    const shot = await openPhotoStudio({ items: photoItemsFor(zone.id), start: zone.id, submit: true, place: zone.name });
     if (!shot) continue;   // 사진을 안 고르고 닫았으면 다시 선택 화면으로
     chat.user(`<img class="shot" src="${shot.dataUrl}" alt="제출한 사진">`);
     return;

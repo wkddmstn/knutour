@@ -42,14 +42,20 @@ function injectStyle() {
   .arm-item{position:absolute;left:0;top:0;width:64px;height:64px;margin:-32px 0 0 -32px;font-size:46px;line-height:64px;text-align:center;
     z-index:3;display:none;cursor:pointer;filter:drop-shadow(0 0 8px rgba(255,255,200,.9));animation:arm-bob 1.6s ease-in-out infinite;touch-action:manipulation}
   .arm-item.got{animation:arm-got .5s ease-out forwards;pointer-events:none}
-  .arm-item.arm-book{width:78px;height:108px;margin:-54px 0 0 -39px;line-height:normal;font-size:inherit;filter:drop-shadow(0 0 10px rgba(255,255,200,.95)) drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+  .arm-item.arm-book{width:80px;height:118px;margin:-59px 0 0 -40px;line-height:normal;font-size:inherit;filter:drop-shadow(0 0 10px rgba(255,255,200,.95)) drop-shadow(0 4px 6px rgba(0,0,0,.35))}
   .arm-book img{width:100%;height:100%;object-fit:cover;border-radius:4px 8px 8px 4px}
   .arm-cover{width:100%;height:100%;border-radius:4px 8px 8px 4px;background:linear-gradient(90deg,rgba(0,0,0,.25) 0 8%,transparent 8% 100%),var(--c);
     color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px 8px 12px;box-sizing:border-box;text-align:left}
   .arm-cover b{font-size:15px;line-height:1.25;word-break:keep-all}
   .arm-cover small{font-size:10px;opacity:.9}
-  .arm-tree{position:absolute;left:50%;bottom:-4px;width:min(440px,110vw);transform:translateX(-50%);z-index:0;pointer-events:none}
+  .arm-tree{position:absolute;left:50%;bottom:-14px;width:min(400px,100vw);transform:translateX(-50%);z-index:0;pointer-events:none}
   .arm-tree svg,.arm-tree img{display:block;width:100%;height:auto}
+  .arm-bookinfo{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left}
+  .arm-bookinfo img{width:58px;height:86px;object-fit:cover;border-radius:3px 6px 6px 3px;box-shadow:0 3px 8px rgba(0,0,0,.25);flex:none}
+  .arm-bookinfo .t{font-size:15px}
+  .arm-bookinfo .s{text-align:left;line-height:1.5}
+  a.arm-btn{display:block;text-align:center;text-decoration:none;box-sizing:border-box}
+  .arm-found{font-size:11px;color:#8b95a1;text-align:center;line-height:1.5}
   .arm-petal-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
   .arm-petal-canvas.on{pointer-events:auto;cursor:pointer}
   /* 벚꽃잎 */
@@ -191,7 +197,7 @@ function find(ctx) {
   const books = (ctx.mission.books && ctx.mission.books.length ? ctx.mission.books : DEFAULT_BOOKS).slice(0, 5);
   const total = books.length;
   const angles = [-75, 70, 150, -150, 110].slice(0, total);     // 호반우 기준 각도
-  const fallback = [[18, 30], [82, 26], [22, 70], [78, 68], [50, 20]]; // 센서 없을 때 화면 위치(%)
+  const fallback = [[16, 22], [84, 20], [14, 48], [86, 46], [50, 16]]; // 센서 없을 때 화면 위치(%) — 아래쪽 안내 카드에 가리지 않게 위쪽에
   const found = [];
 
   const items = books.map((bk, i) => {
@@ -205,9 +211,9 @@ function find(ctx) {
       found.push(bk);
       navigator.vibrate?.(60);
       ctx.spawnHeart(parseFloat(d.style.left), parseFloat(d.style.top), "✨");
-      ctx.say(`『${bk.title}』 찾았다! ${bk.comment || ""}`.trim());
+      ctx.say(`『${bk.title}』 찾았다! 📖`);
       progress();
-      showList();
+      showBook(bk);
       if (found.length >= total) {
         ctx.react("proud", ctx.mission.tip || "추천 도서 다 찾았다! 도서관에서 빌려 봐 📚", 3200);
         ctx.complete();
@@ -218,10 +224,17 @@ function find(ctx) {
   });
 
   const progress = () => ctx.info(found.length >= total ? "추천 도서를 모두 찾았어! 🎉" : `주위를 둘러보며 숨은 추천 도서 ${total}권을 찾아봐! (${found.length}/${total})`);
-  function showList() {
-    ctx.tray.innerHTML = `<div class="arm-card"><div class="t">📖 찾은 추천 도서 ${found.length}/${total}</div>
-      <div class="s">${found.map((b) => `『${b.title}』 ${b.author || ""}`).join("<br>")}</div>
-      ${found.length >= total ? `<div class="s">중앙도서관에서 빌려 보세요! 대출은 학생증으로 할 수 있어요.</div>` : ""}</div>`;
+  // 방금 잡은 책 소개 + 지금까지 찾은 책 + "책 빌리러 가기"(경북대 도서관 홈페이지)
+  const LIB_URL = ctx.mission.libraryUrl || "https://kudos.knu.ac.kr/pages/index.htm";
+  function showBook(bk) {
+    ctx.tray.innerHTML = `<div class="arm-card">
+      <div class="arm-bookinfo">
+        ${bk.img ? `<img src="${bk.img}" alt="">` : ""}
+        <div><div class="t">『${bk.title}』</div><div class="s">${bk.author || ""}</div><div class="s">${bk.comment || ""}</div></div>
+      </div>
+      <div class="arm-found">찾은 추천 도서 ${found.length}/${total} · ${found.map((b) => `『${b.title}』`).join(" ")}</div>
+      <a class="arm-btn primary" href="${LIB_URL}" target="_blank" rel="noopener">📚 책 빌리러 가기 (경북대 도서관)</a>
+    </div>`;
     ctx.tray.classList.remove("ar-hidden");
   }
   progress();
@@ -236,7 +249,7 @@ function find(ctx) {
       const inView = Math.abs(rel) < ctx.VIEW / 2 + 5;
       d.style.display = inView ? "block" : "none";
       d.style.left = W() / 2 - rel * ctx.PX + "px";
-      d.style.top = H() * 0.42 + y + ((Math.abs(ang) % 3) * 18) + "px";
+      d.style.top = Math.min(H() * 0.5, H() * 0.36 + y + ((Math.abs(ang) % 3) * 18)) + "px";   // 아래 카드에 가리지 않게
     });
   });
   // 센서가 없으면(PC 등) 화면 곳곳에 바로 보여준다
@@ -251,16 +264,21 @@ function find(ctx) {
   return () => { clearTimeout(t); items.forEach(({ d }) => d.remove()); };
 }
 const DEFAULT_BOOKS = [
-  { title: "데미안", author: "헤르만 헤세", comment: "새내기에게 딱 맞는 성장 소설!" },
-  { title: "어린 왕자", author: "생텍쥐페리", comment: "다시 읽으면 또 다른 책이야." },
-  { title: "코스모스", author: "칼 세이건", comment: "우주가 궁금하다면!" },
+  { title: "두고 온 여름", author: "성해나 소설", img: "img/books/book1.jpg",
+    comment: "잠시 한 가족이 되었던 두 사람이 함께 보낸 여름과 그 뒤의 시간을 돌아보는 이야기." },
+  { title: "저녁의 구애", author: "편혜영 소설집", img: "img/books/book2.jpg",
+    comment: "평범한 일상에 스며든 불안과 낯섦을 서늘하게 그려 낸 단편들." },
+  { title: "대온실 수리 보고서", author: "김금희 장편소설", img: "img/books/book3.jpg",
+    comment: "창경궁 대온실 보수 공사의 기록을 맡은 주인공이 오래 묻어 둔 기억과 마주하는 이야기." },
+  { title: "저주토끼", author: "정보라 소설집", img: "img/books/book4.jpg",
+    comment: "저주와 복수, 기이한 상상으로 현실의 부조리를 비추는 소설집. 2022 부커상 인터내셔널 최종 후보." },
 ];
 const BOOK_COLORS = ["#2f6fed", "#d4121a", "#0a9d63", "#8d5fd3", "#a86400"];
 
 /* ============================================================
    🌸 벚꽃길: 떨어지는 벚꽃잎 잡기
    ============================================================ */
-// 벚꽃 나무 그림 (직접 그린 SVG). img/hobanu/cherry-tree.png 파일을 넣으면 그 그림을 대신 쓴다.
+// 벚꽃 나무: img/hobanu/cherry-tree.webp 일러스트를 쓰고, 못 불러오면 아래 SVG로 대신 그린다.
 function cherryTreeSVG() {
   let seed = 7;
   const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
@@ -295,7 +313,8 @@ function petals(ctx) {
   const tree = el("div", "arm-tree");
   const png = new Image();
   png.onload = () => { tree.innerHTML = ""; tree.appendChild(png); };
-  png.src = "img/hobanu/cherry-tree.png";
+  png.alt = "";
+  png.src = "img/hobanu/cherry-tree.webp";
   tree.innerHTML = cherryTreeSVG();
   ctx.inner.insertBefore(tree, ctx.inner.firstChild);
 
@@ -319,11 +338,24 @@ function petals(ctx) {
       vy: 0.5 + Math.random() * 0.9,
       vx: (Math.random() - 0.3) * 0.6,
       rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.06,
-      size: 9 + Math.random() * 9, ph: Math.random() * Math.PI * 2,
+      size: 9 + Math.random() * 9, ph: Math.random() * Math.PI * 2, a: 0.75 + Math.random() * 0.25,
       c: COLORS[(Math.random() * COLORS.length) | 0],
     });
   }
+  const petalImg = new Image();
+  petalImg.src = "img/hobanu/petal.png";          // 꽃잎 일러스트 (없으면 아래 도형으로 그림)
   function drawPetal(p) {
+    if (petalImg.complete && petalImg.naturalWidth) {
+      const s = p.size * 2.3;
+      g.save();
+      g.translate(p.x * dpr, p.y * dpr);
+      g.rotate(p.rot);
+      g.scale(dpr, dpr * (0.5 + 0.5 * Math.abs(Math.sin(p.ph))));   // 뒤집히며 떨어지는 느낌
+      g.globalAlpha = p.a ?? 1;
+      g.drawImage(petalImg, -s / 2, -s / 2 * petalImg.naturalHeight / petalImg.naturalWidth, s, s * petalImg.naturalHeight / petalImg.naturalWidth);
+      g.restore();
+      return;
+    }
     g.save();
     g.translate(p.x * dpr, p.y * dpr);
     g.rotate(p.rot);

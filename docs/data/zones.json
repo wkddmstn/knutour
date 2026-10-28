@@ -83,12 +83,18 @@
         { "id": "m-library-photo", "type": "photo", "title": "대출 인증샷",
           "desc": "책을 대출한 화면이나 대출한 책을 사진으로 남겨주세요.", "points": 100 },
         { "id": "m-library-ar", "type": "ar", "ar": "find", "title": "숨은 추천 도서 찾기 (AR)",
-          "desc": "도서관 주변에 숨은 추천 도서 3권을 휴대폰을 돌려 가며 찾아보세요.", "points": 100,
-          "tip": "추천 도서 다 찾았다! 열람실 자리는 도서관 앱에서 예약할 수 있어 📚",
+          "desc": "도서관 주변에 숨은 추천 도서 4권을 휴대폰을 돌려 가며 찾아보세요.", "points": 100,
+          "tip": "추천 도서 다 찾았다! 도서관에서 빌려 봐 📚",
+          "libraryUrl": "https://kudos.knu.ac.kr/pages/index.htm",
           "books": [
-            { "title": "데미안", "author": "헤르만 헤세", "comment": "새내기에게 딱 맞는 성장 소설!" },
-            { "title": "어린 왕자", "author": "생텍쥐페리", "comment": "다시 읽으면 또 다른 책이야." },
-            { "title": "코스모스", "author": "칼 세이건", "comment": "우주가 궁금하다면!" }
+            { "title": "두고 온 여름", "author": "성해나 소설", "img": "img/books/book1.jpg",
+              "comment": "잠시 한 가족이 되었던 두 사람이 함께 보낸 여름과 그 뒤의 시간을 돌아보는 이야기." },
+            { "title": "저녁의 구애", "author": "편혜영 소설집", "img": "img/books/book2.jpg",
+              "comment": "평범한 일상에 스며든 불안과 낯섦을 서늘하게 그려 낸 단편들." },
+            { "title": "대온실 수리 보고서", "author": "김금희 장편소설", "img": "img/books/book3.jpg",
+              "comment": "창경궁 대온실 보수 공사의 기록을 맡은 주인공이 오래 묻어 둔 기억과 마주하는 이야기." },
+            { "title": "저주토끼", "author": "정보라 소설집", "img": "img/books/book4.jpg",
+              "comment": "저주와 복수, 기이한 상상으로 현실의 부조리를 비추는 소설집. 2022 부커상 인터내셔널 최종 후보." }
           ] }
       ]
     },

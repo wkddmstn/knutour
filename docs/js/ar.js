@@ -1,10 +1,11 @@
 // js/ar.js — 호반우 AR (담당: 장주연)
 //   startAR(zone, { mission })  → Promise<{ met, fed, done, otter }>
 //       met: 호반우와 놀았는지 / fed: 학식 주기 성공 / done: AR 미션 성공 / otter: 희귀 수달을 잡았는지
-//   openPhotoStudio({ items, start, submit }) → 사진 찍기 화면. submit이면 "이 사진으로 제출" → { dataUrl }
+//   openPhotoStudio({ items, start, submit, place }) → 사진 찍기 화면(꾸미기 포함). submit이면 "이 사진으로 제출" → { dataUrl }
 //   openDex() / renderHobanuPane(div) / hasMet(id) / photoItemsFor(zoneId)
 // AR 미니 미션(돌림판·책 찾기·꽃잎·응원)은 ar-missions.js에 있다.
 import { runArMission } from "./ar-missions.js";
+import { stickerCatalog, frameSVG } from "./ar-stickers.js";   // 사진 꾸미기 아이템
 
 const IMG = "img/hobanu/";
 export const MASCOTS = {
@@ -249,6 +250,27 @@ function injectStyle() {
     .ar-btn{padding:10px 16px;font-size:15px}
     .ar-snack img{width:40px;height:40px}
   }
+  /* ---- 사진 꾸미기 (스티커·프레임) ---- */
+  #ps-hob{z-index:1}
+  .ps-stk{position:absolute;z-index:2;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.25))}
+  #ps-frameimg{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+  #ps-root .ps-sel{outline:2px dashed rgba(255,255,255,.95);outline-offset:4px}
+  #ps-del{position:absolute;z-index:4;width:30px;height:30px;margin:-15px 0 0 -15px;padding:0;border-radius:50%;border:2px solid #fff;
+    background:#B21B1D;color:#fff;font-size:14px;font-weight:900;display:none;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  #ps-deco{position:absolute;left:0;right:0;bottom:0;z-index:6;background:#fff;color:#191f28;border-radius:20px 20px 0 0;
+    padding:12px 14px max(16px,env(safe-area-inset-bottom));max-height:48vh;display:flex;flex-direction:column;gap:10px;box-shadow:0 -6px 20px rgba(0,0,0,.35)}
+  #ps-root.land #ps-deco{right:150px;max-height:70vh}
+  .ps-deco-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ps-deco-tab{width:auto;border:none;border-radius:999px;padding:7px 12px;background:#f2f4f6;color:#4e5968;font-size:13px;font-weight:700}
+  .ps-deco-tab.on{background:#B21B1D;color:#fff}
+  .ps-deco-done{width:auto;margin-left:auto !important;border:none;border-radius:999px;padding:7px 14px;background:#1D1A17;color:#fff;font-size:13px;font-weight:700}
+  .ps-deco-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;overflow-y:auto;padding-bottom:4px}
+  .ps-deco-item{width:auto;border:none;background:#f7f8fa;border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:10px;font-weight:600;color:#4e5968;line-height:1.2;text-align:center}
+  .ps-deco-item img{width:100%;height:56px;object-fit:contain;pointer-events:none}
+  .ps-deco-item.on{box-shadow:inset 0 0 0 2px #B21B1D;background:#fff1f1}
+  .ps-deco-none{height:56px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#b0b8c1}
+  .ps-deco-hint{font-size:11px;color:#8b95a1;margin:0}
   @keyframes ps-tip{0%,80%{opacity:1}100%{opacity:0}}
   @keyframes ps-flash{0%{opacity:.9}100%{opacity:0}}`;
   document.head.appendChild(s);
@@ -590,7 +612,7 @@ export function startAR(zone, opts = {}) {
       const items = collectedItems();
       if (!items.some((it) => it.id === id)) items.unshift({ id: id || "ar", name: m.name, img: m.img });
       if (otter && !items.some((it) => it.id === "otter")) items.push({ id: "otter", name: RARE.otter.name, img: RARE.otter.img });
-      await openPhotoStudio({ items, start: id || "ar" });
+      await openPhotoStudio({ items, start: id || "ar", place: zone.name || "" });
       if (!closed) startCam();
     };
 
@@ -621,7 +643,7 @@ const RATIOS = [
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 
-export function openPhotoStudio({ items, start, submit = false } = {}) {
+export function openPhotoStudio({ items, start, submit = false, place = "" } = {}) {
   injectStyle();
   items = items || collectedItems();
 
@@ -632,6 +654,9 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
       <div id="ps-frame">
         <video id="ps-cam" autoplay playsinline muted></video>
         <img id="ps-hob" alt="호반우" draggable="false">
+        <div id="ps-stks"></div>
+        <img id="ps-frameimg" class="ar-hidden" alt="" draggable="false">
+        <button id="ps-del" aria-label="스티커 지우기">✕</button>
         <div id="ps-flash"></div>
       </div>
       <div class="ps-topbar">
@@ -640,6 +665,7 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
         <span class="ps-spacer" style="width:40px;height:40px"></span>
       </div>
       <div class="ps-rail">
+        <button class="ps-tool" id="ps-deco-btn"><i class="ps-glass">✨</i>꾸미기</button>
         <button class="ps-tool" id="ps-flip"><i class="ps-glass">🔄</i>전환</button>
         <button class="ps-tool" id="ps-bigger"><i class="ps-glass">➕</i>크게</button>
         <button class="ps-tool" id="ps-smaller"><i class="ps-glass">➖</i>작게</button>
@@ -655,6 +681,11 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
           <button id="ps-shutter" aria-label="촬영"></button>
           <span class="ps-spacer"></span>
         </div>
+      </div>
+      <div id="ps-deco" class="ar-hidden">
+        <div class="ps-deco-head" id="ps-deco-tabs"></div>
+        <p class="ps-deco-hint">눌러서 붙이고, 붙인 스티커를 눌러 선택하면 옮기기·크기 조절·✕로 지우기를 할 수 있어요</p>
+        <div class="ps-deco-grid" id="ps-deco-grid"></div>
       </div>
       <div id="ps-review" class="ar-hidden">
         <img id="ps-photo" alt="찍은 사진">
@@ -734,38 +765,126 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
       const left = !w ? 0 : (AW - fw) / 2;
       Object.assign(frame.style, { width: fw + "px", height: fh + "px", left: left + "px", top: top + "px" });
       $("ps-ratio").textContent = "📐 " + RATIOS[ratio].label;
+      if (frameId !== "none") frameImg.src = frameSVG(frameId, FW, FH, place);
       render();
     }
     $("ps-ratio").onclick = () => { ratio = (ratio + 1) % RATIOS.length; fit(); };
     window.addEventListener("resize", fit);
 
     /* ---------- 호반우 그리기 + 크기 버튼 ---------- */
+    // 호반우와 스티커는 모두 { x, y, w } (사진 틀 대비 비율)로 위치를 기억한다
+    function placeObj(img, o) {
+      const w = o.w * Math.min(FW, FH * 0.9);
+      const h = img.naturalWidth ? w * img.naturalHeight / img.naturalWidth : w;
+      img.style.width = w + "px";
+      img.style.left = (o.x * FW - w / 2) + "px";
+      img.style.top = (o.y * FH - h / 2) + "px";
+    }
     function render() {
       if (!FW) return;
-      const w = st.w * Math.min(FW, FH * 0.9);
-      const h = hob.naturalWidth ? w * hob.naturalHeight / hob.naturalWidth : w;
-      hob.style.width = w + "px";
-      hob.style.left = (st.x * FW - w / 2) + "px";
-      hob.style.top = (st.y * FH - h / 2) + "px";
+      placeObj(hob, st);
+      stickers.forEach((sk) => placeObj(sk.el, sk));
+      // 선택 표시: 스티커가 있을 때만 점선으로 보여 준다
+      hob.classList.toggle("ps-sel", sel === "hob" && stickers.length > 0);
+      stickers.forEach((sk) => sk.el.classList.toggle("ps-sel", sk === sel));
+      const del = $("ps-del");
+      if (sel !== "hob" && sel) {
+        const r = sel.el.getBoundingClientRect(), fr = frame.getBoundingClientRect();
+        del.style.display = "block";
+        del.style.left = (r.right - fr.left) + "px";
+        del.style.top = (r.top - fr.top) + "px";
+      } else del.style.display = "none";
     }
-    const clampW = (w) => Math.max(0.15, Math.min(1.3, w));
-    $("ps-bigger").onclick = () => { st.w = clampW(st.w * 1.15); render(); };
-    $("ps-smaller").onclick = () => { st.w = clampW(st.w / 1.15); render(); };
-    $("ps-reset").onclick = () => { Object.assign(st, HOME); render(); };
+    const clampW = (w) => Math.max(0.08, Math.min(1.3, w));
+    const T = () => (sel === "hob" || !sel ? st : sel);     // 지금 조작하는 대상
+    $("ps-bigger").onclick = () => { T().w = clampW(T().w * 1.15); render(); };
+    $("ps-smaller").onclick = () => { T().w = clampW(T().w / 1.15); render(); };
+    $("ps-reset").onclick = () => {
+      if (T() === st) Object.assign(st, HOME); else Object.assign(T(), { x: 0.5, y: 0.45, w: T().w0 });
+      render();
+    };
+
+    /* ---------- 꾸미기: 스티커·프레임 ---------- */
+    const cat = stickerCatalog(place);
+    const stickers = [];          // { id, el, x, y, w, w0 }
+    let sel = "hob";              // 선택된 대상: "hob" 또는 스티커
+    let frameId = "none";
+    let decoTab = "frame";
+    const frameImg = $("ps-frameimg");
+    function setFrame(id) {
+      frameId = id;
+      if (id === "none") { frameImg.classList.add("ar-hidden"); frameImg.removeAttribute("src"); }
+      else { frameImg.src = frameSVG(id, FW, FH, place); frameImg.classList.remove("ar-hidden"); }
+      drawDeco();
+    }
+    function addSticker(item) {
+      const img = el("img");
+      img.className = "ps-stk"; img.alt = ""; img.draggable = false;
+      const sk = { id: item.id, el: img, x: 0.5, y: 0.4 + (stickers.length % 4) * 0.06, w: item.w || 0.3, w0: item.w || 0.3 };
+      img.onload = render;
+      img.src = item.src;
+      $("ps-stks").appendChild(img);
+      stickers.push(sk);
+      sel = sk;
+      render();
+      navigator.vibrate?.(20);
+    }
+    $("ps-del").addEventListener("pointerdown", (e) => e.stopPropagation());
+    $("ps-del").onclick = (e) => {
+      e.stopPropagation();
+      if (sel === "hob" || !sel) return;
+      sel.el.remove();
+      stickers.splice(stickers.indexOf(sel), 1);
+      sel = "hob";
+      render();
+    };
+    function drawDeco() {
+      $("ps-deco-tabs").innerHTML = cat.tabs.map((t) =>
+        `<button class="ps-deco-tab ${t.id === decoTab ? "on" : ""}" data-t="${t.id}">${t.name}</button>`).join("") +
+        `<button class="ps-deco-done" id="ps-deco-done">완료</button>`;
+      $("ps-deco-tabs").querySelectorAll(".ps-deco-tab").forEach((b) => { b.onclick = () => { decoTab = b.dataset.t; drawDeco(); }; });
+      $("ps-deco-done").onclick = () => $("ps-deco").classList.add("ar-hidden");
+      const list = cat[decoTab];
+      $("ps-deco-grid").innerHTML = list.map((it, i) => {
+        if (decoTab === "frame") {
+          const prev = it.id === "none" ? `<div class="ps-deco-none">⦸</div>` : `<img src="${frameSVG(it.id, 90, 120, place)}" alt="">`;
+          return `<button class="ps-deco-item ${it.id === frameId ? "on" : ""}" data-i="${i}">${prev}${it.name}</button>`;
+        }
+        return `<button class="ps-deco-item" data-i="${i}"><img src="${it.src}" alt="">${it.name}</button>`;
+      }).join("");
+      $("ps-deco-grid").querySelectorAll(".ps-deco-item").forEach((b) => {
+        b.onclick = () => {
+          const it = list[+b.dataset.i];
+          if (decoTab === "frame") setFrame(it.id); else addSticker(it);
+        };
+      });
+    }
+    $("ps-deco-btn").onclick = () => {
+      const d = $("ps-deco");
+      d.classList.toggle("ar-hidden");
+      if (!d.classList.contains("ar-hidden")) drawDeco();
+    };
 
     /* ---------- 끌어서 옮기기 + 두 손가락으로 크기 조절 ---------- */
     const pts = new Map();
     let g0 = null;
     const snap = () => {
       const p = [...pts.values()];
-      g0 = { x: st.x, y: st.y, w: st.w, p };
+      const t = T();
+      g0 = { x: t.x, y: t.y, w: t.w, p };
       if (p.length >= 2) {
         g0.d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
         g0.cx = (p[0].x + p[1].x) / 2; g0.cy = (p[0].y + p[1].y) / 2;
       }
     };
+    const hit = (x, y, img) => { const r = img.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
     frame.addEventListener("pointerdown", (e) => {
       frame.setPointerCapture?.(e.pointerId);
+      if (pts.size === 0) {   // 첫 손가락: 누른 스티커(맨 위부터) 또는 호반우를 선택
+        const top = [...stickers].reverse().find((sk) => hit(e.clientX, e.clientY, sk.el));
+        if (top) sel = top;
+        else if (hit(e.clientX, e.clientY, hob)) sel = "hob";
+      }
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       snap();
       e.preventDefault();
@@ -774,23 +893,24 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
       if (!pts.has(e.pointerId) || !g0) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const p = [...pts.values()];
+      const t = T();
       if (p.length === 1) {
-        st.x = g0.x + (p[0].x - g0.p[0].x) / FW;
-        st.y = g0.y + (p[0].y - g0.p[0].y) / FH;
+        t.x = g0.x + (p[0].x - g0.p[0].x) / FW;
+        t.y = g0.y + (p[0].y - g0.p[0].y) / FH;
       } else if (p.length >= 2 && g0.d) {
         const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
-        st.w = clampW(g0.w * d / g0.d);
-        st.x = g0.x + ((p[0].x + p[1].x) / 2 - g0.cx) / FW;
-        st.y = g0.y + ((p[0].y + p[1].y) / 2 - g0.cy) / FH;
+        t.w = clampW(g0.w * d / g0.d);
+        t.x = g0.x + ((p[0].x + p[1].x) / 2 - g0.cx) / FW;
+        t.y = g0.y + ((p[0].y + p[1].y) / 2 - g0.cy) / FH;
       }
-      st.x = Math.max(0, Math.min(1, st.x));
-      st.y = Math.max(0, Math.min(1, st.y));
+      t.x = Math.max(0, Math.min(1, t.x));
+      t.y = Math.max(0, Math.min(1, t.y));
       render();
     });
     const lift = (e) => { pts.delete(e.pointerId); snap(); };
     frame.addEventListener("pointerup", lift);
     frame.addEventListener("pointercancel", lift);
-    frame.addEventListener("wheel", (e) => { e.preventDefault(); st.w = clampW(st.w * (1 - e.deltaY * 0.001)); render(); }, { passive: false });
+    frame.addEventListener("wheel", (e) => { e.preventDefault(); T().w = clampW(T().w * (1 - e.deltaY * 0.001)); render(); }, { passive: false });
 
     /* ---------- 카메라 (전면/후면 전환 + 줌 버튼) ---------- */
     async function startCam() {
@@ -851,7 +971,8 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
       root.appendChild(d);
       setTimeout(() => d.remove(), 1900);
     }
-    $("ps-shutter").onclick = () => {
+    $("ps-shutter").onclick = async () => {
+      if (frameId !== "none" && !frameImg.complete) await new Promise((r) => { frameImg.onload = r; frameImg.onerror = r; });
       const k = Math.min(3, Math.max(2, window.devicePixelRatio || 2));
       const c = el("canvas");
       c.width = Math.round(FW * k); c.height = Math.round(FH * k);
@@ -872,6 +993,11 @@ export function openPhotoStudio({ items, start, submit = false } = {}) {
       }
       const fr = frame.getBoundingClientRect(), hr = hob.getBoundingClientRect();
       g.drawImage(hob, hr.left - fr.left, hr.top - fr.top, hr.width, hr.height);
+      stickers.forEach((sk) => {                       // 붙인 스티커 (붙인 순서대로)
+        const r = sk.el.getBoundingClientRect();
+        try { g.drawImage(sk.el, r.left - fr.left, r.top - fr.top, r.width, r.height); } catch {}
+      });
+      if (frameId !== "none") { try { g.drawImage(frameImg, 0, 0, FW, FH); } catch {} }   // 프레임은 맨 위
 
       const f = $("ps-flash");
       f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
