@@ -9,6 +9,7 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
 import { startAR, MASCOTS } from "./ar.js";
+import { listGuestbook, postGuestbookEntry } from "./guestbook.js";
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -528,6 +529,17 @@ function verifyLocation(zone) {
   });
 }
 
+// 구역 방명록 팝업 열기 (목록 불러오고, 글 남기면 새로고침된 목록으로 다시 띄운다)
+async function openGuestbook(zone) {
+  const entries = await listGuestbook(zone.id);
+  ui.showGuestbook(zone.name, entries, async (message, photoFile) => {
+    const nickname = store.getState().profile?.nickname || "익명";
+    const ok = await postGuestbookEntry(zone.id, nickname, message, photoFile);
+    if (ok) await openGuestbook(zone);
+    return ok;
+  });
+}
+
 // 미션 선택 메뉴 (챗봇의 선택 버튼)
 async function missionMenu(zone) {
   while (true) {
@@ -546,10 +558,12 @@ async function missionMenu(zone) {
         disabled: store.isDone(m.id),
       })),
       ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
+      { label: "📖 방명록", value: "__guestbook", ghost: true },
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
     if (pick === "__ar") { await startAR(zone); continue; }
+    if (pick === "__guestbook") { await openGuestbook(zone); continue; }
     if (!inZone) {
       ui.toast(`${zone.name}에서 멀어졌어요. 구역 안으로 들어와서 다시 시도해 주세요.`);
       continue;

@@ -439,6 +439,61 @@ export function setGeofenceWarning(show, zoneName = "") {
   geoBanner.classList.toggle("show", !!show);
 }
 
+/* ---------- 구역별 방명록 ---------- */
+// entries: 최신순 글 목록, onSubmit(message, photoFile) => Promise<boolean>(성공 여부)
+export function showGuestbook(zoneName, entries, onSubmit) {
+  const m = $("modal");
+  m.classList.remove("hidden");
+  m.classList.add("modal-center");
+
+  const listHtml = entries.length
+    ? entries.map((e) => `
+        <div class="gb-entry">
+          ${e.photo_url ? `<img class="gb-photo" src="${esc(e.photo_url)}" alt="">` : ""}
+          <div class="gb-body"><b>${esc(e.nickname)}</b><span>${esc(e.message)}</span></div>
+        </div>`).join("")
+    : `<p class="sum-foot" style="text-align:center">아직 글이 없어요. 첫 글을 남겨보세요!</p>`;
+
+  m.innerHTML = `
+    <div class="modal-card pop-in" style="text-align:left">
+      <h2 style="font-size:18px;text-align:center">📖 ${esc(zoneName)} 방명록</h2>
+      <div class="gb-list">${listHtml}</div>
+      <div class="gb-form">
+        <textarea id="gb-input" class="text-in" placeholder="이 장소에 한마디 남겨보세요" maxlength="200" rows="2"></textarea>
+        <div class="gb-form-row">
+          <label class="btn-file small">📷 사진 추가<input id="gb-photo" type="file" accept="image/*" hidden></label>
+          <span id="gb-photo-name" class="sum-foot" style="margin:0"></span>
+        </div>
+        <button id="gb-submit" class="btn" style="margin-top:8px">남기기</button>
+      </div>
+      <button id="gb-close" class="btn alt" style="margin-top:10px">닫기</button>
+    </div>`;
+
+  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
+  $("gb-close").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
+
+  let pickedPhoto = null;
+  $("gb-photo").onchange = (e) => {
+    pickedPhoto = e.target.files[0] || null;
+    $("gb-photo-name").textContent = pickedPhoto ? pickedPhoto.name : "";
+  };
+  $("gb-submit").onclick = async () => {
+    const msg = $("gb-input").value.trim();
+    if (!msg) return;
+    const btn = $("gb-submit");
+    btn.disabled = true;
+    btn.textContent = "올리는 중...";
+    const ok = await onSubmit(msg, pickedPhoto);
+    if (!ok) {
+      btn.disabled = false;
+      btn.textContent = "남기기";
+      toast("글 등록에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+    // 성공하면 onSubmit 쪽에서 showGuestbook을 새로고침된 목록으로 다시 호출해 준다
+  };
+}
+
 export function updateDebug(pos, r) {
   $("debug").textContent =
     `lat ${pos.lat.toFixed(5)} lng ${pos.lng.toFixed(5)} ` +
