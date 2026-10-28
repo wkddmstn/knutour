@@ -1,0 +1,25 @@
+{
+  "_설명": "맛집 추천 데이터. categories는 센트럴파크 돌림판 칸, restaurants는 추천 맛집 목록. receipt는 나중에 영수증 인증할 때 사용 (keywords: 영수증에 찍히는 가게 이름, points: 인증 시 포인트).",
+  "categories": [
+    { "id": "chicken",    "name": "치킨",       "emoji": "🍗" },
+    { "id": "pizza",      "name": "피자",       "emoji": "🍕" },
+    { "id": "kimbap",     "name": "김밥·분식",  "emoji": "🍙" },
+    { "id": "burger",     "name": "햄버거",     "emoji": "🍔" },
+    { "id": "sandwich",   "name": "샌드위치",   "emoji": "🥪" },
+    { "id": "tteokbokki", "name": "떡볶이",     "emoji": "🌶️" },
+    { "id": "dosirak",    "name": "도시락",     "emoji": "🍱" },
+    { "id": "dessert",    "name": "디저트·음료", "emoji": "🧋" }
+  ],
+  "restaurants": [],
+  "_예시": {
+    "id": "r-001",
+    "name": "(가게 이름)",
+    "category": "chicken",
+    "area": "북문",
+    "address": "",
+    "lat": 0,
+    "lng": 0,
+    "comment": "호반우 한마디",
+    "receipt": { "keywords": ["가게 이름"], "points": 50 }
+  }
+}

@@ -29,7 +29,9 @@
       ],
       "missions": [
         { "id": "m-centralpark-photo", "type": "photo", "title": "피크닉 사진",
-          "desc": "돗자리를 깔고 피크닉하는 모습을 사진으로 남겨주세요.", "points": 100 }
+          "desc": "돗자리를 깔고 피크닉하는 모습을 사진으로 남겨주세요.", "points": 100 },
+        { "id": "m-centralpark-ar", "type": "ar", "ar": "roulette", "title": "피크닉 메뉴 돌림판 (AR)",
+          "desc": "호반우 옆 돌림판을 돌려서 오늘 피크닉 메뉴를 정해 봐! 호반우가 맛집도 추천해 줘요.", "points": 100 }
       ]
     },
     {
@@ -79,7 +81,21 @@
       },
       "missions": [
         { "id": "m-library-photo", "type": "photo", "title": "대출 인증샷",
-          "desc": "책을 대출한 화면이나 대출한 책을 사진으로 남겨주세요.", "points": 100 }
+          "desc": "책을 대출한 화면이나 대출한 책을 사진으로 남겨주세요.", "points": 100 },
+        { "id": "m-library-ar", "type": "ar", "ar": "find", "title": "숨은 추천 도서 찾기 (AR)",
+          "desc": "도서관 주변에 숨은 추천 도서 4권을 휴대폰을 돌려 가며 찾아보세요.", "points": 100,
+          "tip": "추천 도서 다 찾았다! 도서관에서 빌려 봐 📚",
+          "libraryUrl": "https://kudos.knu.ac.kr/pages/index.htm",
+          "books": [
+            { "title": "두고 온 여름", "author": "성해나 소설", "img": "img/books/book1.jpg",
+              "comment": "잠시 한 가족이 되었던 두 사람이 함께 보낸 여름과 그 뒤의 시간을 돌아보는 이야기." },
+            { "title": "저녁의 구애", "author": "편혜영 소설집", "img": "img/books/book2.jpg",
+              "comment": "평범한 일상에 스며든 불안과 낯섦을 서늘하게 그려 낸 단편들." },
+            { "title": "대온실 수리 보고서", "author": "김금희 장편소설", "img": "img/books/book3.jpg",
+              "comment": "창경궁 대온실 보수 공사의 기록을 맡은 주인공이 오래 묻어 둔 기억과 마주하는 이야기." },
+            { "title": "저주토끼", "author": "정보라 소설집", "img": "img/books/book4.jpg",
+              "comment": "저주와 복수, 기이한 상상으로 현실의 부조리를 비추는 소설집. 2022 부커상 인터내셔널 최종 후보." }
+          ] }
       ]
     },
     {
@@ -110,7 +126,9 @@
       ],
       "missions": [
         { "id": "m-stadium-together", "type": "together", "title": "대운동장 함께 돌기",
-          "desc": "친구와 함께 대운동장을 한 바퀴 돌아보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 }
+          "desc": "친구와 함께 대운동장을 한 바퀴 돌아보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 },
+        { "id": "m-stadium-ar", "type": "ar", "ar": "cheer", "title": "축제 응원 흔들기 (AR)",
+          "desc": "휴대폰을 흔들어 응원 게이지를 가득 채워 보세요!", "points": 100 }
       ]
     },
     {
@@ -133,7 +151,9 @@
       ],
       "missions": [
         { "id": "m-gongstaurant-photo", "type": "photo", "title": "학식 먹기",
-          "desc": "식권이나 오늘 먹은 메뉴를 사진으로 남겨주세요.", "points": 100 }
+          "desc": "식권이나 오늘 먹은 메뉴를 사진으로 남겨주세요.", "points": 100 },
+        { "id": "m-gongstaurant-ar", "type": "ar", "ar": "snack", "title": "호반우에게 학식 주기 (AR)",
+          "desc": "배고픈 호반우에게 공식당 인기 메뉴를 끌어다 주세요.", "points": 100 }
       ]
     },
     {
@@ -160,7 +180,9 @@
       "polygonBuffer": 10,
       "missions": [
         { "id": "m-loveroad-together", "type": "together", "title": "러브로드 함께 돌기",
-          "desc": "친구와 함께 백양로를 걸어보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 }
+          "desc": "친구와 함께 백양로를 걸어보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 },
+        { "id": "m-loveroad-ar", "type": "ar", "ar": "heart", "goal": 3, "title": "호반우에게 하트 그리기 (AR)",
+          "desc": "화면에 손가락으로 하트를 그려서 러브로드의 호반우에게 마음을 전해 보세요.", "points": 100 }
       ]
     },
     {
@@ -183,7 +205,9 @@
       "polygonBuffer": 10,
       "missions": [
         { "id": "m-cherryroad-photo", "type": "photo", "title": "벚꽃길 사진찍기",
-          "desc": "봄바람에 벚꽃잎이 흩날리는 길 위에서, 지금 이 순간을 사진으로 붙잡아 보세요.", "points": 100 }
+          "desc": "봄바람에 벚꽃잎이 흩날리는 길 위에서, 지금 이 순간을 사진으로 붙잡아 보세요.", "points": 100 },
+        { "id": "m-cherryroad-ar", "type": "ar", "ar": "petals", "title": "벚꽃잎 잡기 (AR)",
+          "desc": "벚꽃 나무에서 흩날리는 꽃잎을 15초 안에 10개 잡아 보세요!", "points": 100, "goal": 10, "time": 15 }
       ]
     },
     {
@@ -209,7 +233,9 @@
           "choices": ["서점", "은행", "학식", "영화관"],
           "answer": 3,
           "hint": "복지관엔 서점, 은행, 병원(보건소), 우체국, 학식까지 있지만, 이것만은 없어요.",
-          "points": 100 }
+          "points": 100 },
+        { "id": "m-bokji-ar", "type": "ar", "ar": "shop", "rounds": 3, "title": "호반우 장보기 (AR)",
+          "desc": "호반우가 부탁한 개강 준비물을 끌어서 장바구니에 담아 주세요.", "points": 100 }
       ]
     }
   ]
