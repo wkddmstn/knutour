@@ -24,6 +24,9 @@
   <button id="reset">🗑 초기화</button>
 </div>
 <div id="list"></div>
+<h2 style="font-size:17px;margin-top:24px">AR 미션 테스트</h2>
+<p style="color:#666;font-size:13px">zones.json에 들어간 AR 미션을 하나씩 실행해 봐요. 일청담 수달은 주소 끝에 <b>?otter=1</b>을 붙이고 "일청담"을 누르면 무조건 나와요.</p>
+<div id="mlist"></div>
 <p id="log"></p>
 <h2 style="font-size:17px;margin-top:24px">탐색 탭 미리보기</h2>
 <p style="color:#666;font-size:13px">앱의 퀘스트 → 탐색 화면에 들어갈 "호반우" 탭 모습이에요.</p>
@@ -31,6 +34,19 @@
 <script type="module">
   import { startAR, openDex, openPhotoStudio, renderHobanuPane, MASCOTS } from "./js/ar.js";
   const pane = document.getElementById("pane");
+  fetch("data/zones.json").then((r) => r.json()).then(({ zones }) => {
+    const ml = document.getElementById("mlist");
+    zones.forEach((z) => z.missions.filter((mm) => mm.type === "ar").forEach((mm) => {
+      const b = document.createElement("button");
+      b.textContent = `${z.name} · ${mm.title}`;
+      b.onclick = async () => {
+        const r = await startAR(z, { mission: mm });
+        refresh();
+        log.textContent = `${mm.title}: ${r.done ? "미션 성공 ✅" : "미완료"}`;
+      };
+      ml.appendChild(b);
+    }));
+  });
   const refresh = () => renderHobanuPane(pane);
   refresh();
   const list = document.getElementById("list");
@@ -41,7 +57,7 @@
     b.onclick = async () => {
       const r = await startAR({ id, name: m.name });
       refresh();
-      log.textContent = `${m.name}: ${r.met ? "호반우와 놀았어요 ✅" : "그냥 닫았어요"}${r.fed ? " · 학식 미션 완료 🍚" : ""}`;
+      log.textContent = `${m.name}: ${r.met ? "호반우와 놀았어요 ✅" : "그냥 닫았어요"}${r.otter ? " · 희귀 수달 🦦" : ""}`;
     };
     list.appendChild(b);
   });

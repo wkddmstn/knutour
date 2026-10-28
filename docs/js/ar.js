@@ -1,3 +1,11 @@
+// js/ar.js — 호반우 AR (담당: 장주연)
+//   startAR(zone, { mission })  → Promise<{ met, fed, done, otter }>
+//       met: 호반우와 놀았는지 / fed: 학식 주기 성공 / done: AR 미션 성공 / otter: 희귀 수달을 잡았는지
+//   openPhotoStudio({ items, start, submit }) → 사진 찍기 화면. submit이면 "이 사진으로 제출" → { dataUrl }
+//   openDex() / renderHobanuPane(div) / hasMet(id) / photoItemsFor(zoneId)
+// AR 미니 미션(돌림판·책 찾기·꽃잎·응원)은 ar-missions.js에 있다.
+import { runArMission } from "./ar-missions.js";
+
 const IMG = "img/hobanu/";
 export const MASCOTS = {
   centralpark:  { name: "센트럴 파크",     img: IMG + "centralpark.png",  lines: ["센팍에 온 걸 환영해! 🌳", "여기서 무빔 영화도 상영해. 돗자리 챙겨 와!"] },
@@ -5,8 +13,13 @@ export const MASCOTS = {
   library:      { name: "중앙도서관",      img: IMG + "library.png",      lines: ["쉿! 도서관이야 📚", "열람실은 신관, 책은 구관에 있어!", "자리는 도서관 앱으로 예약해!"] },
   stadium:      { name: "대운동장·백호관", img: IMG + "stadium.png",      lines: ["여기가 축제 무대야! 🎤", "올해는 누가 올까? 두근두근!", "백호관엔 중앙동아리방이 모여 있어!"] },
   gongstaurant: { name: "공식당",          img: IMG + "gongstaurant.png", lines: ["배고프지? 🍚", "치즈알밥이랑 육회비빔밥 강추!", "개강 시즌엔 일찍 와야 해!"] },
-  loveroad:     { name: "러브로드",  img: IMG + "loveroad.png",     lines: ["러브로드에 온 걸 환영해 🌸", "손잡고 정문에서 본관까지 걸으면… 전설 알지? 💕"] },
+  loveroad:     { name: "러브로드",        img: IMG + "react-love.png",   lines: ["러브로드에 온 걸 환영해 💕", "연인이 손잡고 정문에서 본관 쪽으로 걸으면… 영원한 사랑이 이루어진대!", "친구랑 같이 걸어도 좋아!"] },
+  cherryroad:   { name: "벚꽃길",          img: IMG + "loveroad.png",     lines: ["벚꽃길에 온 걸 환영해 🌸", "봄이면 꽃잎이 눈처럼 흩날려!", "여기서 찍으면 인생샷 보장 📸"] },
   bokji:        { name: "복지관",          img: IMG + "bokji.png",        lines: ["복지관엔 뭐가 있을까? 🛍️", "퀴즈 맞힐 수 있겠어?"] },
+};
+// 희귀 캐릭터 (도감의 "희귀" 칸)
+export const RARE = {
+  otter: { name: "신천 수달", img: IMG + "otter.png", hint: "일청담의 밤에 나타난다는 소문이…" },
 };
 const DEFAULT = { name: "캠퍼스", img: IMG + "react-hi.png", lines: ["반가워! 나는 호반우야!"] };
 const REACT = { love: IMG + "react-love.png", hi: IMG + "react-hi.png", proud: IMG + "react-proud.png" };
@@ -46,7 +59,15 @@ function addLove(id, n = 1) {
 // 도감에 모은 호반우 목록 (사진 찍기 화면에서 사용)
 function collectedItems() {
   const dex = getDex();
-  return Object.keys(MASCOTS).filter((id) => dex[id]).map((id) => ({ id, name: MASCOTS[id].name, img: MASCOTS[id].img }));
+  const all = { ...MASCOTS, ...RARE };
+  return Object.keys(all).filter((id) => dex[id]).map((id) => ({ id, name: all[id].name, img: all[id].img }));
+}
+// 사진 미션용: 그 장소 호반우를 맨 앞에 두고, 모은 호반우를 뒤에 붙인다
+export function photoItemsFor(zoneId) {
+  const items = collectedItems().filter((it) => it.id !== zoneId);
+  const m = MASCOTS[zoneId];
+  if (m) items.unshift({ id: zoneId, name: m.name, img: m.img });
+  return items;
 }
 
 /* ---------------- 공통 도구 ---------------- */
@@ -103,6 +124,14 @@ function injectStyle() {
   .ar-btn{width:auto;margin:0;display:inline-block;text-align:center;padding:13px 18px;border:none;border-radius:14px;font-size:16px;font-weight:600;background:rgba(255,255,255,.92);color:#191f28}
   .ar-btn.primary{background:#d4121a;color:#fff}
   #ar-root .ar-hidden,#hob-dex .ar-hidden,#ps-root .ar-hidden{display:none !important}
+  #ar-otter{position:absolute;left:-72px;bottom:4px;width:98px;cursor:pointer;touch-action:manipulation;z-index:2;
+    filter:drop-shadow(0 0 6px #fff7b0) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 8px rgba(0,0,0,.35));
+    animation:ar-otter-in .7s ease-out, ar-bob 1.8s ease-in-out .7s infinite}
+  #ar-otter.flee{animation:ar-otter-out .9s ease-in forwards;pointer-events:none}
+  @keyframes ar-otter-in{from{transform:translateY(70px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+  @keyframes ar-otter-out{to{transform:translateY(90px) scale(.5);opacity:0}}
+  .dex-rare-title{margin:16px 0 8px;font-size:14px;font-weight:800;color:#a86400}
+  .dex-item.rare{background:linear-gradient(135deg,#fff7d6,#ffe9f2)}
   @keyframes ar-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
   @keyframes ar-shadow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(.8);opacity:.55}}
   @keyframes ar-pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
@@ -233,7 +262,17 @@ export function startAR(zone, opts = {}) {
   const id = zone.id;
   const m = zone.mascot || MASCOTS[id] || DEFAULT;
   const collectible = !!MASCOTS[id];
-  const snacks = SNACKS[id];
+  const mission = opts.mission || null;            // zones.json의 AR 미션 (type: "ar", ar: "roulette" 등)
+  const mtype = mission?.ar || null;
+  const snacks = mtype === "snack" ? (SNACKS[id] || SNACKS.gongstaurant) : null;
+  const PET_GOAL = 16;
+  // 일청담 희귀 수달: 낮 5%, 밤(18시~6시) 15%. 주소 끝에 ?otter=1 을 붙이면 무조건 등장(시연용)
+  const otterChance = () => {
+    if (new URLSearchParams(location.search).get("otter") === "1") return 1;
+    const h = new Date().getHours();
+    return h >= 18 || h < 6 ? 0.15 : 0.05;
+  };
+  const otterPlanned = id === "ilcheongdam" && Math.random() < otterChance();
 
   return new Promise((resolve) => {
     const root = el("div");
@@ -245,6 +284,7 @@ export function startAR(zone, opts = {}) {
           <div id="ar-bubble" class="ar-hidden"></div>
           <div id="ar-shadow"></div>
           <div id="ar-jump"><img id="ar-hob" src="${m.img}" alt="호반우" draggable="false"></div>
+          ${otterPlanned ? `<img id="ar-otter" class="ar-hidden" src="${RARE.otter.img}" alt="수달" draggable="false">` : ""}
         </div>
       </div>
       <div id="ar-fx"></div>
@@ -261,12 +301,14 @@ export function startAR(zone, opts = {}) {
 
     const PX = window.innerWidth / VIEW;
     let stream = null, target = null, raf = 0, closed = false;
-    let visible = false, gotSensor = false, met = false, fed = false;
+    let visible = false, gotSensor = false, met = false, fed = false, done = false, otter = false;
+    let missionStarted = false, cleanupMission = null, otterShown = false, otterTimer = 0;
+    const headingFns = [];
     let lineIdx = 0, petDist = 0, petCount = 0, reactTimer = 0;
     const pos = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
 
     const info = (t) => { $("ar-info").textContent = t; };
-    info(`${zone.name || m.name}에 호반우가 숨어 있어! 주위를 둘러봐`);
+    info(mission ? `${mission.title} · 주위를 둘러보며 호반우를 찾아봐!` : `${zone.name || m.name}에 호반우가 숨어 있어! 주위를 둘러봐`);
     renderLove();
 
     /* 카메라: "호반우 만나기"를 누른 순간 바로 켠다 (안 되면 하늘색 배경) */
@@ -326,6 +368,7 @@ export function startAR(zone, opts = {}) {
       const inView = Math.abs(diff) < VIEW / 2 + 10;
       if (inView && !visible) show();
       else if (!inView && visible) hide();
+      headingFns.forEach((fn) => fn({ diff, y: pos.y }));
     }
 
     function loop() {
@@ -342,13 +385,15 @@ export function startAR(zone, opts = {}) {
       inner.classList.remove("pop"); void inner.offsetWidth; inner.classList.add("pop");
       navigator.vibrate?.(150);
       $("ar-shot").classList.remove("ar-hidden");
-      if (!met) info("호반우 발견! 눌러 보거나 쓰다듬어 봐 👆");
+      if (!met && !mission) info("호반우 발견! 눌러 보거나 쓰다듬어 봐 👆");
+      if (mission && !missionStarted) startMission();
+      if (otterPlanned && !otterShown) { otterShown = true; setTimeout(showOtter, 2500); }
     }
 
     function hide() {
       visible = false;
       $("ar-stage").style.display = "none";
-      info("주위를 천천히 둘러봐...");
+      if (!mission) info("주위를 천천히 둘러봐...");   // 미션 중에는 진행 상황 문구를 유지
     }
 
     /* ---------- 상호작용 공통 ---------- */
@@ -396,7 +441,57 @@ export function startAR(zone, opts = {}) {
       met = true;
       if (collectible && addToDex(id)) toast("📖 도감에 등록됐어!");
       renderLove();
-      if (snacks && !fed) showTray();
+    }
+
+    /* ---------- AR 미션 ---------- */
+    function complete() {
+      if (done) return;
+      done = true;
+      markMet();
+      setTimeout(() => toast("✅ 미션 성공!"), 400);
+      const c = $("ar-close");
+      c.textContent = "✅ 완료";
+      c.classList.add("primary");
+    }
+    async function startMission() {
+      missionStarted = true;
+      if (mtype === "snack") { showTray(); return; }
+      if (mtype === "pet") { say("나 쓰다듬어 줄래? 💕"); info(`호반우를 손가락으로 쓰다듬어 줘! 💗 0/${PET_GOAL}`); return; }
+      const ctx = {
+        root, inner: $("ar-inner"), hob, tray: $("ar-tray"), PX, VIEW, mission, zone,
+        say, react, toast, info, spawnHeart, jump, complete,
+        onHeading: (fn) => headingFns.push(fn),
+        hasSensor: () => gotSensor,
+      };
+      cleanupMission = await runArMission(mtype, ctx);
+    }
+
+    /* ---------- 일청담 희귀 수달 ---------- */
+    function showOtter() {
+      const o = $("ar-otter");
+      if (!o || closed) return;
+      o.classList.remove("ar-hidden");
+      toast("✨ 희귀! 신천 수달이 나타났어!");
+      info("✨ 수달이 나타났어! 10초 안에 터치해!");
+      navigator.vibrate?.([60, 40, 60, 40, 120]);
+      otterTimer = setTimeout(() => {
+        if (otter) return;
+        o.classList.add("flee");
+        info("수달이 물속으로 숨어 버렸어… 다음에 또 만나!");
+        setTimeout(() => o.remove(), 900);
+      }, 10000);
+      o.onclick = () => {
+        if (otter) return;
+        otter = true;
+        clearTimeout(otterTimer);
+        const isNew = addToDex("otter");
+        const r = o.getBoundingClientRect();
+        for (let i = 0; i < 8; i++) setTimeout(() => spawnHeart(r.left + r.width * Math.random(), r.top + r.height * 0.3, i % 2 ? "✨" : "🌟"), i * 70);
+        toast(isNew ? "🦦 희귀 수달 도감 등록!" : "🦦 수달이 또 놀러 왔어!");
+        info("희귀 수달을 만났어! 도감에서 확인해 봐 ✨");
+        say("수달이랑 친구가 됐어! 🦦");
+        navigator.vibrate?.([100, 50, 100]);
+      };
     }
 
     /* ---------- 터치(대사) & 쓰다듬기(문지르기) ---------- */
@@ -406,7 +501,7 @@ export function startAR(zone, opts = {}) {
       jump();
       navigator.vibrate?.(60);
       markMet();
-      if (!snacks || fed) info(lineIdx < m.lines.length ? "한 번 더 눌러 봐! 쓰다듬어도 좋아 🤚" : "호반우랑 사진도 찍어 봐 📸");
+      if (!mission) info(lineIdx < m.lines.length ? "한 번 더 눌러 봐! 쓰다듬어도 좋아 🤚" : "호반우랑 사진도 찍어 봐 📸");
     }
     function pet(x, y) {
       spawnHeart(x, y);
@@ -419,6 +514,10 @@ export function startAR(zone, opts = {}) {
         if (collectible && love === LOVE_MAX && before < LOVE_MAX) react("love", "우리 이제 단짝이야! 💗", 2000);
         else react("love", PET_LINES[(petCount / 8 - 1) % PET_LINES.length]);
         navigator.vibrate?.(40);
+      }
+      if (mtype === "pet" && !done) {
+        info(`호반우를 손가락으로 쓰다듬어 줘! 💗 ${Math.min(petCount, PET_GOAL)}/${PET_GOAL}`);
+        if (petCount >= PET_GOAL) { react("love", "우리 완전 친해졌다! 💕", 2500); info("호반우와 친해졌어! 💕"); complete(); }
       }
     }
     let down = null;
@@ -441,11 +540,12 @@ export function startAR(zone, opts = {}) {
     /* ---------- 공식당 특별 미션: 학식 주기 ---------- */
     function showTray() {
       const tray = $("ar-tray");
-      tray.innerHTML = `<div class="ar-tray-title">🍚 공식당 특별 미션 · 학식을 호반우에게 끌어다 줘!</div>` +
+      tray.innerHTML = `<div class="ar-tray-title">🍚 학식을 호반우에게 끌어다 줘!</div>` +
         snacks.map((s, i) => `<button class="ar-snack" data-i="${i}"><img src="${s.img}" alt="">${s.n}</button>`).join("");
       tray.classList.remove("ar-hidden");
       tray.querySelectorAll(".ar-snack").forEach((b) => dragSnack(b, snacks[+b.dataset.i]));
-      info("특별 미션! 학식을 호반우에게 먹여 줘 🍚");
+      say("배고파… 학식 먹고 싶어 🍚");
+      info("학식 사진을 호반우에게 끌어다 줘!");
     }
     function dragSnack(btn, s) {
       let start = null, ghost = null;
@@ -479,8 +579,8 @@ export function startAR(zone, opts = {}) {
       if (collectible) { addLove(id, 2); renderLove(); }
       react("proud", `냠냠! ${s.n} 최고야! 😋`, 2200);
       navigator.vibrate?.([80, 40, 80]);
-      info("공식당 특별 미션 완료! 🍚");
-      toast("🍚 특별 미션 완료!");
+      info("호반우가 배불러졌어! 🍚");
+      complete();
     }
 
     /* ---------- 같이 찍기 → 사진 찍기 화면(크기 조절·촬영)으로 ---------- */
@@ -489,6 +589,7 @@ export function startAR(zone, opts = {}) {
       stopCam();                               // 휴대폰은 카메라를 동시에 두 번 못 켜서 잠시 끈다
       const items = collectedItems();
       if (!items.some((it) => it.id === id)) items.unshift({ id: id || "ar", name: m.name, img: m.img });
+      if (otter && !items.some((it) => it.id === "otter")) items.push({ id: "otter", name: RARE.otter.name, img: RARE.otter.img });
       await openPhotoStudio({ items, start: id || "ar" });
       if (!closed) startCam();
     };
@@ -498,10 +599,12 @@ export function startAR(zone, opts = {}) {
       closed = true;
       cancelAnimationFrame(raf);
       clearTimeout(reactTimer);
+      clearTimeout(otterTimer);
       window.removeEventListener("deviceorientation", onTurn);
+      try { cleanupMission?.(); } catch {}
       stopCam();
       root.remove();
-      resolve({ met, fed });
+      resolve({ met, fed, done, otter });
     };
   });
 }
@@ -518,7 +621,7 @@ const RATIOS = [
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 
-export function openPhotoStudio({ items, start } = {}) {
+export function openPhotoStudio({ items, start, submit = false } = {}) {
   injectStyle();
   items = items || collectedItems();
 
@@ -559,7 +662,8 @@ export function openPhotoStudio({ items, start } = {}) {
         <div class="ps-rv-bar">
           <div class="ps-rv-row">
             <button class="ps-rv-btn ps-glass" id="ps-retake">↺ 다시 찍기</button>
-            <button class="ps-rv-btn primary" id="ps-save">⬇ 저장</button>
+            ${submit ? `<button class="ps-rv-btn primary" id="ps-submit">✅ 이 사진으로 제출</button>` : ""}
+            <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-save">⬇ 저장</button>
             <button class="ps-rv-btn ps-glass ar-hidden" id="ps-share">📤 공유</button>
           </div>
           <p class="ps-rv-hint" id="ps-hint"></p>
@@ -570,14 +674,14 @@ export function openPhotoStudio({ items, start } = {}) {
     const frame = $("ps-frame"), video = $("ps-cam"), hob = $("ps-hob");
 
     let closed = false;
-    const close = () => {
+    const close = (val) => {
       closed = true;
       stopCam();
       window.removeEventListener("resize", fit);
       root.remove();
-      resolve();
+      resolve(val);
     };
-    $("ps-close").onclick = close;
+    $("ps-close").onclick = () => close();
 
     // 모은 호반우가 없으면 안내만 보여준다
     if (!items.length) {
@@ -808,6 +912,7 @@ export function openPhotoStudio({ items, start } = {}) {
       a.remove();
       toast("⬇ 저장했어요!");
     };
+    if (submit) $("ps-submit").onclick = () => close({ dataUrl: lastShot, mascot: current.id });
     $("ps-share").onclick = async () => {
       try {
         await navigator.share({ files: [dataUrlToFile(lastShot, fileName())], title: "호반우와 함께 📸" });
@@ -841,6 +946,15 @@ function dexBody() {
           const love = d.love || 0;
           return `<div class="dex-item"><img src="${mm.img}" alt="${mm.name} 호반우"><b>${mm.name}</b>
             <small>${"💗".repeat(love)}${"🤍".repeat(LOVE_MAX - love)}</small></div>`;
+        }).join("")}
+      </div>
+      <div class="dex-rare-title">✨ 희귀</div>
+      <div class="dex-grid">
+        ${Object.keys(RARE).map((i) => {
+          const rr = RARE[i];
+          return dex[i]
+            ? `<div class="dex-item rare"><img src="${rr.img}" alt="${rr.name}"><b>${rr.name}</b><small>희귀 캐릭터를 만났어요!</small></div>`
+            : `<div class="dex-item locked"><img src="${rr.img}" alt=""><b>???</b><small>${rr.hint}</small></div>`;
         }).join("")}
       </div>`,
   };

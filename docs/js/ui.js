@@ -130,6 +130,7 @@ export function renderQuestShell(cleared = 0, total = 0) {
     <div class="seg quest-seg">
       <button data-m="map" class="on">지도</button>
       <button data-m="rank">랭킹</button>
+      <button data-m="hobanu">호반우</button>
     </div>
     <div id="quest-map-pane">
       <h1 class="sec campus-title">캠퍼스 지도</h1>
@@ -145,7 +146,8 @@ export function renderQuestShell(cleared = 0, total = 0) {
       <h3 class="sec">구역 목록</h3>
       <div id="zone-list"></div>
     </div>
-    <div id="quest-rank-pane" class="hidden"></div>`;
+    <div id="quest-rank-pane" class="hidden"></div>
+    <div id="quest-hobanu-pane" class="hidden"></div>`;
 }
 
 // 구역 목록: 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과

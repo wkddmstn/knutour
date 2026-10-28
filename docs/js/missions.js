@@ -3,24 +3,31 @@ import { completeMission } from "./storage.js";
 import { reward, esc } from "./ui.js";
 import { sendFriendRequest, hasConfirmedTogether } from "./friend.js";
 import { joinQueue, leaveQueue, waitForMatch } from "./match.js";
+import { isDone } from "./storage.js";
+import { startAR, openPhotoStudio, photoItemsFor, MASCOTS } from "./ar.js";   // AR 호반우 (장주연)
 
-const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝" };
+const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝", ar: "✨" };
 export const icon = (type) => ICON[type] || "⭐";
 
 const FIRST_TRY_BONUS = 20;
 
 // 미션 1개를 대화로 진행한다. 끝나면 점수를 기록하고 보상 효과를 보여준다.
-export async function runMission(m) {
+export async function runMission(m, zone) {
   // "함께하기" 미션은 상대방이 수락해야 완료되므로, 완료 처리를 여기서 바로 하지 않고 별도로 흐른다
   if (m.type === "together") { await together(m); return; }
+  if (m.type === "ar") { await arMission(m, zone); return; }   // AR 미션 (장주연)
 
-  await chat.bot(`<b>${m.title}</b><br>${m.desc || m.question || ""}`);
+  // 사진 미션은 끝낸 뒤에도 새 사진으로 다시 찍을 수 있다 (XP는 처음 한 번만)
+  const again = m.type === "photo" && isDone(m.id);
+  await chat.bot(`<b>${m.title}</b><br>${again ? "새 사진으로 다시 찍어 볼까? (XP는 처음 한 번만 받아요)" : (m.desc || m.question || "")}`);
 
   let bonus = 0;
-  if (m.type === "photo") await photo();
+  if (m.type === "photo") await photo(m, zone);
   else if (m.type === "voice") await voice(m);
   else if (m.type === "quiz") bonus = await quiz(m);
   else if (m.type === "code") bonus = await code(m);
+
+  if (again) { await chat.bot("새 사진으로 바꿨어! 📸"); return; }
 
   const pts = m.points + bonus;
   completeMission(m.id, pts);
@@ -28,6 +35,19 @@ export async function runMission(m) {
   await chat.bot(
     `미션 완료! <b>+${pts} XP</b>` + (bonus ? `<br>첫 시도 성공 보너스 ${bonus} XP까지 받았어.` : "")
   );
+}
+
+/* ---------- AR 미션 (장주연) ---------- */
+// zones.json의 { type: "ar", ar: "roulette" | "find" | "petals" | "cheer" | "snack" | "pet" } 미션
+async function arMission(m, zone) {
+  const again = isDone(m.id);
+  await chat.bot(`<b>${m.title}</b><br>${m.desc || ""}`);
+  const r = await startAR(zone || { id: "", name: "" }, { mission: m });
+  if (!r.done) { await chat.bot("괜찮아, 다음에 다시 도전해 보자!"); return; }
+  if (again) { await chat.bot("또 성공했네! 🎉 (XP는 처음 한 번만 받아요)"); return; }
+  completeMission(m.id, m.points);
+  reward(m.points);
+  await chat.bot(`AR 미션 성공! <b>+${m.points} XP</b>`);
 }
 
 /* ---------- 함께하기 (친구 코드 상호 확인) ---------- */
@@ -123,9 +143,12 @@ async function togetherRandom(m) {
 }
 
 /* ---------- 사진 ---------- */
-async function photo() {
+async function photo(m, zone) {
+  const withHob = !!(zone && MASCOTS[zone.id]);   // 이 장소에 호반우가 있으면 "호반우와 함께 찍기" 제공 (장주연)
+  while (true) {
   const file = await chat.ask((card, done) => {
     card.innerHTML = `
+      ${withHob ? `<button class="chip primary hob-cam" style="margin-bottom:8px">🐾 호반우와 함께 찍기</button>` : ""}
       <label class="btn-file">사진 찍기 · 선택하기
         <input type="file" accept="image/*" capture="environment" hidden>
       </label>
@@ -143,8 +166,17 @@ async function photo() {
       send.classList.remove("hidden");
     };
     send.onclick = () => picked && done(picked);
+    card.querySelector(".hob-cam")?.addEventListener("click", () => done("__hob"));
   });
+  if (file === "__hob") {
+    const shot = await openPhotoStudio({ items: photoItemsFor(zone.id), start: zone.id, submit: true });
+    if (!shot) continue;   // 사진을 안 고르고 닫았으면 다시 선택 화면으로
+    chat.user(`<img class="shot" src="${shot.dataUrl}" alt="제출한 사진">`);
+    return;
+  }
   chat.user(`<img class="shot" src="${URL.createObjectURL(file)}" alt="제출한 사진">`);
+  return;
+  }
 }
 
 /* ---------- 음성 ---------- */

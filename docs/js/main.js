@@ -8,7 +8,7 @@ import { ensureProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
-import { startAR, MASCOTS } from "./ar.js";
+import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -288,7 +288,9 @@ function switchQuestPane(mode) {
   document.querySelectorAll(".quest-seg button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
   $("quest-map-pane")?.classList.toggle("hidden", mode !== "map");
   $("quest-rank-pane")?.classList.toggle("hidden", mode !== "rank");
+  $("quest-hobanu-pane")?.classList.toggle("hidden", mode !== "hobanu");   // 호반우 탭 (장주연)
   if (mode === "rank") showQuestRank("total");
+  if (mode === "hobanu") renderHobanuPane($("quest-hobanu-pane"));
 }
 
 async function showQuestRank(mode) {
@@ -530,31 +532,50 @@ function verifyLocation(zone) {
 
 // 미션 선택 메뉴 (챗봇의 선택 버튼)
 async function missionMenu(zone) {
+  let replay = false;   // 구역 클리어 후 "사진·AR 미션 다시 하기"를 고른 경우 (장주연)
   while (true) {
     const left = zone.missions.filter((m) => !store.isDone(m.id));
-    if (!left.length) { await finishZone(zone); return; }
+    if (!left.length && !replay) {
+      if ((await finishZone(zone)) !== "stay") return;
+      replay = true;
+      continue;
+    }
 
     await chat.bot(
-      left.length === zone.missions.length
+      !left.length
+        ? "다시 해 볼 미션을 골라 봐! 📸"
+        : left.length === zone.missions.length
         ? "어떤 미션부터 시작할까요?"
         : `남은 미션이 <b>${left.length}개</b> 있어요. 다음은 뭘 할까요?`
     );
     const pick = await chat.choices([
-      ...zone.missions.map((m) => ({
-        label: `${store.isDone(m.id) ? "✓" : icon(m.type)}  ${m.title}  ·  +${m.points} XP`,
-        value: m.id,
-        disabled: store.isDone(m.id),
-      })),
-      ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
+      ...zone.missions.map((m) => {
+        const doneM = store.isDone(m.id);
+        const again = doneM && (m.type === "photo" || m.type === "ar");   // 사진·AR 미션은 끝낸 뒤에도 다시 하기 (장주연)
+        return {
+          label: `${doneM ? "✓" : icon(m.type)}  ${m.title}  ·  ${again ? "다시 하기" : `+${m.points} XP`}`,
+          value: m.id,
+          disabled: doneM && !again,
+        };
+      }),
+      ...(MASCOTS[zone.id] ? [{ label: "호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
-    if (pick === "__ar") { await startAR(zone); continue; }
+    if (pick === "__ar") {   // AR 호반우 (장주연): 처음 만나면 +20 XP, 일청담 희귀 수달 +50 XP
+      const r = await startAR(zone);
+      if (r.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
+      if (r.otter && store.grantBonus("otter", 50)) {
+        ui.reward(50);
+        await chat.bot("✨ 희귀 <b>신천 수달</b>을 만났어! 보너스 <b>50 XP</b>!");
+      }
+      continue;
+    }
     if (!inZone) {
       ui.toast(`${zone.name}에서 멀어졌어요. 구역 안으로 들어와서 다시 시도해 주세요.`);
       continue;
     }
-    await runMission(zone.missions.find((m) => m.id === pick));
+    await runMission(zone.missions.find((m) => m.id === pick), zone);
   }
 }
 
@@ -574,10 +595,13 @@ async function finishZone(zone) {
     ui.showFinale(() => goTab("quest", { mode: "rank" }));
   }
 
+  const canReplay = zone.missions.some((m) => m.type === "photo" || m.type === "ar");
   const next = await chat.choices([
     { label: "다른 구역 보기", value: "quest" },
     { label: "랭킹 보기", value: "quest-rank" },
+    ...(canReplay ? [{ label: "사진·AR 미션 다시 하기", value: "stay", ghost: true }] : []),   // (장주연)
   ]);
+  if (next === "stay") return "stay";
   if (next === "quest-rank") goTab("quest", { mode: "rank" });
   else goTab("quest");
 }
