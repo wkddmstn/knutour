@@ -32,7 +32,7 @@ const SNACKS = {
 };
 const PET_LINES = ["기분 좋아~ 💕", "헤헤, 간지러워!", "더 쓰다듬어 줘!", "너 좋은 사람이구나!"];
 
-const OFFSET = 35;      // 처음 보던 방향에서 오른쪽으로 35도 옆에 등장
+const OFFSET = 0;       // 호반우가 나타나는 방향: 0 = 휴대폰 정면 (숫자를 키우면 그만큼 오른쪽에 숨음)
 const VIEW = 60;        // 화면에 보이는 각도 범위
 const LOVE_MAX = 5;     // 친밀도 최대치
 const DEX_KEY = "knu-hobanu-dex";

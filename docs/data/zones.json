@@ -82,8 +82,14 @@
       "missions": [
         { "id": "m-library-photo", "type": "photo", "title": "대출 인증샷",
           "desc": "책을 대출한 화면이나 대출한 책을 사진으로 남겨주세요.", "points": 100 },
-        { "id": "m-library-ar", "type": "ar", "ar": "find", "title": "숨은 책 찾기 (AR)",
-          "desc": "도서관 주변에 숨은 책 3권을 휴대폰을 돌려 가며 찾아보세요.", "points": 100, "item": "📚", "count": 3, "tip": "다 찾았다! 열람실 자리는 도서관 앱에서 예약할 수 있어 📚" }
+        { "id": "m-library-ar", "type": "ar", "ar": "find", "title": "숨은 추천 도서 찾기 (AR)",
+          "desc": "도서관 주변에 숨은 추천 도서 3권을 휴대폰을 돌려 가며 찾아보세요.", "points": 100,
+          "tip": "추천 도서 다 찾았다! 열람실 자리는 도서관 앱에서 예약할 수 있어 📚",
+          "books": [
+            { "title": "데미안", "author": "헤르만 헤세", "comment": "새내기에게 딱 맞는 성장 소설!" },
+            { "title": "어린 왕자", "author": "생텍쥐페리", "comment": "다시 읽으면 또 다른 책이야." },
+            { "title": "코스모스", "author": "칼 세이건", "comment": "우주가 궁금하다면!" }
+          ] }
       ]
     },
     {
@@ -195,7 +201,7 @@
         { "id": "m-cherryroad-photo", "type": "photo", "title": "벚꽃길 사진찍기",
           "desc": "봄바람에 벚꽃잎이 흩날리는 길 위에서, 지금 이 순간을 사진으로 붙잡아 보세요.", "points": 100 },
         { "id": "m-cherryroad-ar", "type": "ar", "ar": "petals", "title": "벚꽃잎 잡기 (AR)",
-          "desc": "15초 안에 떨어지는 벚꽃잎을 10개 잡아 보세요!", "points": 100, "goal": 10, "time": 15 }
+          "desc": "벚꽃 나무에서 흩날리는 꽃잎을 15초 안에 10개 잡아 보세요!", "points": 100, "goal": 10, "time": 15 }
       ]
     },
     {
