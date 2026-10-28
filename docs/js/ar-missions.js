@@ -5,6 +5,7 @@
 //   petals   : 벚꽃길 — 호반우 뒤 벚꽃 나무에서 흩날리는 꽃잎 잡기
 //   cheer    : 대운동장 — 휴대폰 흔들어 응원 게이지 채우기
 //   heart    : 러브로드 — 화면에 손가락으로 하트를 그려 호반우에게 마음 전하기
+//   shop     : 복지관 — 호반우가 말한 개강 준비물을 끌어서 장바구니에 담기
 // (snack: 공식당 학식 주기, pet: 쓰다듬기는 ar.js 안에서 처리)
 //
 // ctx: startAR가 넘겨주는 도구 모음
@@ -25,7 +26,7 @@ function injectStyle() {
   #ar-stage.with-wheel{--wheel:clamp(170px,36vmin,360px);width:calc(190px + var(--wheel));margin-left:calc(-95px - var(--wheel) / 2)}
   #ar-stage.with-wheel #ar-jump{right:auto;width:180px}
   #ar-stage.with-wheel #ar-shadow{left:90px}
-  #ar-stage.with-wheel #ar-bubble{left:50%;max-width:min(300px,90vw)}
+  #ar-stage.with-wheel #ar-bubble{left:50%;bottom:max(100%,calc(var(--wheel) + 40px))}   /* 말풍선을 돌림판 위로 (안 겹치게) */
   .arm-wheel{position:absolute;right:0;bottom:40px;width:var(--wheel,170px);height:var(--wheel,170px);touch-action:none;cursor:pointer}
   .arm-wheel canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 6px 16px rgba(0,0,0,.35);
     transition:transform 3.4s cubic-bezier(.12,.67,.12,1)}
@@ -77,6 +78,24 @@ function injectStyle() {
   .arm-guide.off{opacity:0;animation:none}
   .arm-fly{position:absolute;z-index:4;font-size:54px;pointer-events:none;transform:translate(-50%,-50%);
     transition:left .7s cubic-bezier(.5,0,.6,1),top .7s cubic-bezier(.5,0,.6,1),transform .7s,opacity .7s}
+  /* 장보기 */
+  .arm-basket{position:absolute;right:-58px;bottom:6px;width:86px;height:86px;z-index:2;font-size:62px;line-height:86px;text-align:center;
+    border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 4px 12px rgba(0,0,0,.25);transition:transform .15s,background .15s;pointer-events:none}
+  .arm-basket.over{transform:scale(1.18);background:rgba(255,240,200,.9)}
+  .arm-basket.bump{animation:arm-bump .4s ease-out}
+  .arm-basket i{position:absolute;right:-4px;top:-4px;min-width:26px;height:26px;border-radius:13px;background:#d4121a;color:#fff;font-style:normal;
+    font-size:14px;font-weight:800;line-height:26px;padding:0 6px;box-sizing:border-box}
+  .arm-shop{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%}
+  .arm-shop button{width:auto;margin:0;padding:6px 2px;border:none;border-radius:12px;background:#fff3e0;color:#191f28;font-family:inherit;
+    font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;touch-action:none;cursor:grab}
+  .arm-shop button b{font-size:30px;line-height:1.1;pointer-events:none}
+  .arm-shop button.got{opacity:.35;pointer-events:none}
+  .arm-shop button.no{animation:arm-shake .35s}
+  .arm-need{font-size:13px;font-weight:800;color:#191f28;text-align:center}
+  .arm-need s{color:#b0b8c1}
+  .arm-ghost{position:fixed;z-index:10;font-size:54px;transform:translate(-50%,-60%);pointer-events:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+  @keyframes arm-bump{40%{transform:scale(1.25) rotate(-8deg)}}
+  @keyframes arm-shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
   @keyframes arm-pulse{0%,100%{transform:translate(-50%,-58%) scale(1)}50%{transform:translate(-50%,-58%) scale(1.04)}}
   @keyframes arm-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes arm-got{0%{transform:scale(1);opacity:1}60%{transform:scale(1.6);opacity:1}100%{transform:scale(.2) translateY(-60px);opacity:0}}
@@ -154,7 +173,7 @@ async function roulette(ctx) {
   g.beginPath(); g.arc(R, R, R - 4, 0, Math.PI * 2); g.strokeStyle = "#d4121a"; g.lineWidth = 10; g.stroke();
 
   let rot = 0, spinning = false;
-  ctx.say("피크닉 메뉴 고민돼? 돌림판 돌려 보자! 🎡");
+  ctx.say("메뉴 고민돼? 돌림판 돌려 보자!");
   ctx.info("돌림판을 눌러서 돌려 봐!");
 
   const spin = () => {
@@ -174,7 +193,7 @@ async function roulette(ctx) {
 
   function showResult(c) {
     const list = data.restaurants.filter((r) => r.category === c.id);
-    ctx.react("proud", `오늘 피크닉은 ${c.emoji} ${c.name} 어때?`, 2600);
+    ctx.react("proud", `오늘 피크닉은 ${c.name} 어때?`, 2600);
     ctx.info(`오늘의 피크닉 메뉴는 ${c.emoji} ${c.name}!`);
     navigator.vibrate?.(120);
     ctx.tray.innerHTML = `
@@ -221,11 +240,11 @@ function find(ctx) {
       found.push(bk);
       navigator.vibrate?.(60);
       ctx.spawnHeart(parseFloat(d.style.left), parseFloat(d.style.top), "✨");
-      ctx.say(`『${bk.title}』 찾았다! 📖`);
+      ctx.say("추천 도서 찾았다!");
       progress();
       showBook(bk);
       if (found.length >= total) {
-        ctx.react("proud", ctx.mission.tip || "추천 도서 다 찾았다! 도서관에서 빌려 봐 📚", 3200);
+        ctx.react("proud", ctx.mission.tip || "다 찾았다! 도서관에서 빌려 봐", 3200);
         ctx.complete();
       }
     };
@@ -248,7 +267,7 @@ function find(ctx) {
     ctx.tray.classList.remove("ar-hidden");
   }
   progress();
-  ctx.say(`이 근처에 추천 도서 ${total}권이 숨어 있대! 휴대폰을 돌려 찾아봐!`);
+  ctx.say(`추천 도서 ${total}권이 숨어 있어. 찾아봐!`);
 
   const W = () => window.innerWidth, H = () => window.innerHeight;
   ctx.onHeading(({ diff, y }) => {
@@ -423,7 +442,7 @@ function petals(ctx) {
     caught = 0; left = TIME; playing = true;
     cv.classList.add("on");
     ctx.tray.classList.add("ar-hidden");
-    ctx.say("바람이 분다! 흩날리는 꽃잎을 잡아 봐 🌸");
+    ctx.say("바람이 분다! 꽃잎을 잡아 봐");
     update();
     tickT = setInterval(() => { left--; update(); if (left <= 0) end(false); }, 1000);
   }
@@ -450,7 +469,7 @@ function petals(ctx) {
     ctx.tray.querySelector("button").onclick = start;
   }
   showRetry("시작하기");
-  ctx.say("벚꽃 나무 아래에서 꽃잎을 잡아 볼까?");
+  ctx.say("벚꽃잎 잡으러 가 볼까?");
   ctx.info("시작하기를 누르면 바람이 불어요");
   return () => {
     clearInterval(tickT);
@@ -514,7 +533,7 @@ function cheer(ctx) {
   function win() {
     done = true;
     window.removeEventListener("devicemotion", onMotion);
-    ctx.react("proud", "최고의 응원이야! 축제 분위기 최고! 🎉", 3000);
+    ctx.react("proud", "최고의 응원이야! 고마워!", 3000);
     ctx.info("응원 성공! 🎉");
     for (let i = 0; i < 24; i++) {
       const c = el("div", "arm-confetti");
@@ -610,7 +629,7 @@ function heart(ctx) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const resize = () => { cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; redraw(); };
 
-  // 처음에는 점선 하트 가이드를 보여 준다 (첫 성공 후 사라짐)
+  // 호반우 위에 점선 하트 가이드를 계속 보여 준다
   const guide = el("div", "arm-guide");
   guide.innerHTML = `<svg viewBox="-18 -14 36 33" xmlns="http://www.w3.org/2000/svg"><path d="${
     heartTemplate(48).map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join("")}Z"
@@ -683,7 +702,6 @@ function heart(ctx) {
     redraw("#ff2d78", true);
     navigator.vibrate?.([30, 40, 30]);
     count++;
-    guide.classList.add("off");
     const fly = el("div", "arm-fly");
     fly.textContent = "💗";
     fly.style.left = r.cx + "px"; fly.style.top = r.cy + "px";
@@ -700,7 +718,7 @@ function heart(ctx) {
       fly.remove();
       for (let i = 0; i < 6; i++) setTimeout(() => ctx.spawnHeart(hx + (Math.random() * 80 - 40), hy + (Math.random() * 40 - 20), ["💗", "💕", "💘"][i % 3]), i * 70);
       if (count >= GOAL && count === GOAL) {
-        ctx.react("love", "마음 다 전해졌어! 우리 이제 단짝 💞", 3000);
+        ctx.react("love", "마음 다 전해졌어! 고마워", 3000);
         ctx.info(`💗 하트 ${GOAL}/${GOAL} · 마음이 전해졌어!`);
         ctx.complete();
         ctx.tray.innerHTML = `<div class="arm-card"><div class="t">💞 하트 ${GOAL}개 전달 성공!</div>
@@ -725,9 +743,131 @@ function heart(ctx) {
   };
 }
 
+/* ============================================================
+   🛒 복지관: 호반우 개강 준비물 장보기 (끌어서 장바구니에 담기)
+   ============================================================ */
+const SHOP_ITEMS = {
+  note: { n: "공책", e: "📒" }, pen: { n: "볼펜", e: "🖊️" }, book: { n: "전공책", e: "📘" }, eraser: { n: "지우개", e: "🧽" },
+  marker: { n: "형광펜", e: "🖍️" }, box: { n: "택배 상자", e: "📦" }, letter: { n: "편지", e: "✉️" }, umbrella: { n: "우산", e: "☂️" },
+  water: { n: "생수", e: "💧" }, gimbap: { n: "삼각김밥", e: "🍙" }, card: { n: "체크카드", e: "💳" }, bandage: { n: "밴드", e: "🩹" },
+};
+// 복지관엔 서점, 우체국, 은행, 학식당 등이 있어서 그에 맞는 부탁들
+const SHOP_ORDERS = [
+  { say: "공책이랑 볼펜 사 줘!", need: ["note", "pen"] },
+  { say: "서점에서 전공책 하나만!", need: ["book"] },
+  { say: "형광펜이랑 지우개도 필요해!", need: ["marker", "eraser"] },
+  { say: "우체국에 부칠 택배 상자 줘!", need: ["box"] },
+  { say: "목말라. 생수랑 삼각김밥!", need: ["water", "gimbap"] },
+  { say: "비 온대. 우산 하나만 사 줘!", need: ["umbrella"] },
+];
+function shop(ctx) {
+  const ROUNDS = ctx.mission.rounds || 3;
+  const orders = [...SHOP_ORDERS].sort(() => Math.random() - 0.5).slice(0, ROUNDS);
+  let round = 0, got = [], total = 0, ghost = null, finished = false;
+
+  const basket = el("div", "arm-basket");
+  basket.innerHTML = `🛒<i>0</i>`;
+  ctx.inner.appendChild(basket);
+
+  const order = () => orders[round];
+  function drawTray() {
+    const o = order();
+    const decoys = Object.keys(SHOP_ITEMS).filter((k) => !o.need.includes(k)).sort(() => Math.random() - 0.5).slice(0, 5 - o.need.length);
+    const list = [...o.need, ...decoys].sort(() => Math.random() - 0.5);
+    ctx.tray.innerHTML = `<div class="arm-card">
+      <div class="arm-need">🧾 ${o.need.map((k) => got.includes(k) ? `<s>${SHOP_ITEMS[k].n}</s>` : SHOP_ITEMS[k].n).join(" · ")}</div>
+      <div class="arm-shop">${list.map((k) => `<button data-k="${k}" class="${got.includes(k) ? "got" : ""}"><b>${SHOP_ITEMS[k].e}</b>${SHOP_ITEMS[k].n}</button>`).join("")}</div>
+      <div class="s">물건을 끌어서 장바구니에 담아 줘 (눌러도 담겨요)</div></div>`;
+    ctx.tray.classList.remove("ar-hidden");
+    ctx.tray.querySelectorAll(".arm-shop button").forEach(bindDrag);
+  }
+  function update() { ctx.info(`🛒 개강 준비물 장보기 ${Math.min(round + 1, ROUNDS)}/${ROUNDS}`); }
+
+  // 장바구니(또는 호반우) 위에 놓았는지
+  const overTarget = (x, y) => [basket, ctx.hob].some((t) => {
+    const r = t.getBoundingClientRect();
+    return r.width && x > r.left - 20 && x < r.right + 20 && y > r.top - 20 && y < r.bottom + 20;
+  });
+  function bindDrag(btn) {
+    let start = null, moved = false;
+    btn.addEventListener("pointerdown", (e) => {
+      if (finished) return;
+      start = { x: e.clientX, y: e.clientY }; moved = false;
+      btn.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+    });
+    btn.addEventListener("pointermove", (e) => {
+      if (!start) return;
+      if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) {
+        moved = true;
+        ghost = el("div", "arm-ghost"); ghost.textContent = SHOP_ITEMS[btn.dataset.k].e;
+        ctx.root.appendChild(ghost);
+      }
+      if (ghost) {
+        ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px";
+        basket.classList.toggle("over", overTarget(e.clientX, e.clientY));
+      }
+    });
+    const end = (e, cancel) => {
+      if (!start) return;
+      const wasMoved = moved, x = e.clientX, y = e.clientY;
+      start = null; moved = false;
+      ghost?.remove(); ghost = null;
+      basket.classList.remove("over");
+      if (cancel) return;
+      if (!wasMoved || overTarget(x, y)) put(btn);   // 그냥 눌러도 담긴다
+    };
+    btn.addEventListener("pointerup", (e) => end(e, false));
+    btn.addEventListener("pointercancel", (e) => end(e, true));
+  }
+
+  function put(btn) {
+    const k = btn.dataset.k, o = order();
+    if (!o.need.includes(k)) {
+      btn.classList.remove("no"); void btn.offsetWidth; btn.classList.add("no");
+      ctx.say(`${SHOP_ITEMS[k].n}? 그건 안 시켰는데?`);
+      ctx.jump();
+      navigator.vibrate?.(80);
+      return;
+    }
+    if (got.includes(k)) return;
+    got.push(k); total++;
+    basket.querySelector("i").textContent = total;
+    basket.classList.remove("bump"); void basket.offsetWidth; basket.classList.add("bump");
+    const r = basket.getBoundingClientRect();
+    ctx.spawnHeart(r.left + r.width / 2, r.top, SHOP_ITEMS[k].e);
+    navigator.vibrate?.(30);
+    if (o.need.every((n) => got.includes(n))) {
+      round++;
+      got = [];
+      if (round >= ROUNDS) return win();
+      ctx.react("proud", "고마워! 하나만 더 부탁해", 1400);
+      update();
+      setTimeout(() => { if (!finished) { ctx.say(order().say); drawTray(); } }, 1300);
+      ctx.tray.querySelectorAll(".arm-shop button").forEach((b) => b.classList.add("got"));
+    } else {
+      ctx.say(`${SHOP_ITEMS[k].n} 좋아! 나머지도!`);
+      drawTray();
+    }
+  }
+  function win() {
+    finished = true;
+    ctx.react("love", "개강 준비 끝! 고마워", 3000);
+    ctx.info("🛒 장보기 완료! 개강 준비 끝 🎉");
+    ctx.tray.innerHTML = `<div class="arm-card"><div class="t">🛒 개강 준비물 ${total}개를 다 샀어요!</div>
+      <div class="s">복지관엔 서점, 우체국, 은행, 학식당이 있어요</div></div>`;
+    ctx.complete();
+  }
+
+  update();
+  ctx.say(order().say);
+  drawTray();
+  return () => { ghost?.remove(); basket.remove(); };
+}
+
 /* ---------------- 공통 ---------------- */
 const $stage = (ctx) => ctx.root.querySelector("#ar-stage");
-const MISSIONS = { roulette, find, petals, cheer, heart };
+const MISSIONS = { roulette, find, petals, cheer, heart, shop };
 
 // startAR가 호반우를 처음 보여줄 때 부른다. 정리 함수(cleanup)를 돌려준다.
 export async function runArMission(type, ctx) {

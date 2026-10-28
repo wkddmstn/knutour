@@ -8,19 +8,22 @@ import { runArMission } from "./ar-missions.js";
 import { stickerCatalog, frameSVG, LOGO, logoItem } from "./ar-stickers.js";   // 사진 꾸미기 아이템
 
 const IMG = "img/hobanu/";
+// 시연(데모)용: true면 일청담 "호반우 만나기 (AR)"에서 희귀 수달이 항상 나타난다. 실제 운영 때는 false로 (장주연)
+export const OTTER_DEMO = true;
+
 export const MASCOTS = {
-  centralpark:  { name: "센트럴 파크",     img: IMG + "centralpark.png",  lines: ["센팍에 온 걸 환영해! 🌳", "여기서 무빔 영화도 상영해. 돗자리 챙겨 와!"] },
-  ilcheongdam:  { name: "일청담",          img: IMG + "ilcheongdam.png",  lines: ["일청담은 감꽃 모양을 본떠 만들었어!", "운 좋으면 신천에서 놀러 온 수달도 볼 수 있어 🦦", "밤엔 호롱불이 켜져서 진짜 예뻐!"] },
+  centralpark:  { name: "센트럴 파크",     img: IMG + "centralpark.png",  lines: ["센팍에 온 걸 환영해! 🌳", "무빔 영화 보러 돗자리 챙겨 와!"] },
+  ilcheongdam:  { name: "일청담",          img: IMG + "ilcheongdam.png",  lines: ["일청담은 감꽃 모양을 본떠 만들었어!", "운 좋으면 신천 수달도 만날 수 있어", "밤엔 호롱불이 켜져서 진짜 예뻐!"] },
   library:      { name: "중앙도서관",      img: IMG + "library.png",      lines: ["쉿! 도서관이야 📚", "열람실은 신관, 책은 구관에 있어!", "자리는 도서관 앱으로 예약해!"] },
   stadium:      { name: "대운동장·백호관", img: IMG + "stadium.png",      lines: ["여기가 축제 무대야! 🎤", "올해는 누가 올까? 두근두근!", "백호관엔 중앙동아리방이 모여 있어!"] },
   gongstaurant: { name: "공식당",          img: IMG + "gongstaurant.png", lines: ["배고프지? 🍚", "치즈알밥이랑 육회비빔밥 강추!", "개강 시즌엔 일찍 와야 해!"] },
-  loveroad:     { name: "러브로드",        img: IMG + "react-love.png",   lines: ["러브로드에 온 걸 환영해 💕", "연인이 손잡고 정문에서 본관 쪽으로 걸으면… 영원한 사랑이 이루어진대!", "친구랑 같이 걸어도 좋아!"] },
+  loveroad:     { name: "러브로드",        img: IMG + "react-love.png",   lines: ["러브로드에 온 걸 환영해 💕", "손잡고 걸으면 사랑이 이뤄진대!", "친구랑 같이 걸어도 좋아!"] },
   cherryroad:   { name: "벚꽃길",          img: IMG + "loveroad.png",     lines: ["벚꽃길에 온 걸 환영해 🌸", "봄이면 꽃잎이 눈처럼 흩날려!", "여기서 찍으면 인생샷 보장 📸"] },
   bokji:        { name: "복지관",          img: IMG + "bokji.png",        lines: ["복지관엔 뭐가 있을까? 🛍️", "퀴즈 맞힐 수 있겠어?"] },
 };
 // 희귀 캐릭터 (도감의 "희귀" 칸)
 export const RARE = {
-  otter: { name: "신천 수달", img: IMG + "otter.png", hint: "일청담의 밤에 나타난다는 소문이…" },
+  otter: { name: "신천 수달", img: IMG + "otter.png", hint: "일청담에서 '호반우 만나기 (AR)'를 열면 가끔 나타난대요 (밤에 더 자주)" },
 };
 const DEFAULT = { name: "캠퍼스", img: IMG + "react-hi.png", lines: ["반가워! 나는 호반우야!"] };
 const REACT = { love: IMG + "react-love.png", hi: IMG + "react-hi.png", proud: IMG + "react-proud.png" };
@@ -104,7 +107,8 @@ function injectStyle() {
     filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 2px #fff) drop-shadow(0 8px 10px rgba(0,0,0,.35));
     animation:ar-bob 2.4s ease-in-out infinite}
   #ar-bubble{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:10px;background:#fff;color:#191f28;
-    padding:10px 14px;border-radius:16px;font-size:15px;line-height:1.4;width:max-content;max-width:240px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+    padding:10px 14px;border-radius:16px;font-size:15px;line-height:1.4;width:max-content;max-width:calc(100vw - 20px);box-shadow:0 4px 12px rgba(0,0,0,.2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #ar-bubble::after{content:"";position:absolute;top:100%;left:50%;margin-left:-8px;border:8px solid transparent;border-top-color:#fff}
   #ar-fx{position:absolute;inset:0;pointer-events:none;z-index:3}
   .ar-heart{position:fixed;font-size:26px;pointer-events:none;animation:ar-heart 1s ease-out forwards}
@@ -128,6 +132,13 @@ function injectStyle() {
   #ar-otter{position:absolute;left:-72px;bottom:4px;width:98px;cursor:pointer;touch-action:manipulation;z-index:2;
     filter:drop-shadow(0 0 6px #fff7b0) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 8px rgba(0,0,0,.35));
     animation:ar-otter-in .7s ease-out, ar-bob 1.8s ease-in-out .7s infinite}
+  #ar-otter.hop{animation:ar-otter-hop .5s ease-out}
+  #ar-otter.spin{animation:ar-otter-spin .8s ease-in-out}
+  #ar-otter-say{position:absolute;left:-76px;bottom:104px;transform:translateX(-10%);z-index:3;background:#fff8d6;color:#5a3d00;padding:6px 10px;
+    border-radius:12px;font-size:13px;font-weight:700;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.2);pointer-events:none}
+  #ar-otter-say::after{content:"";position:absolute;top:100%;left:26px;border:6px solid transparent;border-top-color:#fff8d6}
+  @keyframes ar-otter-hop{40%{transform:translateY(-26px) rotate(-6deg)}70%{transform:translateY(0) rotate(4deg)}}
+  @keyframes ar-otter-spin{50%{transform:translateY(-20px) rotate(180deg) scale(1.1)}100%{transform:rotate(360deg)}}
   #ar-otter.flee{animation:ar-otter-out .9s ease-in forwards;pointer-events:none}
   @keyframes ar-otter-in{from{transform:translateY(70px) scale(.6);opacity:0}to{transform:none;opacity:1}}
   @keyframes ar-otter-out{to{transform:translateY(90px) scale(.5);opacity:0}}
@@ -298,9 +309,10 @@ export function startAR(zone, opts = {}) {
   const mtype = mission?.ar || null;
   const snacks = mtype === "snack" ? (SNACKS[id] || SNACKS.gongstaurant) : null;
   const PET_GOAL = 16;
-  // 일청담 희귀 수달: 낮 5%, 밤(18시~6시) 15%. 주소 끝에 ?otter=1 을 붙이면 무조건 등장(시연용)
+  // 일청담 희귀 수달: 낮 5%, 밤(18시~6시) 15%.
+  // 시연용: OTTER_DEMO가 true이거나 주소 끝에 ?otter=1 을 붙이면 일청담에서 무조건 등장
   const otterChance = () => {
-    if (new URLSearchParams(location.search).get("otter") === "1") return 1;
+    if (OTTER_DEMO || new URLSearchParams(location.search).get("otter") === "1") return 1;
     const h = new Date().getHours();
     return h >= 18 || h < 6 ? 0.15 : 0.05;
   };
@@ -429,10 +441,14 @@ export function startAR(zone, opts = {}) {
     }
 
     /* ---------- 상호작용 공통 ---------- */
+    // 호반우 말풍선: 이모티콘은 빼고 한 줄로. 화면보다 길면 글자 크기를 줄인다
+    const noEmoji = (t) => String(t).replace(/[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\uFE0F\u200D]/gu, "").replace(/\s{2,}/g, " ").trim();
     function say(line) {
       const b = $("ar-bubble");
-      b.textContent = line;
+      b.textContent = noEmoji(line);
+      b.style.fontSize = "";
       b.classList.remove("ar-hidden");
+      for (let fs = 15; fs > 11 && b.scrollWidth > b.clientWidth + 1; fs--) b.style.fontSize = fs - 1 + "px";
     }
     function jump() {
       const j = $("ar-jump");
@@ -499,29 +515,58 @@ export function startAR(zone, opts = {}) {
     }
 
     /* ---------- 일청담 희귀 수달 ---------- */
+    // 수달은 3번 쓰다듬으면(터치) 친구가 된다. 15초 안에 못 하면 물속으로 숨는다.
     function showOtter() {
       const o = $("ar-otter");
       if (!o || closed) return;
+      const OTTER_GOAL = 3;
+      const LINES = ["끼익?", "꾸르륵~", "끼잇!"];
+      const FRIEND_LINES = ["꾸륵꾸륵~", "끼이익!", "(물고기 찾는 중…)", "(빙글빙글)"];
+      let taps = 0;
+      const bubble = el("div"); bubble.id = "ar-otter-say";
+      const otterSay = (t) => { bubble.textContent = t; };
+      o.parentNode.appendChild(bubble);
       o.classList.remove("ar-hidden");
+      otterSay("…?");
+      say("어, 신천 수달이다!");
+      jump();
       toast("✨ 희귀! 신천 수달이 나타났어!");
-      info("✨ 수달이 나타났어! 10초 안에 터치해!");
+      info(`✨ 수달이 나타났어! 15초 안에 ${OTTER_GOAL}번 쓰다듬어 줘`);
       navigator.vibrate?.([60, 40, 60, 40, 120]);
       otterTimer = setTimeout(() => {
         if (otter) return;
         o.classList.add("flee");
+        bubble.remove();
+        say("앗, 수달이 숨어 버렸어");
         info("수달이 물속으로 숨어 버렸어… 다음에 또 만나!");
         setTimeout(() => o.remove(), 900);
-      }, 10000);
+      }, 15000);
+      const anim = (cls) => { o.classList.remove("hop", "spin"); void o.offsetWidth; o.classList.add(cls); };
       o.onclick = () => {
-        if (otter) return;
+        const r = o.getBoundingClientRect();
+        if (otter) {   // 친구가 된 뒤에도 놀아 준다
+          anim(Math.random() < 0.3 ? "spin" : "hop");
+          otterSay(FRIEND_LINES[(Math.random() * FRIEND_LINES.length) | 0]);
+          spawnHeart(r.left + r.width / 2, r.top, "💛");
+          navigator.vibrate?.(30);
+          return;
+        }
+        taps++;
+        anim("hop");
+        otterSay(LINES[taps - 1] || "끼잇!");
+        spawnHeart(r.left + r.width / 2, r.top + r.height * 0.3, "💛");
+        navigator.vibrate?.(40);
+        if (taps < OTTER_GOAL) { info(`수달 쓰다듬기 ${taps}/${OTTER_GOAL}`); return; }
+        // 친구 성공!
         otter = true;
         clearTimeout(otterTimer);
         const isNew = addToDex("otter");
-        const r = o.getBoundingClientRect();
-        for (let i = 0; i < 8; i++) setTimeout(() => spawnHeart(r.left + r.width * Math.random(), r.top + r.height * 0.3, i % 2 ? "✨" : "🌟"), i * 70);
+        anim("spin");
+        otterSay("끼이이익!");
+        for (let i = 0; i < 10; i++) setTimeout(() => spawnHeart(r.left + r.width * Math.random(), r.top + r.height * 0.3, i % 2 ? "✨" : "🌟"), i * 70);
         toast(isNew ? "🦦 희귀 수달 도감 등록!" : "🦦 수달이 또 놀러 왔어!");
-        info("희귀 수달을 만났어! 도감에서 확인해 봐 ✨");
-        say("수달이랑 친구가 됐어! 🦦");
+        info("수달이랑 친구가 됐어! 같이 사진도 찍어 봐 ✨");
+        react("love", "수달이랑 친구가 됐다!", 2400);
         navigator.vibrate?.([100, 50, 100]);
       };
     }
