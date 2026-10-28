@@ -23,10 +23,11 @@ function injectStyle() {
   const s = el("style");
   s.textContent = `
   /* 돌림판 */
-  #ar-stage.with-wheel{--wheel:clamp(170px,36vmin,360px);width:calc(190px + var(--wheel));margin-left:calc(-95px - var(--wheel) / 2)}
+  #ar-stage.with-wheel{--wheel:clamp(170px,36vmin,360px);--gap:min(230px,calc(100vw - var(--wheel) - 8px));
+    width:calc(var(--gap) + var(--wheel));margin-left:calc((var(--gap) + var(--wheel)) / -2)}
   #ar-stage.with-wheel #ar-jump{right:auto;width:180px}
   #ar-stage.with-wheel #ar-shadow{left:90px}
-  #ar-stage.with-wheel #ar-bubble{left:50%;bottom:max(100%,calc(var(--wheel) + 40px))}   /* 말풍선을 돌림판 위로 (안 겹치게) */
+  #ar-stage.with-wheel #ar-bubble{left:90px}   /* 말풍선은 호반우 머리 위 (돌림판은 오른쪽으로 띄워서 안 겹치게) */
   .arm-wheel{position:absolute;right:0;bottom:40px;width:var(--wheel,170px);height:var(--wheel,170px);touch-action:none;cursor:pointer}
   .arm-wheel canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 6px 16px rgba(0,0,0,.35);
     transition:transform 3.4s cubic-bezier(.12,.67,.12,1)}
@@ -50,7 +51,9 @@ function injectStyle() {
     color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px 8px 12px;box-sizing:border-box;text-align:left}
   .arm-cover b{font-size:15px;line-height:1.25;word-break:keep-all}
   .arm-cover small{font-size:10px;opacity:.9}
-  .arm-tree{position:absolute;left:50%;bottom:-14px;width:min(400px,100vw);transform:translateX(-50%);z-index:0;pointer-events:none}
+  .arm-tree{--tw:min(54vw,440px);position:absolute;width:var(--tw);left:max(-18vw,calc(50% - 70px - var(--tw)));bottom:calc(50% - 160px);
+    z-index:1;pointer-events:none;opacity:0;transition:opacity .6s;will-change:opacity}
+  .arm-tree.on{opacity:1}
   .arm-tree svg,.arm-tree img{display:block;width:100%;height:auto}
   .arm-bookinfo{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left}
   .arm-bookinfo img{width:58px;height:86px;object-fit:cover;border-radius:3px 6px 6px 3px;box-shadow:0 3px 8px rgba(0,0,0,.25);flex:none}
@@ -338,14 +341,16 @@ function petals(ctx) {
   const GOAL = ctx.mission.goal || 10, TIME = ctx.mission.time || 15;
   let caught = 0, left = TIME, tickT = 0, raf = 0, playing = false, spawnAcc = 0, lastT = 0;
 
-  // 1) 호반우 뒤에 큰 벚꽃 나무 (호반우와 함께 공간에 고정되어 움직인다)
+  // 1) 호반우 옆에 큰 벚꽃 나무
+  // 나무는 휴대폰 화면 기준으로 고정 (호반우처럼 방향 따라 움직이지 않음 → 깜박임 없음)
   const tree = el("div", "arm-tree");
   const png = new Image();
-  png.onload = () => { tree.innerHTML = ""; tree.appendChild(png); };
   png.alt = "";
+  png.onload = () => { tree.appendChild(png); tree.classList.add("on"); };
+  png.onerror = () => { tree.innerHTML = cherryTreeSVG(); tree.classList.add("on"); };
+  png.decoding = "async";
   png.src = "img/hobanu/cherry-tree.webp";
-  tree.innerHTML = cherryTreeSVG();
-  ctx.inner.insertBefore(tree, ctx.inner.firstChild);
+  ctx.root.insertBefore(tree, ctx.root.querySelector("#ar-stage"));
 
   // 2) 화면 전체에 흩날리는 꽃잎 (캔버스)
   const cv = el("canvas", "arm-petal-canvas");
@@ -406,8 +411,8 @@ function petals(ctx) {
   function frame(t) {
     const dt = Math.min(50, t - (lastT || t)); lastT = t;
     const wind = Math.sin(t / 1800) * 0.7 + Math.sin(t / 600) * 0.25 + 0.35;   // 바람이 세졌다 약해졌다
-    spawnAcc += dt * (playing ? 0.012 : 0.004);
-    while (spawnAcc > 1 && parts.length < 140) { spawn(); spawnAcc -= 1; }
+    spawnAcc += dt * (playing ? 0.0045 : 0.0015);   // 1초에 약 4.5개 (대기 중엔 1.5개)
+    while (spawnAcc > 1 && parts.length < 45) { spawn(); spawnAcc -= 1; }
     g.clearRect(0, 0, cv.width, cv.height);
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
@@ -721,6 +726,7 @@ function heart(ctx) {
         ctx.react("love", "마음 다 전해졌어! 고마워", 3000);
         ctx.info(`💗 하트 ${GOAL}/${GOAL} · 마음이 전해졌어!`);
         ctx.complete();
+        guide.classList.add("off");
         ctx.tray.innerHTML = `<div class="arm-card"><div class="t">💞 하트 ${GOAL}개 전달 성공!</div>
           <div class="s">더 그려도 돼요. 다 했으면 아래 완료를 눌러 주세요</div></div>`;
       } else {
@@ -746,8 +752,13 @@ function heart(ctx) {
 /* ============================================================
    🛒 복지관: 호반우 개강 준비물 장보기 (끌어서 장바구니에 담기)
    ============================================================ */
+// 지우개 이모티콘이 없어서 흰 직사각형 지우개를 직접 그림
+const ERASER = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g transform="rotate(-18 32 32)"><rect x="8" y="20" width="48" height="24" rx="4" fill="#fff" stroke="#8b95a1" stroke-width="2.5"/>
+  <rect x="26" y="20" width="20" height="24" fill="#3d7be0"/><rect x="8" y="20" width="48" height="24" rx="4" fill="none" stroke="#5c6670" stroke-width="2.5"/></g></svg>`);
+const itemIcon = (it) => (it.img ? `<img src="${it.img}" alt="" style="width:1em;height:1em;vertical-align:-.12em">` : it.e);
 const SHOP_ITEMS = {
-  note: { n: "공책", e: "📒" }, pen: { n: "볼펜", e: "🖊️" }, book: { n: "전공책", e: "📘" }, eraser: { n: "지우개", e: "🧽" },
+  note: { n: "공책", e: "📒" }, pen: { n: "볼펜", e: "🖊️" }, book: { n: "전공책", e: "📘" }, eraser: { n: "지우개", e: "", img: ERASER },
   marker: { n: "형광펜", e: "🖍️" }, box: { n: "택배 상자", e: "📦" }, letter: { n: "편지", e: "✉️" }, umbrella: { n: "우산", e: "☂️" },
   water: { n: "생수", e: "💧" }, gimbap: { n: "삼각김밥", e: "🍙" }, card: { n: "체크카드", e: "💳" }, bandage: { n: "밴드", e: "🩹" },
 };
@@ -776,7 +787,7 @@ function shop(ctx) {
     const list = [...o.need, ...decoys].sort(() => Math.random() - 0.5);
     ctx.tray.innerHTML = `<div class="arm-card">
       <div class="arm-need">🧾 ${o.need.map((k) => got.includes(k) ? `<s>${SHOP_ITEMS[k].n}</s>` : SHOP_ITEMS[k].n).join(" · ")}</div>
-      <div class="arm-shop">${list.map((k) => `<button data-k="${k}" class="${got.includes(k) ? "got" : ""}"><b>${SHOP_ITEMS[k].e}</b>${SHOP_ITEMS[k].n}</button>`).join("")}</div>
+      <div class="arm-shop">${list.map((k) => `<button data-k="${k}" class="${got.includes(k) ? "got" : ""}"><b>${itemIcon(SHOP_ITEMS[k])}</b>${SHOP_ITEMS[k].n}</button>`).join("")}</div>
       <div class="s">물건을 끌어서 장바구니에 담아 줘 (눌러도 담겨요)</div></div>`;
     ctx.tray.classList.remove("ar-hidden");
     ctx.tray.querySelectorAll(".arm-shop button").forEach(bindDrag);
@@ -800,7 +811,7 @@ function shop(ctx) {
       if (!start) return;
       if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) {
         moved = true;
-        ghost = el("div", "arm-ghost"); ghost.textContent = SHOP_ITEMS[btn.dataset.k].e;
+        ghost = el("div", "arm-ghost"); ghost.innerHTML = itemIcon(SHOP_ITEMS[btn.dataset.k]);
         ctx.root.appendChild(ghost);
       }
       if (ghost) {
@@ -835,7 +846,7 @@ function shop(ctx) {
     basket.querySelector("i").textContent = total;
     basket.classList.remove("bump"); void basket.offsetWidth; basket.classList.add("bump");
     const r = basket.getBoundingClientRect();
-    ctx.spawnHeart(r.left + r.width / 2, r.top, SHOP_ITEMS[k].e);
+    ctx.spawnHeart(r.left + r.width / 2, r.top, SHOP_ITEMS[k].e || "✨");
     navigator.vibrate?.(30);
     if (o.need.every((n) => got.includes(n))) {
       round++;

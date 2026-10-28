@@ -8,7 +8,7 @@ import { ensureProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
-import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
+import { startAR, MASCOTS, renderHobanuPane, OTTER_DEMO } from "./ar.js";   // AR 호반우 (장주연)
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -561,11 +561,13 @@ async function missionMenu(zone) {
         };
       }),
       ...(MASCOTS[zone.id] ? [{ label: "호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
+      // 데모용 히든 미션: 일청담에서 신천 수달 만나기 (장주연)
+      ...(OTTER_DEMO && zone.id === "ilcheongdam" ? [{ label: "🦦 히든 미션! (데모)", value: "__otter", ghost: true }] : []),
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
-    if (pick === "__ar") {   // AR 호반우 (장주연): 처음 만나면 +20 XP, 일청담 희귀 수달 +50 XP
-      const r = await startAR(zone);
+    if (pick === "__ar" || pick === "__otter") {   // AR 호반우 (장주연): 처음 만나면 +20 XP, 일청담 희귀 수달 +50 XP
+      const r = await startAR(zone, pick === "__otter" ? { hidden: "otter" } : {});
       if (r.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
       if (r.otter && store.grantBonus("otter", 50)) {
         ui.reward(50);

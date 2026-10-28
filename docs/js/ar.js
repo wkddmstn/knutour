@@ -8,7 +8,7 @@ import { runArMission } from "./ar-missions.js";
 import { stickerCatalog, frameSVG, LOGO, logoItem } from "./ar-stickers.js";   // 사진 꾸미기 아이템
 
 const IMG = "img/hobanu/";
-// 시연(데모)용: true면 일청담 "호반우 만나기 (AR)"에서 희귀 수달이 항상 나타난다. 실제 운영 때는 false로 (장주연)
+// 시연(데모)용: true면 일청담 미션 목록에 "히든 미션!" 버튼이 생겨서 수달을 항상 만날 수 있다. 실제 운영 때는 false로 (장주연)
 export const OTTER_DEMO = true;
 
 export const MASCOTS = {
@@ -106,10 +106,10 @@ function injectStyle() {
   #ar-hob{display:block;width:100%;height:230px;object-fit:contain;object-position:bottom;cursor:grab;touch-action:none;-webkit-user-drag:none;
     filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 2px #fff) drop-shadow(0 8px 10px rgba(0,0,0,.35));
     animation:ar-bob 2.4s ease-in-out infinite}
-  #ar-bubble{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:10px;background:#fff;color:#191f28;
+  #ar-bubble{position:absolute;bottom:100%;left:50%;transform:translateX(calc(-50% + var(--bx,0px)));margin-bottom:10px;background:#fff;color:#191f28;
     padding:10px 14px;border-radius:16px;font-size:15px;line-height:1.4;width:max-content;max-width:calc(100vw - 20px);box-shadow:0 4px 12px rgba(0,0,0,.2);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #ar-bubble::after{content:"";position:absolute;top:100%;left:50%;margin-left:-8px;border:8px solid transparent;border-top-color:#fff}
+  #ar-bubble::after{content:"";position:absolute;top:100%;left:calc(50% - var(--bx,0px));margin-left:-8px;border:8px solid transparent;border-top-color:#fff}
   #ar-fx{position:absolute;inset:0;pointer-events:none;z-index:3}
   .ar-heart{position:fixed;font-size:26px;pointer-events:none;animation:ar-heart 1s ease-out forwards}
   #ar-top{position:absolute;top:max(18px,env(safe-area-inset-top));left:16px;right:16px;text-align:center;z-index:4}
@@ -139,6 +139,13 @@ function injectStyle() {
   #ar-otter-say::after{content:"";position:absolute;top:100%;left:26px;border:6px solid transparent;border-top-color:#fff8d6}
   @keyframes ar-otter-hop{40%{transform:translateY(-26px) rotate(-6deg)}70%{transform:translateY(0) rotate(4deg)}}
   @keyframes ar-otter-spin{50%{transform:translateY(-20px) rotate(180deg) scale(1.1)}100%{transform:rotate(360deg)}}
+  #ar-sudal{position:absolute;left:50%;bottom:0;width:min(100vw,560px);transform:translate(-50%,100%);z-index:3;pointer-events:none;
+    transition:transform .55s cubic-bezier(.2,1.3,.4,1)}
+  #ar-sudal.up{transform:translate(-50%,8%)}
+  #ar-sudal img{display:block;width:100%;height:auto}
+  #ar-sudal p{position:absolute;left:50%;bottom:calc(100% - 4%);transform:translateX(-50%);margin:0;background:#fff;color:#5a3d00;padding:10px 16px;
+    border-radius:16px;font-size:16px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  #ar-sudal p::after{content:"";position:absolute;top:100%;left:50%;margin-left:-8px;border:8px solid transparent;border-top-color:#fff}
   #ar-otter.flee{animation:ar-otter-out .9s ease-in forwards;pointer-events:none}
   @keyframes ar-otter-in{from{transform:translateY(70px) scale(.6);opacity:0}to{transform:none;opacity:1}}
   @keyframes ar-otter-out{to{transform:translateY(90px) scale(.5);opacity:0}}
@@ -310,9 +317,10 @@ export function startAR(zone, opts = {}) {
   const snacks = mtype === "snack" ? (SNACKS[id] || SNACKS.gongstaurant) : null;
   const PET_GOAL = 16;
   // 일청담 희귀 수달: 낮 5%, 밤(18시~6시) 15%.
-  // 시연용: OTTER_DEMO가 true이거나 주소 끝에 ?otter=1 을 붙이면 일청담에서 무조건 등장
+  // 히든 미션(opts.hidden === "otter")이거나 주소 끝에 ?otter=1 을 붙이면 무조건 등장
+  const hiddenOtter = opts.hidden === "otter";
   const otterChance = () => {
-    if (OTTER_DEMO || new URLSearchParams(location.search).get("otter") === "1") return 1;
+    if (hiddenOtter || new URLSearchParams(location.search).get("otter") === "1") return 1;
     const h = new Date().getHours();
     return h >= 18 || h < 6 ? 0.15 : 0.05;
   };
@@ -352,7 +360,9 @@ export function startAR(zone, opts = {}) {
     const pos = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
 
     const info = (t) => { $("ar-info").textContent = t; };
-    info(mission ? `${mission.title} · 주위를 둘러보며 호반우를 찾아봐!` : `${zone.name || m.name}에 호반우가 숨어 있어! 주위를 둘러봐`);
+    info(mission ? `${mission.title} · 주위를 둘러보며 호반우를 찾아봐!`
+      : hiddenOtter ? "히든 미션! 일청담 어딘가에 신천 수달이 숨어 있대"
+      : `${zone.name || m.name}에 호반우가 숨어 있어! 주위를 둘러봐`);
     renderLove();
 
     /* 카메라: "호반우 만나기"를 누른 순간 바로 켠다 (안 되면 하늘색 배경) */
@@ -429,9 +439,9 @@ export function startAR(zone, opts = {}) {
       inner.classList.remove("pop"); void inner.offsetWidth; inner.classList.add("pop");
       navigator.vibrate?.(150);
       $("ar-shot").classList.remove("ar-hidden");
-      if (!met && !mission) info("호반우 발견! 눌러 보거나 쓰다듬어 봐 👆");
+      if (!met && !mission && !hiddenOtter) info("호반우 발견! 눌러 보거나 쓰다듬어 봐 👆");
       if (mission && !missionStarted) startMission();
-      if (otterPlanned && !otterShown) { otterShown = true; setTimeout(showOtter, 2500); }
+      if (otterPlanned && !otterShown) { otterShown = true; setTimeout(showOtter, hiddenOtter ? 1500 : 2500); }
     }
 
     function hide() {
@@ -449,6 +459,11 @@ export function startAR(zone, opts = {}) {
       b.style.fontSize = "";
       b.classList.remove("ar-hidden");
       for (let fs = 15; fs > 11 && b.scrollWidth > b.clientWidth + 1; fs--) b.style.fontSize = fs - 1 + "px";
+      // 말할 때 화면 밖으로 잘리면 안쪽으로 밀어 준다 (꼬리는 호반우를 계속 가리킴)
+      b.style.setProperty("--bx", "0px");
+      const r = b.getBoundingClientRect();
+      const dx = r.left < 8 ? 8 - r.left : r.right > innerWidth - 8 ? innerWidth - 8 - r.right : 0;
+      if (dx && r.width < innerWidth - 16) b.style.setProperty("--bx", dx + "px");
     }
     function jump() {
       const j = $("ar-jump");
@@ -515,59 +530,62 @@ export function startAR(zone, opts = {}) {
     }
 
     /* ---------- 일청담 희귀 수달 ---------- */
-    // 수달은 3번 쓰다듬으면(터치) 친구가 된다. 15초 안에 못 하면 물속으로 숨는다.
+    // 수달을 누르면 작은 수달이 사라지고, 화면 아래에서 큰 수달이 쏙 올라와 인사한다 (5초 뒤 다시 작은 수달로)
+    // 처음 누르면 친구가 되어 도감에 등록. 그냥 마주쳤을 때는 15초 안에 안 누르면 물속으로 숨는다(히든 미션은 안 숨음).
     function showOtter() {
       const o = $("ar-otter");
       if (!o || closed) return;
-      const OTTER_GOAL = 3;
-      const LINES = ["끼익?", "꾸르륵~", "끼잇!"];
-      const FRIEND_LINES = ["꾸륵꾸륵~", "끼이익!", "(물고기 찾는 중…)", "(빙글빙글)"];
-      let taps = 0;
+      const LINES = ["안녕! 나는 신천에서 놀러 온 수달이야", "일청담 물 진짜 시원하다!", "우리 친구 하자! 꾸르륵", "물고기 있으면 나 줘!", "밤에 또 놀러 와!"];
+      let lineN = 0, bigTimer = 0, bigOn = false;
       const bubble = el("div"); bubble.id = "ar-otter-say";
-      const otterSay = (t) => { bubble.textContent = t; };
+      bubble.textContent = "…?";
       o.parentNode.appendChild(bubble);
+      const big = el("div"); big.id = "ar-sudal";
+      big.innerHTML = `<p></p><img src="${IMG}sudal.webp" alt="">`;
+      root.appendChild(big);
       o.classList.remove("ar-hidden");
-      otterSay("…?");
       say("어, 신천 수달이다!");
       jump();
-      toast("✨ 희귀! 신천 수달이 나타났어!");
-      info(`✨ 수달이 나타났어! 15초 안에 ${OTTER_GOAL}번 쓰다듬어 줘`);
+      toast(hiddenOtter ? "✨ 히든 미션! 신천 수달 발견!" : "✨ 희귀! 신천 수달이 나타났어!");
+      info(hiddenOtter ? "✨ 히든 미션: 수달을 눌러서 인사해 봐!" : "✨ 수달이 나타났어! 15초 안에 눌러 봐!");
       navigator.vibrate?.([60, 40, 60, 40, 120]);
-      otterTimer = setTimeout(() => {
-        if (otter) return;
-        o.classList.add("flee");
-        bubble.remove();
-        say("앗, 수달이 숨어 버렸어");
-        info("수달이 물속으로 숨어 버렸어… 다음에 또 만나!");
-        setTimeout(() => o.remove(), 900);
-      }, 15000);
-      const anim = (cls) => { o.classList.remove("hop", "spin"); void o.offsetWidth; o.classList.add(cls); };
+      if (!hiddenOtter) {
+        otterTimer = setTimeout(() => {
+          if (otter) return;
+          o.classList.add("flee");
+          bubble.remove();
+          say("앗, 수달이 숨어 버렸어");
+          info("수달이 물속으로 숨어 버렸어… 다음에 또 만나!");
+          setTimeout(() => o.remove(), 900);
+        }, 15000);
+      }
       o.onclick = () => {
-        const r = o.getBoundingClientRect();
-        if (otter) {   // 친구가 된 뒤에도 놀아 준다
-          anim(Math.random() < 0.3 ? "spin" : "hop");
-          otterSay(FRIEND_LINES[(Math.random() * FRIEND_LINES.length) | 0]);
-          spawnHeart(r.left + r.width / 2, r.top, "💛");
-          navigator.vibrate?.(30);
-          return;
-        }
-        taps++;
-        anim("hop");
-        otterSay(LINES[taps - 1] || "끼잇!");
-        spawnHeart(r.left + r.width / 2, r.top + r.height * 0.3, "💛");
-        navigator.vibrate?.(40);
-        if (taps < OTTER_GOAL) { info(`수달 쓰다듬기 ${taps}/${OTTER_GOAL}`); return; }
-        // 친구 성공!
-        otter = true;
+        if (bigOn) return;
+        bigOn = true;
         clearTimeout(otterTimer);
-        const isNew = addToDex("otter");
-        anim("spin");
-        otterSay("끼이이익!");
-        for (let i = 0; i < 10; i++) setTimeout(() => spawnHeart(r.left + r.width * Math.random(), r.top + r.height * 0.3, i % 2 ? "✨" : "🌟"), i * 70);
-        toast(isNew ? "🦦 희귀 수달 도감 등록!" : "🦦 수달이 또 놀러 왔어!");
-        info("수달이랑 친구가 됐어! 같이 사진도 찍어 봐 ✨");
-        react("love", "수달이랑 친구가 됐다!", 2400);
-        navigator.vibrate?.([100, 50, 100]);
+        o.classList.add("ar-hidden");
+        bubble.classList.add("ar-hidden");
+        big.querySelector("p").textContent = LINES[lineN++ % LINES.length];
+        requestAnimationFrame(() => big.classList.add("up"));
+        navigator.vibrate?.([40, 30, 80]);
+        if (!otter) {   // 처음 누르면 친구 성공!
+          otter = true;
+          const isNew = addToDex("otter");
+          toast(isNew ? "🦦 희귀 수달 도감 등록!" : "🦦 수달이 또 놀러 왔어!");
+          info(hiddenOtter ? "히든 미션 성공! 수달이랑 친구가 됐어 ✨" : "수달이랑 친구가 됐어! 같이 사진도 찍어 봐 ✨");
+          react("love", "수달이랑 친구가 됐다!", 2400);
+          if (hiddenOtter) complete();
+        }
+        bigTimer = setTimeout(() => {
+          big.classList.remove("up");
+          setTimeout(() => {
+            bigOn = false;
+            if (closed) return;
+            o.classList.remove("ar-hidden");
+            bubble.textContent = "꾸르륵~";
+            bubble.classList.remove("ar-hidden");
+          }, 550);
+        }, 5000);
       };
     }
 
