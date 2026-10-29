@@ -226,7 +226,9 @@ function injectStyle() {
   #ps-shutter::after{content:"";width:62px;height:62px;border-radius:50%;background:#fff;transition:transform .1s}
   #ps-shutter:active::after{transform:scale(.85)}
   .ps-spacer{width:48px;height:48px}
-  .ps-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#ddd;font-size:15px;line-height:1.7;padding:24px}
+  .ps-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;color:#ddd;
+    font-size:15px;line-height:1.7;padding:24px;pointer-events:none}   /* 안내 글자가 ✕ 버튼을 가리지 않게 */
+  .ps-empty button{pointer-events:auto;width:auto;margin:0;padding:12px 22px;border:none;border-radius:999px;background:#fff;color:#191f28;font-weight:800;font-size:15px;font-family:inherit}
   #ps-review{position:absolute;inset:0;z-index:5;background:#000;display:flex;align-items:center;justify-content:center}
   #ps-review img{max-width:100%;max-height:100%;object-fit:contain;-webkit-touch-callout:default;user-select:auto;-webkit-user-select:auto}
   .ps-rv-top{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px}
@@ -791,8 +793,9 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
     let closed = false;
     const close = (val) => {
       closed = true;
-      stopCam();
-      window.removeEventListener("resize", fit);
+      // 모은 호반우가 없을 때는 카메라 준비 전에 닫히므로, 정리 중 오류가 나도 화면은 꼭 닫는다
+      try { stopCam(); } catch {}
+      try { window.removeEventListener("resize", fit); } catch {}
       root.remove();
       resolve(val);
     };
@@ -803,8 +806,10 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
       root.querySelectorAll(".ps-rail,.ps-tip,.ps-bottom,#ps-ratio,#ps-frame").forEach((n) => n.classList.add("ar-hidden"));
       const msg = el("div");
       msg.className = "ps-empty";
-      msg.innerHTML = "아직 모은 호반우가 없어요<br>캠퍼스 곳곳에서 호반우를 만나면<br>여기서 같이 사진을 찍을 수 있어요!";
+      msg.innerHTML = `<div>아직 모은 호반우가 없어요<br>캠퍼스 곳곳에서 호반우를 만나면<br>여기서 같이 사진을 찍을 수 있어요!</div>
+        <button type="button">← 돌아가기</button>`;
       root.appendChild(msg);
+      msg.querySelector("button").onclick = () => close();
       return;
     }
 

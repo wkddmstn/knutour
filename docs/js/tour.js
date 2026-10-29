@@ -98,9 +98,72 @@ function renderBadgeSection(slot) {
   }));
 }
 
-/* ---------------- 음성 (브라우저 내장 TTS) ---------------- */
+/* ---------------- 음성: 녹음 파일(클로바더빙) 우선, 없으면 브라우저 내장 TTS ---------------- */
+// 녹음한 대사 (audio/tour/{키}.mp3). 말풍선 글자도 녹음과 똑같이 보여 준다. 음성: 네이버 클로바더빙
+const SCRIPT = {
+  "start-godsaeng": "안녕! 나는 호반우야. 정문에서 출발해서 갓생 코스를 같이 돌아 보자! 첫 번째 장소는 러브로드야.",
+  "start-healing": "안녕! 나는 호반우야. 정문에서 출발해서 힐링 코스를 같이 돌아 보자! 첫 번째 장소는 러브로드야.",
+  "start-full": "안녕! 나는 호반우야. 정문에서 출발해서 전체 코스를 같이 돌아 보자! 첫 번째 장소는 러브로드야.",
+  "next-ilcheongdam": "다음은 일청담! 밤에 호롱불이 켜지는 연못이야. 지도 따라 같이 가 보자!",
+  "next-library": "다음은 중앙도서관! 전국에서 두 번째로 책이 많은 도서관이야. 같이 가 보자!",
+  "next-bokji": "다음은 복지관! 학교생활에 필요한 곳이 다 모여 있어. 같이 가 보자!",
+  "next-centralpark": "다음은 센트럴파크! 무빔이 열리는 잔디밭이야. 같이 가 보자!",
+  "next-gongstaurant": "다음은 공식당! 공대생들이 사랑하는 학식 맛집이야. 같이 가 보자!",
+  "next-cherryroad": "다음은 벚꽃길! 벚꽃이 흩날리는 산책로야. 같이 가 보자!",
+  "next-stadium": "다음은 대운동장! 축제가 열리는 곳이야. 같이 가 보자!",
+  "next-loveroad": "다음은 러브로드! 손잡고 걸으면 사랑이 이루어진다는 길이야. 같이 가 보자!",
+  "half-loveroad": "지금 걷는 이 길이 백양로야. 정문에서 본관 쪽으로 쭉 이어져.",
+  "half-ilcheongdam": "일청담은 감꽃 모양 연못이야. 물가에 수달이 있나 잘 봐 봐!",
+  "half-library": "도서관 자리는 앱으로 미리 예약할 수 있어. 꼭 깔아 둬!",
+  "half-bokji": "복지관엔 서점이랑 우체국도 있어. 교재 살 때 들러 봐!",
+  "half-centralpark": "센팍에선 무빔 영화도 상영해. 날 좋은 날 꼭 와 봐!",
+  "half-gongstaurant": "공식당 메뉴는 매일 바뀌어. 인스타나 크누피아에서 볼 수 있어!",
+  "half-cherryroad": "벚꽃길은 공식당이랑 아주 가까워. 금방 도착해!",
+  "half-stadium": "작년 축제엔 지코랑 선미도 왔대. 조금만 더 가자!",
+  "intro-loveroad": "도착! 여기는 러브로드야. 연인이 손을 잡고 정문에서 본관 방향으로 걸으면 영원한 사랑이 이루어진다는 전설이 있어. 친구랑 같이 걸어도 좋아!",
+  "intro-ilcheongdam": "도착! 여기는 일청담이야. 경북대의 상징인 감꽃 모양을 본떠 만든 연못이야. 밤이 되면 호롱불이 켜지고, 가끔 신천에 사는 수달도 놀러 온대!",
+  "intro-library": "도착! 여기는 중앙도서관이야. 전국 대학 도서관 중에서 두 번째로 책이 많은 곳이야. 열람실은 신관, 책은 구관에 있고, 자리는 도서관 앱으로 예약할 수 있어.",
+  "intro-bokji": "도착! 여기는 복지관이야. 서점, 은행, 우체국, 학식당까지 학교생활에 필요한 곳이 모여 있어. 개강 준비물은 여기서 챙기면 돼!",
+  "intro-centralpark": "도착! 여기는 센트럴파크, 줄여서 센팍이야. 영화를 상영하는 무빔이 열리는 잔디밭이야. 돗자리 펴고 피크닉 하기 딱 좋아!",
+  "intro-gongstaurant": "도착! 여기는 공식당이야. 공대생들에게 인기 있는 학식당인데, 치즈알밥이랑 육회비빔밥이 특히 맛있어. 개강 시즌엔 사람이 많으니까 일찍 와야 해!",
+  "intro-cherryroad": "도착! 여기는 벚꽃길이야. 봄이 되면 벚꽃 잎이 눈처럼 흩날리는 산책로야. 여기서 찍으면 인생샷 보장!",
+  "intro-stadium": "도착! 여기는 대운동장이야. 축제 무대가 열리는 곳이고, 바로 옆 백호관에는 중앙동아리방이 모여 있어. 올해 축제엔 누가 올까?",
+  "near": "거의 다 왔어! 저 앞이야!",
+  "wrong": "어, 반대쪽 같아! 화살표 방향으로 가 줘!",
+  "far": "아직 좀 멀어! 화살표를 따라 조금만 더 가 줘!",
+  "halfway": "벌써 반이나 왔어!",
+  "finish-godsaeng": "갓생 코스 완주! 갓생 새내기 뱃지를 받았어. 같이 돌아서 즐거웠어!",
+  "finish-healing": "힐링 코스 완주! 힐링 마스터 뱃지를 받았어. 같이 돌아서 즐거웠어!",
+  "finish-full": "전체 코스 완주! 캠퍼스 정복자 뱃지를 받았어. 같이 돌아서 즐거웠어!",
+};
+const AUDIO_DIR = "audio/tour/";
+let voiceEl = null;   // 하나의 오디오를 돌려 쓴다 (아이폰은 처음 버튼 누를 때 한 번 풀어 줘야 함)
+const getVoiceEl = () => (voiceEl = voiceEl || new Audio());
+// 키에 맞는 녹음을 재생. 파일이 없거나 재생이 막히면 글자를 TTS로 읽는다
+// mode: "interrupt"(지금 말 끊고 바로) / "queue"(지금 말 끝나면) / "skip"(말하는 중이면 건너뜀)
+// onStart: 실제로 말을 시작할 때 부름 (말풍선 글자를 음성과 맞추려고)
+let playing = false, waiting = null;
+function playKey(key, fallbackText, { mode = "interrupt", onStart } = {}) {
+  const text = SCRIPT[key] || fallbackText;
+  if (!voiceOn()) { onStart?.(); return; }
+  if (playing && mode === "skip") return;
+  if (playing && mode === "queue") { waiting = { key, fallbackText, onStart }; return; }
+  waiting = null;
+  onStart?.();
+  const done = () => { playing = false; const w = waiting; waiting = null; if (w) playKey(w.key, w.fallbackText, { onStart: w.onStart }); };
+  if (!SCRIPT[key]) { speak(text, { interrupt: true }); playing = false; return; }
+  try { speechSynthesis.cancel(); } catch {}
+  const a = getVoiceEl();
+  try { a.pause(); } catch {}
+  playing = true;
+  a.onended = done;
+  a.onerror = () => { speak(text, { interrupt: true }); done(); };
+  a.src = AUDIO_DIR + key + ".mp3";
+  a.play().catch(() => { speak(text, { interrupt: true }); done(); });
+}
+function stopVoice() { waiting = null; playing = false; try { voiceEl?.pause(); } catch {} try { speechSynthesis.cancel(); } catch {} }
 const voiceOn = () => { try { return localStorage.getItem(VOICE_KEY) !== "off"; } catch { return true; } };
-const setVoice = (on) => { try { localStorage.setItem(VOICE_KEY, on ? "on" : "off"); } catch {} if (!on) speechSynthesis?.cancel(); };
+const setVoice = (on) => { try { localStorage.setItem(VOICE_KEY, on ? "on" : "off"); } catch {} if (!on) { try { speechSynthesis.cancel(); } catch {} try { voiceEl?.pause(); } catch {} } };
 let koVoice = null;
 function pickVoice() {
   try {
@@ -269,7 +332,8 @@ function openCourseSheet() {
         <div class="d">${c.desc} · 걷기만 약 ${s.walk}분</div>
         <div class="r">정문 → ${c.stops.map((id) => zoneById(id)?.name || id).join(" → ")}</div>
       </button>`; }).join("")}
-    <button class="ts-close">닫기</button></div>`;
+    <button class="ts-close">닫기</button>
+    <p class="ts-sub" style="margin:10px 0 0;text-align:center;font-size:11px">호반우 음성: 네이버 클로바더빙</p></div>`;
   document.body.appendChild(el);
   el.onclick = (e) => { if (e.target === el) el.remove(); };
   el.querySelector(".ts-close").onclick = () => el.remove();
@@ -283,6 +347,11 @@ function openCourseSheet() {
 // 아이폰은 버튼을 누른 순간에 한 번 소리를 내 줘야 그 뒤에도 음성이 나온다
 function unlockAudio() {
   try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch {}
+  try {   // 녹음 재생용 오디오도 버튼 누른 순간에 한 번 재생해서 풀어 둔다 (무음)
+    const a = getVoiceEl();
+    a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+    a.play().then(() => a.pause()).catch(() => {});
+  } catch {}
   try { if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().catch(() => {}); } catch {}
 }
 
@@ -341,7 +410,7 @@ function _openMove(first) {
     </div>
     <div class="tm-steps">${c.stops.map((_, i) => `<i class="${i < st.idx ? "done" : i === st.idx ? "now" : ""}"></i>`).join("")}</div>
     <div id="tour-map"></div>
-    <div class="tm-legend"><span><i style="background:#2f6fed"></i>내 위치</span><span><i style="background:#d4121a"></i>도착 지점 (빨간 영역에 들어오면 도착)</span><span>점선: 걸어갈 길</span></div>
+    <div class="tm-legend"><span><i style="background:#2f6fed"></i>내 위치</span><span><i style="background:#d4121a"></i>도착 지점 (빨간 영역에 들어오면 도착)</span><span>점선: 걸어갈 길</span><span style="margin-left:auto">음성: 네이버 클로바더빙</span></div>
     <div class="tm-side">
       <div class="tm-next">
         <div class="tm-arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L33 34 L20 27 L7 34 Z" fill="var(--primary,#d4121a)"/></svg></div>
@@ -353,11 +422,12 @@ function _openMove(first) {
   document.body.appendChild(root);
   const $ = (s) => root.querySelector(s);
   const bubble = (t, opt) => { $(".tm-bubble").textContent = clean(t); speak(t, opt); };
+  const say = (key, fallback, mode = "interrupt") => playKey(key, fallback, { mode, onStart: () => { const b = root.querySelector(".tm-bubble"); if (b) b.textContent = clean(SCRIPT[key] || fallback); } });
   const vBtn = $('[data-a="voice"]');
   const paintVoice = () => (vBtn.textContent = voiceOn() ? "🔊 음성" : "🔇 음성");
   paintVoice();
   vBtn.onclick = () => { setVoice(!voiceOn()); paintVoice(); };
-  $('[data-a="out"]').onclick = () => { closeMove(); try { app.goTab("quest"); } catch {} };
+  $('[data-a="out"]').onclick = () => { stopVoice(); closeMove(); try { app.goTab("quest"); } catch {} };
 
   // --- 지도 ---
   let map = null, routeLine = null, meMk = null;
@@ -445,9 +515,9 @@ function _openMove(first) {
     // 실제로 걸을 때: 빨간 구역 안에 들어오거나 핀에서 25m 이내면 도착. 데모 걷기는 핀까지 끝까지 걸어간다
     const ev = geo.evaluate(p, zone);
     if ((!sim && ev.status === "inside") || d <= (sim ? 3 : 25)) return arrive();
-    if (!said.half && d0 > 80 && d <= d0 * 0.55) { said.half = true; bubble(HALF[zone.id] || "벌써 반이나 왔어!"); return; }
-    if (!said.near && d0 > 90 && d <= 60) { said.near = true; bubble(`거의 다 왔어! 저 앞이 ${iya(zone.name)}`); return; }
-    if (!sim && d > minD + 30 && Date.now() - lastWrong > 20000) { lastWrong = Date.now(); bubble("어, 반대쪽 같아! 화살표 방향으로 가 줘", { interrupt: true }); return; }
+    if (!said.half && d0 > 80 && d <= d0 * 0.55) { said.half = true; HALF[zone.id] ? say("half-" + zone.id, HALF[zone.id], "queue") : say("halfway", "벌써 반이나 왔어!", "queue"); return; }
+    if (!said.near && d0 > 90 && d <= 60) { said.near = true; say("near", `거의 다 왔어! 저 앞이 ${iya(zone.name)}`, "skip"); return; }
+    if (!sim && d > minD + 30 && Date.now() - lastWrong > 20000) { lastWrong = Date.now(); say("wrong", "어, 반대쪽 같아! 화살표 방향으로 가 줘!"); return; }
     for (const poi of POIS) {
       if (!poiSaid.has(poi.name) && geo.distanceM(p, poi) < 35) { poiSaid.add(poi.name); bubble(poi.line); return; }
     }
@@ -505,7 +575,7 @@ function _openMove(first) {
     root.querySelector(".tm-steps .now")?.style.setProperty("--p", "100%");
     $(".tm-dist span").textContent = "도착했어요!";
     $(".tm-guide").classList.add("tm-arrive");
-    bubble(`도착! ${INTRO[zone.id] || zone.name + "에 왔어!"}`, { interrupt: true });
+    say("intro-" + zone.id, `도착! ${INTRO[zone.id] || zone.name + "에 왔어!"}`, "queue");
     paintBtns();
     if (map) map.flyTo([zone.lat, zone.lng], 18, { duration: .8 });
   }
@@ -532,7 +602,7 @@ function _openMove(first) {
     box.querySelector('[data-a="demo"]')?.addEventListener("click", (e) => { e.currentTarget.disabled = true; demoWalk(); });
     box.querySelector('[data-a="here"]')?.addEventListener("click", () => {
       // GPS가 부정확할 때를 위한 수동 도착 (100m 안이거나 위치를 모를 때만)
-      if (meMk && geo.distanceM(meMk.getLatLng(), zone) > 100) { bubble("아직 좀 멀어! 화살표를 따라 조금만 더 가 줘", { interrupt: true }); return; }
+      if (meMk && geo.distanceM(meMk.getLatLng(), zone) > 100) { say("far", "아직 좀 멀어! 화살표를 따라 조금만 더 가 줘!"); return; }
       arrive();
     });
   }
@@ -548,16 +618,14 @@ function _openMove(first) {
       window.removeEventListener("deviceorientationabsolute", onOri);
       window.removeEventListener("deviceorientation", onOri);
       try { wake?.release(); } catch {}
-      try { map?.remove(); } catch {}
-      try { speechSynthesis.cancel(); } catch {}
+      try { map?.remove(); } catch {}   // 음성은 끊지 않는다 (도착 소개를 들으며 미션 화면으로 넘어가도 되게)
     },
   };
 
   // 출발 안내
   const fromName = prev.name || "";
-  bubble(first
-    ? `안녕! 나는 호반우야. ${fromName}에서 출발해서 ${c.name}를 같이 돌아 보자! 첫 번째 장소는 ${iya(zone.name)}.`
-    : `다음은 ${zone.name}! ${zone.desc ? zone.desc + "." : ""} 지도 따라 같이 가 보자`, { interrupt: true });
+  if (first && zone.id === "loveroad") say("start-" + c.id, `안녕! 나는 호반우야. ${fromName}에서 출발해서 ${c.name}를 같이 돌아 보자! 첫 번째 장소는 ${iya(zone.name)}.`);
+  else say("next-" + zone.id, `다음은 ${zone.name}! ${zone.desc ? zone.desc + "." : ""} 지도 따라 같이 가 보자`);
   setTimeout(() => map?.invalidateSize(), 200);
 }
 
@@ -582,5 +650,5 @@ function finish(st) {
     <button class="ts-close" style="background:var(--primary,#d4121a);color:#fff">좋아!</button></div>`;
   document.body.appendChild(el);
   el.querySelector(".ts-close").onclick = () => { el.remove(); try { app.goTab("quest"); } catch {} };
-  speak(`${c.name} 완주! ${c.badge} 뱃지를 받았어. 같이 돌아서 즐거웠어!`, { interrupt: true });
+  playKey("finish-" + c.id, `${c.name} 완주! ${c.badge} 뱃지를 받았어. 같이 돌아서 즐거웠어!`);
 }
