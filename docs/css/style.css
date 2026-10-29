@@ -620,6 +620,11 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 
 /* ============ 마스코트 일러스트 (온보딩/홈) ============ */
 .mascot-hero { display: block; width: 128px; height: auto; margin: 24px auto 0; animation: float 3.4s ease-in-out infinite; }
+/* 내 정보: 내 소속 단대 호반우를 프로필 카드 오른쪽 위에 고정 */
+.me-hero { position: relative; }
+.me-college { position: absolute; top: 12px; right: 14px; height: 92px; width: auto; pointer-events: none;
+              filter: drop-shadow(0 6px 10px rgba(36, 28, 22, .14)); }
+.me-hero > div:nth-of-type(-n+3) { padding-right: 96px; }   /* 소속·닉네임·레벨 글자가 캐릭터와 겹치지 않게 */
 .mascot-corner { position: absolute; top: 0; right: -6px; width: 72px; height: auto; opacity: .95; pointer-events: none;
                   animation: float 3s ease-in-out infinite; animation-delay: -1s; }
 
