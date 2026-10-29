@@ -41,7 +41,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 h1, h2, h3 { margin: 0; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-main { padding: calc(8px + env(safe-area-inset-top)) 16px 110px; }
+main { padding: calc(8px + env(safe-area-inset-top)) 16px calc(116px + env(safe-area-inset-bottom)); }
 body[data-view="zone"] main { padding-bottom: 40px; }
 .view { animation: viewIn .38s var(--ease-toss); }
 
@@ -323,19 +323,32 @@ body[data-view="zone"] {
 .badge.off { opacity: .4; filter: grayscale(1); }
 
 /* ============ 하단 탭 ============ */
-#tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
-          display: flex; z-index: 1100; background: var(--card); border-top: 1px solid var(--line);
-          padding-bottom: env(safe-area-inset-bottom); }
-#tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 9px;
-                 color: var(--mute); font-size: 11px; font-weight: 600; }
-#tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8;
-              stroke-linecap: round; stroke-linejoin: round; }
-#tabbar button.on { color: var(--primary); }
+/* 아이폰 느낌: 화면 아래에 둥둥 떠 있는 반투명 유리 알약 모양. 고른 탭은 말랑한 빨간 알약 + 아이콘이 통 튄다 */
+#tabbar { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+          width: calc(100% - 28px); max-width: 452px; display: flex; gap: 4px; z-index: 1100; padding: 6px;
+          border-radius: 32px; background: rgba(255, 255, 255, .74);
+          -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+          border: 1px solid rgba(255, 255, 255, .7);
+          box-shadow: 0 12px 32px -8px rgba(25, 31, 40, .22), 0 2px 8px rgba(25, 31, 40, .06), inset 0 1px 0 rgba(255, 255, 255, .9); }
+#tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 7px;
+                 border-radius: 26px; color: var(--mute); font-size: 11px; font-weight: 700;
+                 transition: background .25s var(--ease-toss), color .2s; }
+#tabbar svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 2;
+              stroke-linecap: round; stroke-linejoin: round; transition: transform .2s var(--ease-toss); }
+#tabbar button:active svg { transform: scale(.86); }
+#tabbar button.on { color: var(--primary); background: var(--primary-weak); }
+#tabbar button.on svg { fill: color-mix(in srgb, currentColor 22%, transparent); animation: tabPop .45s var(--ease-toss); }
+@keyframes tabPop { 0% { transform: scale(.7) translateY(2px); } 55% { transform: scale(1.18) translateY(-2px); } 100% { transform: scale(1); } }
+@media (prefers-color-scheme: dark) {
+  #tabbar { background: rgba(30, 33, 37, .72); border-color: rgba(255, 255, 255, .08);
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .06); }
+}
+@media (prefers-reduced-motion: reduce) { #tabbar button.on svg { animation: none; } }
 body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: none; }
 
 /* 커뮤니티 글쓰기 버튼: 탭바 바로 위 오른쪽에 떠 있는 동그란 버튼. 커뮤니티 화면에서만 보인다. */
 .fab { position: fixed; z-index: 1050; display: none; place-items: center; width: 58px; height: 58px; border-radius: 50%;
-       right: max(16px, calc(50% - 240px + 16px)); bottom: calc(80px + env(safe-area-inset-bottom));
+       right: max(16px, calc(50% - 240px + 16px)); bottom: calc(96px + env(safe-area-inset-bottom));
        background: var(--primary); color: #fff; box-shadow: var(--shadow-btn), 0 2px 6px rgba(0, 0, 0, .12);
        transition: transform .16s var(--ease-toss), background .16s var(--ease-toss); }
 .fab svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -576,8 +589,8 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 
 /* 새 알림이 있으면 하단 "홈" 탭 아이콘 옆에 빨간 점 */
 #tabbar button[data-tab="home"] { position: relative; }
-#tabbar button.has-unread::after { content: ""; position: absolute; top: 8px; left: calc(50% + 9px); width: 8px; height: 8px;
-                                   border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--card); }
+#tabbar button.has-unread::after { content: ""; position: absolute; top: 7px; left: calc(50% + 8px); width: 9px; height: 9px;
+                                   border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px #fff; }
 
 /* 알림 패널: 아래에서 올라오는 시트 + 뒤쪽 어둡게 */
 #notif-panel { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -1049,33 +1062,19 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 .jelly-emoji { font-size: 20px; line-height: 1; }/* 내 정보 카드: 경험치 막대 아래 총 XP · 다음 레벨까지 */
 .me-xp-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13px; color: var(--sub); }
 .me-xp-line b { font-size: 15px; color: var(--primary); }
-/* ============ 커뮤니티 첫 화면: 게시판 카드 (타일 두 개 + 최근 올라온 글) ============ */
-.board-hub { padding: 18px; }
-.board-hub .qm-head { margin-bottom: 12px; }
-.bh-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.bh-tile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 112px;
-  padding: 14px; border-radius: 18px; text-align: left; background: #fff4f5; overflow: hidden;
-  transition: transform .12s var(--ease-toss); }
-.bh-tile.q { background: #f1f6ff; }
-.bh-tile:active { transform: scale(.97); }
-.bh-tile .bh-ic { width: 40px; height: 40px; margin-bottom: auto; }
-.bh-tile b { margin-top: 10px; font-size: 16px; color: var(--ink); }
-.bh-tile small { font-size: 12px; color: var(--sub); }
-.bh-tile::after { content: "›"; position: absolute; right: 14px; top: 12px; font-size: 20px; font-weight: 700; color: var(--mute); }
-.bh-recent { margin-top: 16px; }
-.bh-label { font-size: 13px; font-weight: 700; color: var(--mute); }
-.bc-empty { margin: 8px 0 0; font-size: 13px; color: var(--sub); }
-.bp-list { list-style: none; margin: 4px 0 0; padding: 0; }
-.bp-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 0; text-align: left; border-bottom: 1px solid var(--line); }
-.bp-list li:last-child .bp-row { border-bottom: 0; padding-bottom: 0; }
-.bp-pill { flex: none; padding: 3px 8px; border-radius: 999px; background: var(--primary-weak); color: var(--primary); font-size: 11px; font-weight: 800; }
-.bp-pill.q { background: #e8f0ff; color: #2f6fed; }
+/* ============ 커뮤니티 첫 화면: 자유게시판 카드 (최근 글 미리보기) ============ */
+.board-hub { display: block; width: 100%; text-align: left; padding: 18px; transition: transform .12s var(--ease-toss); }
+.board-hub:active { transform: scale(.985); }
+.bh-head { display: flex; align-items: center; gap: 12px; }
+.bh-head .bh-ic { flex: none; width: 44px; height: 44px; }
+.bh-title { flex: 1; min-width: 0; }
+.bh-title b { display: block; font-size: 17px; color: var(--ink); }
+.bh-title small { display: block; margin-top: 1px; font-size: 12.5px; color: var(--mute); }
+.bc-more { flex: none; font-size: 13px; font-weight: 700; color: var(--primary); }
+.bc-empty { display: block; margin-top: 14px; font-size: 13px; color: var(--sub); }
+.bp-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.bp-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); }
 .bp-body { min-width: 0; flex: 1; }
 .bp-text { display: block; font-size: 14px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bp-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bp-thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--cream-weak); }
-@media (prefers-color-scheme: dark) {
-  .bh-tile { background: #2a1d20; }
-  .bh-tile.q { background: #1b2433; }
-  .bp-pill.q { background: #1b2433; color: #7fb3ff; }
-}
+.bp-thumb { flex: none; width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: var(--cream-weak); }

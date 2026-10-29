@@ -334,7 +334,7 @@ async function goTab(tab, opts = {}) {
     refreshBellBadge();
   } else if (tab === "board") {
     // opts: { board: "post" | "question", filter: "all" | "mine", tag } — 안 주면 지금 상태 그대로
-    if (opts.board) communityBoard = opts.board;
+    if (opts.board) communityBoard = "post";   // 게시판은 자유게시판 하나
     if (opts.board || opts.filter) { communityFilter = opts.filter || "all"; communityTag = opts.tag || null; }
     await renderCommunityTab();
     ui.showView("board");
@@ -406,13 +406,10 @@ async function startHiddenMission(h) {
 }
 
 /* ================= 커뮤니티 탭 ================= */
-// 첫 화면: 내 순위 + 게시판 카드(자유게시판·질문 타일 + 최근 올라온 글 3개). 카드를 누르면 게시판 상세 화면으로.
+// 첫 화면: 내 순위 + 자유게시판 카드(최근 글 3개). 질문 게시판은 없앴다 (예전 질문 글은 보이지 않음). 카드를 누르면 게시판 상세 화면으로.
 async function renderCommunityHome() {
-  const [posts, questions] = await Promise.all([
-    listPosts({ kind: "post", limit: 3 }),
-    listPosts({ kind: "question", limit: 3 }),
-  ]);
-  ui.renderCommunityHome(allZones, posts, questions);
+  const posts = await listPosts({ kind: "post", limit: 3 });
+  ui.renderCommunityHome(allZones, posts);
   $("view-community").querySelectorAll("[data-open-board]").forEach((b) => {
     b.onclick = () => goTab("board", { board: b.dataset.openBoard });
   });

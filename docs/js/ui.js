@@ -497,25 +497,20 @@ function postCardHtml(p, zoneName, myId) {
     </article>`;
 }
 
-// 커뮤니티 탭 첫 화면: 내 순위 카드 + 게시판 카드
-//   게시판 카드 = 위쪽 큰 타일 두 개(자유게시판 · 질문, 누르면 그 게시판으로) + 아래 "최근 올라온 글" 3개(두 게시판 섞어서)
-// posts / questions: 각 게시판 최근 글 (listPosts 결과, 최신순)
-export function renderCommunityHome(zones, posts, questions) {
+// 커뮤니티 탭 첫 화면: 내 순위 카드 + 자유게시판 카드(최근 글 3개 미리보기). 카드를 누르면 게시판 화면으로.
+// posts: 자유게시판 최근 글 (listPosts 결과, 최신순)
+export function renderCommunityHome(zones, posts) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
-  const recent = [...posts, ...questions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
-  const latest = (list) => (list[0] ? `${timeAgo(list[0].created_at)} 새 글` : "아직 글이 없어요");
   const row = (p) => {
-    const q = p.kind === "question";
     const text = String(p.message || (p.photo_url ? "사진을 올렸어요" : "")).replace(/\s+/g, " ");
-    return `<li><button type="button" class="bp-row" data-open-board="${q ? "question" : "post"}">
-      <span class="bp-pill ${q ? "q" : ""}">${q ? "질문" : "자유"}</span>
+    return `<li class="bp-row">
       <span class="bp-body">
         <span class="bp-text">${esc(text)}</span>
         <span class="bp-meta">${esc(p.nickname)} · ${timeAgo(p.created_at)}${p.zone_id ? ` · ${esc(toTag(zoneName(p.zone_id)))}` : ""}${
-          q ? ` · 답변 ${p.comment_count || 0}` : p.comment_count ? ` · 댓글 ${p.comment_count}` : ""}</span>
+          p.like_count ? ` · ♥ ${p.like_count}` : ""}${p.comment_count ? ` · 댓글 ${p.comment_count}` : ""}</span>
       </span>
-      ${!q && p.photo_url ? `<img class="bp-thumb" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ""}
-    </button></li>`;
+      ${p.photo_url ? `<img class="bp-thumb" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ""}
+    </li>`;
   };
   $("view-community").innerHTML = `
     <div class="card card-hero rank-hero" id="rank-hero">
@@ -526,27 +521,18 @@ export function renderCommunityHome(zones, posts, questions) {
       </div>
       <button id="btn-rank-all" class="btn alt-ghost">전체 랭킹 보기</button>
     </div>
-    <div class="card board-hub">
-      <div class="qm-head"><span class="qm-title">게시판</span></div>
-      <div class="bh-tiles">
-        <button type="button" class="bh-tile" data-open-board="post">
-          ${icon("chat", { cls: "bh-ic" })}
-          <b>자유게시판</b><small>${latest(posts)}</small>
-        </button>
-        <button type="button" class="bh-tile q" data-open-board="question">
-          ${icon("question", { cls: "bh-ic" })}
-          <b>질문</b><small>${latest(questions)}</small>
-        </button>
-      </div>
-      <div class="bh-recent">
-        <span class="bh-label">최근 올라온 글</span>
-        ${recent.length ? `<ul class="bp-list">${recent.map(row).join("")}</ul>`
-          : `<p class="bc-empty">아직 글이 없어요. 첫 글을 남겨보세요!</p>`}
-      </div>
-    </div>`;
+    <button type="button" class="card board-hub" data-open-board="post">
+      <span class="bh-head">
+        ${icon("chat", { cls: "bh-ic" })}
+        <span class="bh-title"><b>자유게시판</b><small>캠퍼스 이야기와 호반우 인증샷</small></span>
+        <span class="bc-more">전체 보기 ›</span>
+      </span>
+      ${posts.length ? `<ul class="bp-list">${posts.map(row).join("")}</ul>`
+        : `<span class="bc-empty">아직 글이 없어요. 첫 글을 남겨보세요!</span>`}
+    </button>`;
 }
 
-// 게시판 상세 화면 (커뮤니티 > 자유게시판 / 질문)
+// 게시판 상세 화면 (커뮤니티 > 자유게시판)
 // board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
 // myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
 // 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
