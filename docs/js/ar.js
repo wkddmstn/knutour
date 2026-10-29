@@ -1192,6 +1192,10 @@ export function openDex() {
   box.onclick = (e) => { if (e.target === box) box.remove(); };
 }
 
+// 호반우 탭 아래에 다른 기능(투어 뱃지 등)을 붙일 수 있게 하는 자리. tour.js가 등록한다
+let paneExtra = null;
+export function setHobanuPaneExtra(fn) { paneExtra = fn; }
+
 // 탐색 화면의 "호반우" 탭: 사진 찍기 버튼 + 도감을 container 안에 그린다
 export function renderHobanuPane(container) {
   if (!container) return;
@@ -1208,7 +1212,9 @@ export function renderHobanuPane(container) {
           <div class="dex-head"><b>📖 호반우 도감</b><span>${b.n} / ${b.total}</span></div>
           ${b.html}
         </div>
+        <div class="hob-extra"></div>
       </div>`;
+    try { paneExtra?.(container.querySelector(".hob-extra")); } catch (e) { console.warn(e); }
     container.querySelector(".hob-photo-cta").onclick = async () => {
       await openPhotoStudio();
       draw();

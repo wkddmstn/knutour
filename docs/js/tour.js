@@ -4,7 +4,7 @@
 // main.js는 이 파일을 "있으면 쓰는" 방식(동적 import + try/catch)으로 불러온다.
 // 그래서 이 파일에 문제가 생겨도 기존 앱(구역 채팅·미션·AR)은 그대로 동작한다.
 import * as geo from "./geo.js";
-import { MASCOTS } from "./ar.js";
+import { MASCOTS, setHobanuPaneExtra } from "./ar.js";
 
 export const TOUR_ON = true;          // false로 바꾸면 투어 카드/버튼이 전부 사라진다
 const DEMO_WALK = true;               // 시연용 "데모로 걸어가기" 버튼 (실제 운영 때는 false)
@@ -20,11 +20,11 @@ const GATES = {
 };
 
 const COURSES = [
-  { id: "godsaeng", name: "갓생 살기 코스", emoji: "📚", badge: "갓생 새내기", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
+  { id: "godsaeng", name: "갓생 살기 코스", emoji: "📚", badge: "갓생 새내기", img: "img/mascot/study.png", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
     stops: ["loveroad", "ilcheongdam", "library", "bokji", "centralpark"] },
-  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
+  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", img: "img/hobanu/loveroad.png", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
     stops: ["loveroad", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
-  { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", desc: "캠퍼스 한 바퀴 완주",
+  { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", img: "img/mascot/badge-campus.png", desc: "캠퍼스 한 바퀴 완주",
     stops: ["loveroad", "centralpark", "bokji", "library", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
 ];
 
@@ -58,6 +58,7 @@ const POIS = [];
 let app = null;   // { zones(), openZone, goTab, store, ui }
 export function initTour(api) {
   app = api;
+  try { setHobanuPaneExtra(renderBadgeSection); } catch {}   // 퀘스트 > 호반우 탭에 투어 뱃지 칸
 }
 const zoneById = (id) => app?.zones().find((z) => z.id === id);
 // 받침에 따라 "이야/야", "으로/로" 붙이기
@@ -68,6 +69,7 @@ const course = (id) => COURSES.find((c) => c.id === id);
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } }
 function save(st) { try { st ? localStorage.setItem(KEY, JSON.stringify(st)) : localStorage.removeItem(KEY); } catch {} }
 export const isActive = () => TOUR_ON && !!load();
+const curStopId = () => { const st = load(); return st ? course(st.course)?.stops[st.idx] : null; };
 const getBadges = () => { try { return JSON.parse(localStorage.getItem(BADGE_KEY)) || {}; } catch { return {}; } };
 function giveBadge(id) {
   const b = getBadges();
@@ -76,27 +78,25 @@ function giveBadge(id) {
   try { localStorage.setItem(BADGE_KEY, JSON.stringify(b)); } catch {}
   return true;
 }
-const badgeHtml = (c, on, big = false) => `<div class="tb-badge ${on ? "on" : ""} ${big ? "big" : ""}">
-  <i>${c.emoji}</i><b>${c.badge}</b><span>${on ? new Date(on).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) + " 획득" : c.name + " 완주 시"}</span></div>`;
-// 내 정보 탭에 "스탬프 · 뱃지" 카드 (main.js가 내 정보 화면을 그린 뒤 부름)
-export function renderBadges(container) {
-  if (!TOUR_ON || !container || !app) return;
+const fmtDay = (t) => new Date(t).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+// 호반우 그림 뱃지 (받기 전에는 실루엣)
+const badgeHtml = (c, on, big = false) => `<div class="tb-badge ${on ? "on" : ""} ${big ? "big" : ""}" data-c="${c.id}">
+  <div class="tb-medal"><img src="${c.img}" alt="${c.badge}">${on ? "" : "<em>?</em>"}</div>
+  <b>${on ? c.badge : "???"}</b><span>${on ? fmtDay(on) + " 획득" : c.name + " 완주 시"}</span></div>`;
+// 퀘스트 > 호반우 탭의 "투어 뱃지" 칸 (ar.js의 호반우 도감 아래에 붙음)
+function renderBadgeSection(slot) {
+  if (!TOUR_ON || !slot) return;
   injectStyle();
-  container.querySelector(".tb-card")?.remove();
   const got = getBadges();
-  const zones = app.zones();
-  const cleared = zones.filter((z) => z.missions.every((m) => app.store.isDone(m.id)));
-  const card = document.createElement("div");
-  card.className = "card tb-card";
-  card.innerHTML = `
-    <div class="sum-label">구역 스탬프 · ${cleared.length}/${zones.length}</div>
-    <div class="tb-stamps">${zones.map((z) => `<span class="${cleared.includes(z) ? "on" : ""}" title="${z.name}">${z.emoji || "📍"}</span>`).join("")}</div>
-    <div class="sum-label" style="margin-top:14px">투어 뱃지 · ${Object.keys(got).length}/${COURSES.length}</div>
-    <div class="tb-badges">${COURSES.map((c) => badgeHtml(c, got[c.id])).join("")}</div>`;
-  const hero = container.querySelector(".card-hero");
-  hero ? hero.insertAdjacentElement("afterend", card) : container.prepend(card);
+  slot.innerHTML = `<div class="dex-inline tb-section">
+    <div class="dex-head"><b>🏅 투어 뱃지</b><span>${Object.keys(got).length} / ${COURSES.length}</span></div>
+    <p class="dex-sub">호반우와 투어 코스를 완주하면 호반우 뱃지를 받아요!</p>
+    <div class="tb-badges">${COURSES.map((c) => badgeHtml(c, got[c.id])).join("")}</div></div>`;
+  slot.querySelectorAll(".tb-badge:not(.on)").forEach((el) => (el.onclick = () => {
+    const c = course(el.dataset.c);
+    app?.ui?.toast?.(`${c.emoji} ${c.name}를 완주하면 받을 수 있어요`);
+  }));
 }
-const curStopId = () => { const st = load(); return st ? course(st.course)?.stops[st.idx] : null; };
 
 /* ---------------- 음성 (브라우저 내장 TTS) ---------------- */
 const voiceOn = () => { try { return localStorage.getItem(VOICE_KEY) !== "off"; } catch { return true; } };
@@ -129,20 +129,22 @@ function injectStyle() {
   const s = document.createElement("style");
   s.id = "tour-style";
   s.textContent = `
-  .tb-card{margin-top:16px}
-  .tb-stamps{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
-  .tb-stamps span{aspect-ratio:1;display:grid;place-items:center;font-size:20px;border-radius:12px;background:var(--cream-weak,#f3ead9);filter:grayscale(1);opacity:.4}
-  .tb-stamps span.on{filter:none;opacity:1;background:var(--primary-weak,#fbe7e5)}
-  .tb-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-  .tb-badge{text-align:center;padding:10px 4px;border-radius:14px;background:var(--cream-weak,#f3ead9);filter:grayscale(1);opacity:.5}
-  .tb-badge.on{filter:none;opacity:1;background:linear-gradient(160deg,#fff4de,#fbe7e5)}
-  .tb-badge i{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 6px;border-radius:50%;font-style:normal;font-size:24px;
-    background:#fff;box-shadow:0 0 0 3px #e7c26b,0 3px 8px rgba(0,0,0,.15)}
-  .tb-badge b{display:block;font-size:12.5px}
-  .tb-badge span{display:block;font-size:10.5px;color:var(--sub,#6b5f52);margin-top:2px}
-  .tb-badge.big{filter:none;opacity:1;width:150px;margin:6px auto 12px;background:linear-gradient(160deg,#fff4de,#fbe7e5);animation:tm-pop .6s}
-  .tb-badge.big i{width:70px;height:70px;font-size:36px}
-  .tb-badge.big b{font-size:15px}
+  .tb-section{margin-top:14px}
+  .tb-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .tb-badge{text-align:center;cursor:pointer}
+  .tb-medal{position:relative;width:min(84px,24vw);aspect-ratio:1;margin:0 auto 6px;border-radius:50%;overflow:hidden;
+    background:radial-gradient(circle at 50% 38%,#fffaf0,#f3e3c4);box-shadow:0 0 0 4px #d9d2c5,0 4px 10px rgba(0,0,0,.12)}
+  .tb-medal img{width:100%;height:100%;object-fit:contain;padding:10%;box-sizing:border-box;filter:brightness(0) opacity(.18)}
+  .tb-medal em{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:26px;font-weight:900;color:#b9ad9b}
+  .tb-badge.on .tb-medal{box-shadow:0 0 0 4px #e7b84a,0 0 0 7px #fff3cf,0 6px 14px rgba(168,100,0,.3)}
+  .tb-badge.on .tb-medal img{filter:none}
+  .tb-badge b{display:block;font-size:13px}
+  .tb-badge span{display:block;font-size:11px;color:var(--sub,#6b5f52);margin-top:2px}
+  .tb-badge:not(.on) b{color:var(--mute,#9a8c7c)}
+  .tb-badge.big{margin:6px auto 12px;cursor:default}
+  .tb-badge.big .tb-medal{width:140px;animation:tb-shine 1s ease-out}
+  .tb-badge.big b{font-size:17px}
+  @keyframes tb-shine{0%{transform:scale(.4) rotate(-20deg);opacity:0}60%{transform:scale(1.12) rotate(6deg);opacity:1}100%{transform:none}}
   .tour-card{background:linear-gradient(135deg,var(--primary,#d4121a),#ff6a5b);color:#fff;border-radius:20px;padding:16px 18px;margin:4px 0 14px;
     display:flex;align-items:center;gap:12px;box-shadow:0 10px 24px -12px rgba(212,18,26,.6)}
   .tour-card img{width:58px;height:58px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
@@ -572,10 +574,9 @@ function finish(st) {
   const el = document.createElement("div");
   el.id = "tour-sheet";
   el.innerHTML = `<div class="ts" style="text-align:center">
-    <img src="img/hobanu/react-love.png" alt="" style="width:90px;height:90px;object-fit:contain">
     <h3>${c.emoji} ${c.name} 완주!</h3>
     ${badgeHtml(c, getBadges()[c.id], true)}
-    <p class="ts-sub" style="margin:0 0 6px;font-weight:800;color:var(--primary,#d4121a)">${newBadge ? `🏅 '${c.badge}' 뱃지를 받았어요!` : "이미 받은 뱃지예요"} · 내 정보 탭에서 볼 수 있어요</p>
+    <p class="ts-sub" style="margin:0 0 6px;font-weight:800;color:var(--primary,#d4121a)">${newBadge ? `🏅 '${c.badge}' 뱃지를 받았어요!` : "이미 받은 뱃지예요"} · 퀘스트 > 호반우 탭에서 볼 수 있어요</p>
     <p class="ts-sub">${c.stops.length}곳을 ${mins}분 동안 함께 돌았어요.${first ? " 완주 보너스 100 XP!" : ""}</p>
     <div class="r" style="font-size:13px;line-height:1.8;margin-bottom:12px">정문 → ${c.stops.map((id) => zoneById(id)?.name || id).join(" → ")}</div>
     <button class="ts-close" style="background:var(--primary,#d4121a);color:#fff">좋아!</button></div>`;
