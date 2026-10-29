@@ -311,9 +311,8 @@ async function startHiddenMission(h) {
 
 /* ================= 커뮤니티 탭 ================= */
 async function renderCommunityTab() {
-  const anns = await listAnnouncements(store.getState().profile?.dept);
   const posts = await listPosts({ onlyMine: communityFilter === "mine" });
-  ui.renderCommunity(anns, zones, posts, communityFilter);
+  ui.renderCommunity(zones, posts, communityFilter);
   document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
     b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
   });

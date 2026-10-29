@@ -285,23 +285,10 @@ export function renderRankInto(container, rows, mode, onMode) {
 
 /* ---------- 커뮤니티 ---------- */
 // posts: community_posts 테이블 최신순 목록, filter: "all" | "mine"
-export function renderCommunity(announcements, zones, posts, filter) {
+export function renderCommunity(zones, posts, filter) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   $("view-community").innerHTML = `
-    <h1 class="sec" style="margin-top:4px">커뮤니티</h1>
-    <p class="map-guide">공지사항과 학교 소식을 확인해 보세요.</p>
-    <div class="list-card">
-      ${announcements.length ? announcements.map((a) => `
-        <div class="zone-card" style="cursor:default">
-          <div class="zc-body"><strong>${a.dept ? `<span style="color:var(--primary);font-weight:700">[${esc(a.dept)}]</span> ` : ""}${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
-        </div>`).join("") : `
-        <div class="card" style="text-align:center;margin:0">
-          <img src="img/mascot/polarbear-friends.png" alt="호반우와 친구들" style="width:140px;margin:0 auto 10px">
-          <p style="color:var(--mute);margin:0">아직 공지가 없어요</p>
-        </div>`}
-    </div>
-
-    <h3 class="sec">💬 게시판</h3>
+    <h1 class="sec" style="margin-top:4px">💬 게시판</h1>
     <p class="map-guide">캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요.</p>
     <div class="seg-sub" style="margin:10px 0">
       <button data-f="all" class="${filter === "all" ? "on" : ""}">전체</button>
