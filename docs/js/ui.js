@@ -455,6 +455,28 @@ function showLevelInfo(myLevel) {
   m.onclick = (e) => { if (e.target === m) close(); };
 }
 
+/* ---------- 구역 부가정보 (상단 ⓘ 버튼 → 팝업) ---------- */
+export function showZoneInfo(info) {
+  const m = $("modal");
+  m.classList.remove("hidden");
+  m.classList.add("modal-center");
+  m.innerHTML = `
+    <div class="modal-card pop-in" style="text-align:left">
+      <h2 style="font-size:18px;text-align:center">${esc(info.title || "더 알아보기")}</h2>
+      <div class="accordion" style="margin-top:10px">
+        ${info.sections.map((s, i) => `
+          <details${i === 0 ? " open" : ""}>
+            <summary>${esc(s.title)}</summary>
+            <div class="acc-body">${esc(s.body)}</div>
+          </details>`).join("")}
+      </div>
+      <button id="zone-info-close" class="btn alt" style="margin-top:14px">닫기</button>
+    </div>`;
+  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
+  $("zone-info-close").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
+}
+
 /* ---------- 완주 시트 ---------- */
 export function showFinale(onRank) {
   const st = getState();

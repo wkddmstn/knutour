@@ -7,6 +7,7 @@ import { isDone } from "./storage.js";
 import { startAR, openPhotoStudio, photoItemsFor, MASCOTS } from "./ar.js";   // AR 호반우 (장주연)
 import { getCachedProfile } from "./supa.js";
 import { postCommunity } from "./community.js";
+import { verifyMissionPhoto } from "./verify.js";
 
 const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝", ar: "✨" };
 export const icon = (type) => ICON[type] || "⭐";
@@ -180,6 +181,16 @@ async function photo(m, zone) {
     } else {
       shot = file;
       chat.user(`<img class="shot" src="${URL.createObjectURL(file)}" alt="제출한 사진">`);
+    }
+
+    // AI가 이 사진이 미션 내용과 맞는지 확인한다. 안 맞으면 거절하고 다시 찍게 한다.
+    await chat.bot("사진을 확인하고 있어요... 🔍");
+    const verdict = await verifyMissionPhoto(m.title, m.desc, shot);
+    if (!verdict.ok) {
+      await chat.bot(
+        (verdict.reason ? `음, ${verdict.reason}` : "이 미션이랑 잘 안 맞는 사진 같아.") + " 다른 사진으로 다시 찍어볼래?"
+      );
+      continue;
     }
 
     await offerCommunityUpload(zone, shot);

@@ -404,7 +404,6 @@ function setupZoneInfoBtn(zone) {
     btn = document.createElement("button");
     btn.id = "zone-info-btn";
     btn.type = "button";
-    btn.className = "level-info-btn";
     btn.setAttribute("aria-label", "장소 정보 보기");
     btn.textContent = "ⓘ";
     $("zone-name")?.insertAdjacentElement("afterend", btn);
