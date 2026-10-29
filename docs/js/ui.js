@@ -57,7 +57,7 @@ export function renderOnboard(depts, onSubmit) {
         <span class="onb-badge-ring">KNU</span>
         <strong>캠퍼스 퀘스트</strong>
       </div>
-      <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
+      <img class="onb-logo" src="img/logo.png" alt="캠퍼스 퀘스트 로고">
     </div>
     <h1 class="onb-title onb-title-display">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
     <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
