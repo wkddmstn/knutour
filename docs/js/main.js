@@ -228,6 +228,8 @@ async function init() {
 
 // 친구 요청 실시간 반영: 다른 탭(=다른 사용자)의 행동을 이 탭에 즉시 보여준다
 let unsubscribeFriend = null;
+// 관리자가 새 공지를 올렸을 때도(실시간 구독이 아니라 주기적으로 다시 확인하는 방식으로) 종 배지에 반영한다
+let bellPollTimer = null;
 function setupNotifications() {
   refreshBellBadge();
   if (unsubscribeFriend) unsubscribeFriend();
@@ -240,6 +242,8 @@ function setupNotifications() {
       refreshBellBadge();
     },
   });
+  if (bellPollTimer) clearInterval(bellPollTimer);
+  bellPollTimer = setInterval(refreshBellBadge, 60000);   // 60초마다 새 공지 있는지 확인
 }
 
 function showOnboard() {
@@ -264,6 +268,7 @@ async function goTab(tab, opts = {}) {
     ui.renderDashboard(zones, anns, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
     ui.showView("home");
     renderDailySection();
+    refreshBellBadge();
    } else if (tab === "quest") {
     const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
     ui.renderQuestShell(clearedCount, zones.length);
@@ -275,6 +280,7 @@ async function goTab(tab, opts = {}) {
   } else if (tab === "community") {
     await renderCommunityTab();
     ui.showView("community");
+    refreshBellBadge();
   } else if (tab === "me") {
     ui.renderMe(zones, onReset);
     refreshBellBadge();
