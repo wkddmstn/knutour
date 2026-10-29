@@ -13,39 +13,39 @@ function injectStyle() {
   const s = document.createElement("style");
   s.textContent = `
   .dx-wrap{display:flex;flex-direction:column;gap:14px;padding-bottom:20px}
-  .dx-card{background:var(--card,#fff);border-radius:20px;padding:16px;box-shadow:var(--shadow-card,0 6px 18px rgba(0,0,0,.06));border:1px solid var(--line,#ece3d8)}
+  .dx-card{background:var(--card,#fff);border-radius:20px;padding:16px;box-shadow:var(--shadow-card,0 6px 18px rgba(0,0,0,.06));border:1px solid var(--line,#e5e8eb)}
   .dx-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
   .dx-head b{font-size:16px}
   .dx-head span{font-size:13px;font-weight:800;color:var(--primary,#d4121a)}
-  .dx-sub{margin:0 0 10px;font-size:12.5px;color:var(--sub,#6b5f52)}
-  .dx-bar{height:8px;border-radius:4px;background:var(--line,#ece3d8);overflow:hidden;margin:6px 0 12px}
+  .dx-sub{margin:0 0 10px;font-size:12.5px;color:var(--sub,#4e5968)}
+  .dx-bar{height:8px;border-radius:4px;background:var(--line,#e5e8eb);overflow:hidden;margin:6px 0 12px}
   .dx-bar i{display:block;height:100%;background:var(--primary,#d4121a);border-radius:4px}
   .dx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .dx-item{width:auto;margin:0;padding:8px 4px;border:none;border-radius:14px;background:var(--cream-weak,#f3ead9);font-family:inherit;color:inherit;
+  .dx-item{width:auto;margin:0;padding:8px 4px;border:none;border-radius:14px;background:var(--cream-weak,#f2f4f6);font-family:inherit;color:inherit;
     display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
   .dx-item img{width:100%;aspect-ratio:1;object-fit:contain}
   .dx-item b{font-size:11.5px;line-height:1.2;word-break:keep-all}
-  .dx-item small{font-size:10px;color:var(--mute,#9a8c7c)}
+  .dx-item small{font-size:10px;color:var(--mute,#8b95a1)}
   .dx-item.locked img{filter:brightness(0) opacity(.2)}
-  .dx-item.locked b{color:var(--mute,#9a8c7c)}
-  .dx-item.rare{background:linear-gradient(135deg,#fff7d6,#ffe9f2)}
-  .dx-rare{margin:12px 0 6px;font-size:13px;font-weight:800;color:#a86400}
+  .dx-item.locked b{color:var(--mute,#8b95a1)}
+  .dx-item.rare{background:linear-gradient(135deg,#f2f4f6,#ffe9f2)}
+  .dx-rare{margin:12px 0 6px;font-size:13px;font-weight:800;color:#e8590c}
   .dx-cta{width:100%;margin:4px 0 0;padding:14px;border:none;border-radius:16px;background:var(--primary,#d4121a);color:#fff;font-weight:800;font-size:15px;
     font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
   .dx-cta img{width:34px;height:34px;object-fit:contain}
   .dx-badges .tb-section{margin:0;padding:0;background:none;box-shadow:none}
   #dx-detail{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
-  #dx-detail .dd{width:min(560px,100%);max-height:90vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#241c16);border-radius:22px 22px 0 0;
+  #dx-detail .dd{width:min(560px,100%);max-height:90vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#191f28);border-radius:22px 22px 0 0;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom));font-family:inherit}
   #dx-detail .dd-hero{display:flex;gap:14px;align-items:center}
-  #dx-detail .dd-hero img{width:120px;height:120px;object-fit:contain;flex:none;border-radius:20px;background:var(--cream-weak,#f3ead9)}
+  #dx-detail .dd-hero img{width:120px;height:120px;object-fit:contain;flex:none;border-radius:20px;background:var(--cream-weak,#f2f4f6)}
   #dx-detail .dd-hero.locked img{filter:brightness(0) opacity(.2)}
   #dx-detail h3{margin:0 0 4px;font-size:19px}
-  #dx-detail .dd-meta{font-size:12.5px;color:var(--sub,#6b5f52);line-height:1.6}
-  #dx-detail .dd-line{margin:12px 0 0;padding:11px 14px;border-radius:16px 16px 16px 4px;background:var(--cream-weak,#f3ead9);font-size:14px}
+  #dx-detail .dd-meta{font-size:12.5px;color:var(--sub,#4e5968);line-height:1.6}
+  #dx-detail .dd-line{margin:12px 0 0;padding:11px 14px;border-radius:16px 16px 16px 4px;background:var(--cream-weak,#f2f4f6);font-size:14px}
   #dx-detail .dd-btns{display:flex;gap:8px;margin-top:14px}
   #dx-detail .dd-btns button{flex:1;width:auto;margin:0;padding:13px 8px;border:none;border-radius:14px;font-weight:800;font-size:14px;font-family:inherit;
-    background:var(--line,#ece3d8);color:inherit}
+    background:var(--line,#e5e8eb);color:inherit}
   #dx-detail .dd-btns button.primary{background:var(--primary,#d4121a);color:#fff}
   #dx-detail h4{margin:16px 0 4px;font-size:14px}`;
   document.head.appendChild(s);

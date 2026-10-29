@@ -196,14 +196,14 @@ function injectStyle() {
   .tb-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
   .tb-badge{text-align:center;cursor:pointer}
   .tb-medal{position:relative;width:min(84px,24vw);aspect-ratio:1;margin:0 auto 6px;border-radius:50%;overflow:hidden;
-    background:radial-gradient(circle at 50% 38%,#fffaf0,#f3e3c4);box-shadow:0 0 0 4px #d9d2c5,0 4px 10px rgba(0,0,0,.12)}
+    background:radial-gradient(circle at 50% 38%,#f9fafb,#e5e8eb);box-shadow:0 0 0 4px #d1d6db,0 4px 10px rgba(0,0,0,.12)}
   .tb-medal img{width:100%;height:100%;object-fit:contain;padding:10%;box-sizing:border-box;filter:brightness(0) opacity(.18)}
-  .tb-medal em{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:26px;font-weight:900;color:#b9ad9b}
+  .tb-medal em{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:26px;font-weight:900;color:#b0b8c1}
   .tb-badge.on .tb-medal{box-shadow:0 0 0 4px #e7b84a,0 0 0 7px #fff3cf,0 6px 14px rgba(168,100,0,.3)}
   .tb-badge.on .tb-medal img{filter:none}
   .tb-badge b{display:block;font-size:13px}
-  .tb-badge span{display:block;font-size:11px;color:var(--sub,#6b5f52);margin-top:2px}
-  .tb-badge:not(.on) b{color:var(--mute,#9a8c7c)}
+  .tb-badge span{display:block;font-size:11px;color:var(--sub,#4e5968);margin-top:2px}
+  .tb-badge:not(.on) b{color:var(--mute,#8b95a1)}
   .tb-badge.big{margin:6px auto 12px;cursor:default}
   .tb-badge.big .tb-medal{width:140px;animation:tb-shine 1s ease-out}
   .tb-badge.big b{font-size:17px}
@@ -219,43 +219,43 @@ function injectStyle() {
     font-family:inherit;white-space:nowrap}
   .tour-card button.ghost{background:rgba(255,255,255,.2);color:#fff}
   #tour-sheet{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
-  #tour-sheet .ts{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#241c16);border-radius:22px 22px 0 0;
+  #tour-sheet .ts{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#191f28);border-radius:22px 22px 0 0;
     padding:20px 18px calc(18px + env(safe-area-inset-bottom));font-family:inherit}
   #tour-sheet h3{margin:0 0 4px;font-size:19px}
-  #tour-sheet .ts-sub{margin:0 0 14px;color:var(--sub,#6b5f52);font-size:13px}
+  #tour-sheet .ts-sub{margin:0 0 14px;color:var(--sub,#4e5968);font-size:13px}
   #tour-sheet .ts-gates{display:flex;gap:8px;margin-bottom:14px}
-  #tour-sheet .ts-gates button{width:auto;flex:1;margin:0;padding:10px;border-radius:12px;border:2px solid var(--line,#ece3d8);background:none;color:inherit;font-weight:700;font-family:inherit}
+  #tour-sheet .ts-gates button{width:auto;flex:1;margin:0;padding:10px;border-radius:12px;border:2px solid var(--line,#e5e8eb);background:none;color:inherit;font-weight:700;font-family:inherit}
   #tour-sheet .ts-gates button.on{border-color:var(--primary,#d4121a);color:var(--primary,#d4121a)}
   #tour-sheet .ts-gates button:disabled{opacity:.45}
-  .ts-course{width:100%;margin:0 0 10px;text-align:left;border:2px solid var(--line,#ece3d8);border-radius:16px;padding:14px;background:none;color:inherit;font-family:inherit;display:block}
+  .ts-course{width:100%;margin:0 0 10px;text-align:left;border:2px solid var(--line,#e5e8eb);border-radius:16px;padding:14px;background:none;color:inherit;font-family:inherit;display:block}
   .ts-course:active{border-color:var(--primary,#d4121a)}
   .ts-course .t{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:800}
   .ts-course .t em{font-style:normal;font-size:12.5px;font-weight:800;color:var(--primary,#d4121a);background:var(--primary-weak,#fbe7e5);padding:4px 9px;border-radius:999px}
-  .ts-course .d{font-size:12.5px;color:var(--sub,#6b5f52);margin:4px 0 8px}
-  .ts-course .r{font-size:12.5px;line-height:1.7;color:var(--ink,#241c16)}
-  .ts-close{width:100%;margin:4px 0 0;padding:12px;border:none;border-radius:12px;background:var(--line,#ece3d8);color:inherit;font-weight:700;font-family:inherit}
-  #tour-move{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--ink,#241c16);display:flex;flex-direction:column;font-family:inherit}
+  .ts-course .d{font-size:12.5px;color:var(--sub,#4e5968);margin:4px 0 8px}
+  .ts-course .r{font-size:12.5px;line-height:1.7;color:var(--ink,#191f28)}
+  .ts-close{width:100%;margin:4px 0 0;padding:12px;border:none;border-radius:12px;background:var(--line,#e5e8eb);color:inherit;font-weight:700;font-family:inherit}
+  #tour-move{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--ink,#191f28);display:flex;flex-direction:column;font-family:inherit}
   #tour-move .tm-head{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
   #tour-move .tm-head b{flex:1;font-size:15px}
-  #tour-move .tm-head small{display:block;font-size:12px;color:var(--sub,#6b5f52);font-weight:600}
-  #tour-move .tm-icon{width:auto;margin:0;border:none;background:var(--line,#ece3d8);color:inherit;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700;font-family:inherit}
+  #tour-move .tm-head small{display:block;font-size:12px;color:var(--sub,#4e5968);font-weight:600}
+  #tour-move .tm-icon{width:auto;margin:0;border:none;background:var(--line,#e5e8eb);color:inherit;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700;font-family:inherit}
   #tour-move .tm-steps{display:flex;gap:4px;padding:0 14px 8px}
-  #tour-move .tm-steps i{flex:1;height:5px;border-radius:3px;background:var(--line,#ece3d8)}
+  #tour-move .tm-steps i{flex:1;height:5px;border-radius:3px;background:var(--line,#e5e8eb)}
   #tour-move .tm-steps i.done{background:var(--primary,#d4121a)}
-  #tour-move .tm-steps i.now{background:linear-gradient(90deg,var(--primary,#d4121a) var(--p,0%),var(--line,#ece3d8) var(--p,0%))}
-  #tour-map{flex:1;min-height:180px;margin:0 14px;border-radius:18px;overflow:hidden;background:#e8e3da}
+  #tour-move .tm-steps i.now{background:linear-gradient(90deg,var(--primary,#d4121a) var(--p,0%),var(--line,#e5e8eb) var(--p,0%))}
+  #tour-map{flex:1;min-height:180px;margin:0 14px;border-radius:18px;overflow:hidden;background:#e5e8eb}
   #tour-move .tm-next{display:flex;align-items:center;gap:12px;padding:12px 16px 4px}
   #tour-move .tm-arrow{width:64px;height:64px;flex:none;border-radius:50%;background:var(--primary-weak,#fbe7e5);display:flex;align-items:center;justify-content:center}
   #tour-move .tm-arrow svg{width:40px;height:40px;transition:transform .25s ease-out}
   #tour-move .tm-dist{flex:1;min-width:0}
   #tour-move .tm-dist b{display:block;font-size:20px}
-  #tour-move .tm-dist span{font-size:12.5px;color:var(--sub,#6b5f52)}
+  #tour-move .tm-dist span{font-size:12.5px;color:var(--sub,#4e5968)}
   #tour-move .tm-guide{display:flex;align-items:flex-end;gap:8px;padding:6px 14px 0}
   #tour-move .tm-guide img{width:70px;height:70px;object-fit:contain;flex:none}
-  #tour-move .tm-bubble{flex:1;background:var(--cream-weak,#f3ead9);border-radius:18px 18px 18px 4px;padding:11px 14px;font-size:14.5px;line-height:1.5;margin-bottom:10px}
+  #tour-move .tm-bubble{flex:1;background:var(--cream-weak,#f2f4f6);border-radius:18px 18px 18px 4px;padding:11px 14px;font-size:14.5px;line-height:1.5;margin-bottom:10px}
   #tour-move .tm-btns{display:flex;gap:8px;padding:8px 14px calc(14px + env(safe-area-inset-bottom))}
   #tour-move .tm-btns button{flex:1;width:auto;margin:0;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:800;font-family:inherit;
-    background:var(--line,#ece3d8);color:inherit}
+    background:var(--line,#e5e8eb);color:inherit}
   #tour-move .tm-btns button.primary{background:var(--primary,#d4121a);color:#fff}
   #tour-move .tm-arrive{animation:tm-pop .5s var(--ease-toss,ease-out)}
   .tour-pin{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--primary,#d4121a);display:flex;align-items:center;justify-content:center;
@@ -263,8 +263,8 @@ function injectStyle() {
   .tour-tip{background:#d4121a;color:#fff;border:none;border-radius:999px;padding:3px 9px;font-weight:800;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
   .tour-tip::before{display:none}
   .tour-tip.me{background:#2f6fed}
-  .tour-from{background:#fff;color:#241c16;border:2px solid #241c16;border-radius:999px;font-size:11px;font-weight:800;text-align:center;line-height:18px}
-  .tm-legend{display:flex;gap:12px;flex-wrap:wrap;padding:6px 18px 0;font-size:11.5px;color:var(--sub,#6b5f52)}
+  .tour-from{background:#fff;color:#191f28;border:2px solid #191f28;border-radius:999px;font-size:11px;font-weight:800;text-align:center;line-height:18px}
+  .tm-legend{display:flex;gap:12px;flex-wrap:wrap;padding:6px 18px 0;font-size:11.5px;color:var(--sub,#4e5968)}
   .tm-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
   .tour-me{width:18px;height:18px;border-radius:50%;background:#2f6fed;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,111,237,.25)}
   @keyframes tm-pop{0%{transform:scale(.9);opacity:.3}100%{transform:none;opacity:1}}
@@ -441,14 +441,14 @@ function _openMove(first) {
     L.marker([zone.lat, zone.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-pin">${zone.emoji || "📍"}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 400 })
       .addTo(map).bindTooltip(`도착: ${zone.name}`, { permanent: true, direction: "top", offset: [0, -18], className: "tour-tip" });
     L.marker([prev.lat, prev.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-from">출발</div>`, iconSize: [40, 22], iconAnchor: [20, 11] }) }).addTo(map);
-    POIS.forEach((p) => L.circleMarker([p.lat, p.lng], { radius: 5, color: "#a86400", weight: 2, fillOpacity: .6 }).addTo(map).bindTooltip(p.name));
+    POIS.forEach((p) => L.circleMarker([p.lat, p.lng], { radius: 5, color: "#e8590c", weight: 2, fillOpacity: .6 }).addTo(map).bindTooltip(p.name));
     if (DEBUG) map.on("click", (e) => {
       const t = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
       navigator.clipboard?.writeText(t).catch(() => {});
       app?.ui?.toast?.(`좌표 복사: ${t}`);
     });
   } else {
-    $("#tour-map").innerHTML = `<div style="padding:20px;text-align:center;color:#6b5f52">지도를 불러오지 못했어요. 화살표와 거리를 보고 이동해 주세요.</div>`;
+    $("#tour-map").innerHTML = `<div style="padding:20px;text-align:center;color:#4e5968">지도를 불러오지 못했어요. 화살표와 거리를 보고 이동해 주세요.</div>`;
   }
   function drawRoute(pts) {
     if (!map) return;

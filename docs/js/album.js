@@ -119,26 +119,26 @@ function injectStyle() {
   const s = document.createElement("style");
   s.textContent = `
   .al-seg{display:flex;gap:6px;margin:10px 0 8px}
-  .al-seg button{width:auto;flex:1;margin:0;padding:9px;border:none;border-radius:12px;background:var(--cream-weak,#f3ead9);color:var(--sub,#6b5f52);
+  .al-seg button{width:auto;flex:1;margin:0;padding:9px;border:none;border-radius:12px;background:var(--cream-weak,#f2f4f6);color:var(--sub,#4e5968);
     font-weight:800;font-size:13.5px;font-family:inherit}
   .al-seg button.on{background:var(--primary,#d4121a);color:#fff}
-  .al-place{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line,#ece3d8)}
+  .al-place{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line,#e5e8eb)}
   .al-place:first-child{border-top:none}
-  .al-place .ap-ic{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:var(--cream-weak,#f3ead9)}
+  .al-place .ap-ic{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:var(--cream-weak,#f2f4f6)}
   .al-place.empty .ap-ic{filter:grayscale(1);opacity:.45}
   .al-place .ap-body{flex:1;min-width:0}
   .al-place .ap-body b{display:block;font-size:14px}
-  .al-place .ap-body small{display:block;font-size:11.5px;color:var(--mute,#9a8c7c)}
+  .al-place .ap-body small{display:block;font-size:11.5px;color:var(--mute,#8b95a1)}
   .al-strip{display:flex;gap:6px;overflow-x:auto;margin-top:6px;scrollbar-width:none}
   .al-strip::-webkit-scrollbar{display:none}
   .al-th{flex:none;width:64px;height:64px;border-radius:10px;overflow:hidden;padding:0;margin:0;border:none;background:#ddd;cursor:pointer}
   .al-th img{width:100%;height:100%;object-fit:cover;display:block}
   .al-day{margin-top:12px}
   .al-day h4{margin:0 0 6px;font-size:13.5px}
-  .al-day h4 small{color:var(--mute,#9a8c7c);font-weight:600;margin-left:6px}
+  .al-day h4 small{color:var(--mute,#8b95a1);font-weight:600;margin-left:6px}
   .al-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
   .al-grid .al-th{width:100%;height:auto;aspect-ratio:1}
-  .al-empty{text-align:center;color:var(--mute,#9a8c7c);font-size:13px;padding:18px 0 8px}
+  .al-empty{text-align:center;color:var(--mute,#8b95a1);font-size:13px;padding:18px 0 8px}
   #al-view{position:fixed;inset:0;z-index:2300;background:rgba(0,0,0,.92);display:flex;flex-direction:column;color:#fff;font-family:inherit}
   #al-view .av-top{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
   #al-view .av-top b{flex:1;font-size:15px}
