@@ -16,17 +16,64 @@ function containsBannedWord(text) {
 }
 
 // 게시글 목록 (최신순). zoneId를 주면 그 구역 글만, onlyMine이면 내가 쓴 글만 가져온다.
+// 각 글에 like_count, liked(내가 눌렀는지), comment_count가 붙어서 나온다.
+// 좋아요/댓글 테이블이 아직 없으면(supabase/community_likes_comments.sql 미실행) 0으로 채워서 글 목록만 보여준다.
 export async function listPosts({ zoneId = null, onlyMine = false, limit = 50 } = {}) {
-  let q = client.from("community_posts").select("*").order("created_at", { ascending: false }).limit(limit);
-  if (zoneId) q = q.eq("zone_id", zoneId);
-  if (onlyMine) {
-    const me = getCachedProfile();
-    if (!me) return [];
-    q = q.eq("user_id", me.id);
-  }
-  const { data, error } = await q;
+  const me = getCachedProfile();
+  if (onlyMine && !me) return [];
+  const build = (columns) => {
+    let q = client.from("community_posts").select(columns).order("created_at", { ascending: false }).limit(limit);
+    if (zoneId) q = q.eq("zone_id", zoneId);
+    if (onlyMine) q = q.eq("user_id", me.id);
+    return q;
+  };
+  let { data, error } = await build("*, community_likes(user_id), community_comments(count)");
+  if (error) ({ data, error } = await build("*"));
   if (error) return [];
-  return data;
+  return data.map(({ community_likes: likes = [], community_comments: comments = [], ...p }) => ({
+    ...p,
+    like_count: likes.length,
+    liked: !!me && likes.some((l) => l.user_id === me.id),
+    comment_count: comments[0]?.count || 0,
+  }));
+}
+
+// 좋아요 누르기(like=true) / 취소(like=false). 성공하면 true.
+export async function setLike(postId, like) {
+  const me = getCachedProfile();
+  if (!me) return false;
+  if (like) {
+    const { error } = await client.from("community_likes").insert({ post_id: postId, user_id: me.id });
+    return !error || error.code === "23505";   // 이미 눌러둔 상태(중복)면 성공으로 본다
+  }
+  const { error } = await client.from("community_likes").delete().eq("post_id", postId).eq("user_id", me.id);
+  return !error;
+}
+
+// 댓글 목록 (오래된 순 — 대화 흐름대로 위에서 아래로 읽히게)
+export async function listComments(postId) {
+  const { data, error } = await client.from("community_comments")
+    .select("*").eq("post_id", postId).order("created_at", { ascending: true });
+  return error ? null : data;
+}
+
+// 댓글 달기. 반환값: { ok: true, comment } 또는 { ok: false, reason: "banned_word" | "no_profile" | "error" }
+export async function addComment(postId, nickname, message) {
+  const me = getCachedProfile();
+  if (!me) return { ok: false, reason: "no_profile" };
+  if (containsBannedWord(message)) return { ok: false, reason: "banned_word" };
+  const { data, error } = await client.from("community_comments")
+    .insert({ post_id: postId, user_id: me.id, nickname: nickname || "익명", message })
+    .select().single();
+  return error ? { ok: false, reason: "error" } : { ok: true, comment: data };
+}
+
+// 내 댓글 삭제. 성공하면 true.
+export async function deleteComment(commentId) {
+  const me = getCachedProfile();
+  if (!me) return false;
+  const { error } = await client.from("community_comments").delete().eq("id", commentId).eq("user_id", me.id);
+  return !error;
 }
 
 // AR 포토스튜디오에서 나온 "data:image/..." dataURL을 업로드 가능한 Blob으로 바꾼다

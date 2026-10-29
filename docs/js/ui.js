@@ -284,8 +284,26 @@ export function renderRankInto(container, rows, mode, onMode) {
 }
 
 /* ---------- 커뮤니티 ---------- */
-// posts: community_posts 테이블 최신순 목록, filter: "all" | "mine"
-export function renderCommunity(zones, posts, filter) {
+const ICON_HEART = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.5-9.4C1.2 7.9 3.4 4.4 7 4.4c2.2 0 3.8 1.2 5 3 1.2-1.8 2.8-3 5-3 3.6 0 5.8 3.5 4.5 6.8-1.9 4.8-9.5 9.4-9.5 9.4z"/></svg>`;
+const ICON_COMMENT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.5a8.4 8.4 0 1 1 15.6-4.4z"/></svg>`;
+
+// "방금 전", "5분 전", "3시간 전", "2일 전", 일주일이 넘으면 날짜
+export function timeAgo(iso) {
+  const sec = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return "방금 전";
+  if (sec < 3600) return `${Math.floor(sec / 60)}분 전`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}일 전`;
+  return new Date(iso).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+}
+
+const avatar = (name, cls = "") => `<span class="avatar ${cls}" aria-hidden="true">${esc([...String(name || "?")][0])}</span>`;
+const likeLabel = (p) => (p.like_count ? `좋아요 ${p.like_count}개` : "");
+const commentLabel = (p) => (p.comment_count ? `댓글 ${p.comment_count}개 모두 보기` : "");
+
+// posts: listPosts() 결과(최신순), filter: "all" | "mine", myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
+// 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
+export function renderCommunity(zones, posts, filter, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   $("view-community").innerHTML = `
     <h1 class="sec" style="margin-top:4px">💬 게시판</h1>
@@ -294,21 +312,157 @@ export function renderCommunity(zones, posts, filter) {
       <button data-f="all" class="${filter === "all" ? "on" : ""}">전체</button>
       <button data-f="mine" class="${filter === "mine" ? "on" : ""}">내 글</button>
     </div>
-    <button id="btn-compose" class="btn" style="margin-bottom:14px">✏️ 글쓰기 · 사진 올리기</button>
-    <div class="list-card">
+    <button id="btn-compose" class="btn" style="margin-bottom:16px">✏️ 글쓰기 · 사진 올리기</button>
+    <div class="feed">
       ${posts.length ? posts.map((p) => `
-        <div class="gb-entry">
-          ${p.photo_url ? `<img class="gb-photo" src="${esc(p.photo_url)}" alt="">` : ""}
-          <div class="gb-body">
-            <b>${esc(p.nickname)}${p.zone_id ? ` · <span style="color:var(--primary)">📍 ${esc(zoneName(p.zone_id))}</span>` : ""}</b>
-            <span>${esc(p.message)}</span>
+        <article class="post" data-post="${esc(p.id)}">
+          <header class="post-head">
+            ${avatar(p.nickname)}
+            <div class="post-meta">
+              <b>${esc(p.nickname)}</b>
+              <span>${p.zone_id ? `<em>📍 ${esc(zoneName(p.zone_id))}</em> · ` : ""}${timeAgo(p.created_at)}</span>
+            </div>
+            ${p.user_id !== myId ? `<button class="post-report" type="button" data-act="report" aria-label="신고하기" title="신고하기">🚩</button>` : ""}
+          </header>
+          ${p.photo_url ? `
+          <div class="post-photo" data-act="photo">
+            <img src="${esc(p.photo_url)}" alt="${esc(p.nickname)}님이 올린 사진" loading="lazy">
+            <span class="heart-burst" aria-hidden="true">${ICON_HEART}</span>
+          </div>` : ""}
+          ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${esc(p.message)}</p>` : ""}
+          <div class="post-actions">
+            <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
+                    aria-pressed="${p.liked}" aria-label="좋아요">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
+            <button class="act act-comment" type="button" data-act="comment" aria-label="댓글">${ICON_COMMENT}<span class="act-n">${p.comment_count || ""}</span></button>
           </div>
-          <button class="gb-report" type="button" data-report="${p.id}" title="신고">🚩</button>
-        </div>`).join("") : `
+          <div class="post-foot">
+            <b class="like-line">${likeLabel(p)}</b>
+            <button class="comment-line" type="button" data-act="comment">${commentLabel(p) || "첫 댓글을 남겨보세요"}</button>
+          </div>
+        </article>`).join("") : `
         <div class="card" style="text-align:center;margin:0">
           <p style="color:var(--mute);margin:0">${filter === "mine" ? "아직 올린 글이 없어요" : "아직 글이 없어요. 첫 글을 남겨보세요!"}</p>
         </div>`}
     </div>`;
+}
+
+// 좋아요/댓글 수가 바뀌었을 때 화면 전체를 다시 그리지 않고 그 글 카드만 고친다 (스크롤 위치 유지)
+export function updatePostCard(p, { pop = false } = {}) {
+  const card = document.querySelector(`#view-community [data-post="${CSS.escape(p.id)}"]`);
+  if (!card) return;
+  const like = card.querySelector(".act-like");
+  like.classList.toggle("on", p.liked);
+  like.setAttribute("aria-pressed", p.liked);
+  like.querySelector(".act-n").textContent = p.like_count || "";
+  if (pop) { like.classList.remove("pop"); void like.offsetWidth; like.classList.add("pop"); }
+  card.querySelector(".act-comment .act-n").textContent = p.comment_count || "";
+  card.querySelector(".like-line").textContent = likeLabel(p);
+  card.querySelector(".comment-line").textContent = commentLabel(p) || "첫 댓글을 남겨보세요";
+}
+
+// 사진 더블탭 시 가운데 큰 하트가 톡 튀어나왔다 사라지는 효과
+export function heartBurst(postId) {
+  const b = document.querySelector(`#view-community [data-post="${CSS.escape(postId)}"] .heart-burst`);
+  if (!b) return;
+  b.classList.remove("go"); void b.offsetWidth; b.classList.add("go");
+}
+
+/* ---------- 댓글 시트 ---------- */
+// 아래에서 올라오는 시트. load() => Promise<comments[] | null>, add(text) => Promise<{ok, comment, reason}>,
+// remove(id) => Promise<boolean>. 댓글 수가 바뀔 때마다 onCount(n)를 부른다.
+export function showComments({ myId, myName, load, add, remove, onCount }) {
+  const m = $("modal");
+  m.classList.remove("hidden", "modal-center");
+  m.innerHTML = `
+    <div class="cm-sheet" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+      <div class="cm-grab" aria-hidden="true"></div>
+      <header class="cm-head">
+        <b id="cm-title">댓글</b><span id="cm-count"></span>
+        <button id="cm-close" class="cm-x" type="button" aria-label="닫기">✕</button>
+      </header>
+      <div id="cm-list" class="cm-list" aria-live="polite">
+        <div class="cm-empty"><span class="cm-spin" aria-hidden="true"></span>불러오는 중…</div>
+      </div>
+      <form id="cm-form" class="cm-form" autocomplete="off">
+        ${avatar(myName, "sm")}
+        <input id="cm-in" class="cm-in" maxlength="200" placeholder="${esc(myName || "나")}(으)로 댓글 달기…" enterkeyhint="send">
+        <button id="cm-send" class="cm-send" type="submit" disabled>게시</button>
+      </form>
+    </div>`;
+
+  let comments = [];
+  const list = $("cm-list"), input = $("cm-in"), send = $("cm-send");
+
+  const row = (c) => `
+    <div class="cm-row" data-cid="${esc(c.id)}">
+      ${avatar(c.nickname, "sm")}
+      <div class="cm-body">
+        <div><b>${esc(c.nickname)}</b><time>${timeAgo(c.created_at)}</time></div>
+        <p>${esc(c.message)}</p>
+      </div>
+      ${c.user_id === myId ? `<button class="cm-del" type="button" data-del="${esc(c.id)}">삭제</button>` : ""}
+    </div>`;
+  const paint = () => {
+    $("cm-count").textContent = comments.length || "";
+    list.innerHTML = comments.length ? comments.map(row).join("")
+      : `<div class="cm-empty"><b>아직 댓글이 없어요</b>첫 번째로 이야기를 건네보세요 💬</div>`;
+  };
+  const changed = () => { paint(); onCount?.(comments.length); };
+
+  load().then((data) => {
+    if (data === null) {
+      list.innerHTML = `<div class="cm-empty"><b>댓글을 불러오지 못했어요</b>잠시 후 다시 시도해 주세요.</div>`;
+      return;
+    }
+    comments = data;
+    paint();
+    list.scrollTop = list.scrollHeight;
+  });
+
+  input.oninput = () => { send.disabled = !input.value.trim(); };
+  $("cm-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || send.disabled) return;
+    send.disabled = true;
+    input.disabled = true;
+    const r = await add(text);
+    input.disabled = false;
+    if (r?.ok) {
+      comments.push(r.comment);
+      input.value = "";
+      changed();
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    } else {
+      send.disabled = false;
+      toast(r?.reason === "banned_word" ? "부적절한 표현이 포함되어 있어요." : "댓글을 남기지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+    input.focus();
+  };
+
+  list.onclick = async (e) => {
+    const btn = e.target.closest("[data-del]");
+    if (!btn || !confirm("이 댓글을 삭제할까요?")) return;
+    btn.disabled = true;
+    if (await remove(btn.dataset.del)) {
+      comments = comments.filter((c) => c.id !== btn.dataset.del);
+      changed();
+    } else {
+      btn.disabled = false;
+      toast("삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+
+  const close = () => {
+    document.removeEventListener("keydown", onKey);
+    m.classList.add("hidden");
+    m.innerHTML = "";
+    m.onclick = null;
+  };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  $("cm-close").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
 }
 
 /* ---------- 커뮤니티 글쓰기 (일반 글쓰기 + 미션 사진 업로드 공용) ---------- */

@@ -9,7 +9,7 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
-import { listPosts, postCommunity, reportPost } from "./community.js";
+import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
@@ -312,17 +312,68 @@ async function startHiddenMission(h) {
 /* ================= 커뮤니티 탭 ================= */
 async function renderCommunityTab() {
   const posts = await listPosts({ onlyMine: communityFilter === "mine" });
-  ui.renderCommunity(zones, posts, communityFilter);
+  const myId = getCachedProfile()?.id || null;
+  const byId = new Map(posts.map((p) => [p.id, p]));
+  ui.renderCommunity(zones, posts, communityFilter, myId);
   document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
     b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
   });
-  document.querySelectorAll("#view-community [data-report]").forEach((btn) => {
-    btn.onclick = async () => {
-      if (!confirm("이 글을 신고할까요? 관리자가 확인 후 조치해요.")) return;
-      const ok = await reportPost(btn.dataset.report);
-      ui.toast(ok ? "신고가 접수됐어요." : "신고에 실패했어요. 잠시 후 다시 시도해 주세요.");
-    };
-  });
+
+  // 좋아요는 누르자마자 화면에 반영하고(낙관적 업데이트), 서버 저장에 실패하면 되돌린다
+  const pending = new Set();
+  const toggleLike = async (p, like = !p.liked) => {
+    if (pending.has(p.id) || like === p.liked) return;
+    pending.add(p.id);
+    p.liked = like;
+    p.like_count += like ? 1 : -1;
+    ui.updatePostCard(p, { pop: like });
+    if (!(await setLike(p.id, like))) {
+      p.liked = !like;
+      p.like_count += like ? -1 : 1;
+      ui.updatePostCard(p);
+      ui.toast("좋아요를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+    pending.delete(p.id);
+  };
+
+  const openComments = (p) => {
+    const nickname = store.getState().profile?.nickname || "익명";
+    ui.showComments({
+      myId,
+      myName: nickname,
+      load: () => listComments(p.id),
+      add: (text) => addComment(p.id, nickname, text),
+      remove: (id) => deleteComment(id),
+      onCount: (n) => { p.comment_count = n; ui.updatePostCard(p); },
+    });
+  };
+
+  // 사진은 두 번 빠르게 탭하면 좋아요(이미 눌렀으면 하트 효과만). 모바일·PC 모두 click 두 번으로 판단한다.
+  let lastTap = { id: null, t: 0 };
+  $("view-community").onclick = async (e) => {
+    const el = e.target.closest("[data-act]");
+    const p = byId.get(el?.closest("[data-post]")?.dataset.post);
+    if (!p) return;
+    switch (el.dataset.act) {
+      case "like": toggleLike(p); break;
+      case "comment": openComments(p); break;
+      case "photo": {
+        const now = Date.now();
+        if (lastTap.id === p.id && now - lastTap.t < 320) {
+          ui.heartBurst(p.id);
+          toggleLike(p, true);
+          lastTap = { id: null, t: 0 };
+        } else lastTap = { id: p.id, t: now };
+        break;
+      }
+      case "report": {
+        if (!confirm("이 글을 신고할까요? 관리자가 확인 후 조치해요.")) return;
+        const ok = await reportPost(p.id);
+        ui.toast(ok ? "신고가 접수됐어요." : "신고에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        break;
+      }
+    }
+  };
   $("btn-compose")?.addEventListener("click", () => {
     ui.showComposer({
       zones: zones.map((z) => ({ id: z.id, name: z.name })),
