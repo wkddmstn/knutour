@@ -396,12 +396,34 @@ function clearCampusMap() {
   }
 }
 
+// 구역 부가정보(extraInfo)가 있으면 상단 구역 이름 옆에 ⓘ 버튼을 띄운다 (대화 흐름을 막지 않도록).
+// 버튼 엘리먼트는 한 번만 만들어두고 구역이 바뀔 때마다 재사용한다.
+function setupZoneInfoBtn(zone) {
+  let btn = $("zone-info-btn");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "zone-info-btn";
+    btn.type = "button";
+    btn.className = "level-info-btn";
+    btn.setAttribute("aria-label", "장소 정보 보기");
+    btn.textContent = "ⓘ";
+    $("zone-name")?.insertAdjacentElement("afterend", btn);
+  }
+  if (zone.extraInfo) {
+    btn.classList.remove("hidden");
+    btn.onclick = () => ui.showZoneInfo({ title: zone.extraInfo.buttonLabel || zone.name, sections: zone.extraInfo.sections });
+  } else {
+    btn.classList.add("hidden");
+  }
+}
+
 function openZone(zone) {
   clearCampusMap();
   leaveZone();
   applyZoneTheme(zone);
   ui.showView("zone");
   if ($("zone-name")) $("zone-name").textContent = zone.name;
+  setupZoneInfoBtn(zone);
   $("zone-top")?.classList.remove("collapsed");
   if ($("btn-map")) $("btn-map").textContent = "지도 접기";
   initMap(zone);
@@ -433,12 +455,6 @@ async function runZone(zone, resuming = false) {
   if (!resuming) {
     const introLine = zone.intro ? `<br>${zone.intro}` : "";
     await chat.bot(`오, 여기가 <b>${zone.name}</b>이구나!${introLine}`);
-
-    // 장소에 부가정보(extraInfo)가 있으면 "더 알아보기" 버튼을 띄운다 (누르지 않아도 흐름은 계속 진행됨)
-    if (zone.extraInfo) {
-      chat.choices([{ label: zone.extraInfo.buttonLabel || "더 알아보기", value: "info", ghost: true }])
-        .then(() => showExtraInfo(zone.extraInfo));
-    }
   }
 
   if (!store.isVerified(zone.id)) {
@@ -466,22 +482,6 @@ async function runZone(zone, resuming = false) {
   // 인증 이후에도 계속 위치를 지켜보다가, 구역(반경) 밖으로 나가면 배너로 알리고 미션 진행을 막는다
   startZoneGeofence(zone);
   await missionMenu(zone);
-}
-
-// 장소 부가정보를 아코디언(펼침 목록) 형태로 보여준다. 내용은 지금은 자리표시자이며 나중에 채워 넣으면 됩니다.
-async function showExtraInfo(info) {
-  await chat.ask((card, done) => {
-    card.innerHTML = `
-      <div class="accordion">
-        ${info.sections.map((s, i) => `
-          <details${i === 0 ? " open" : ""}>
-            <summary>${ui.esc(s.title)}</summary>
-            <div class="acc-body">${ui.esc(s.body)}</div>
-          </details>`).join("")}
-      </div>
-      <button class="chip primary" style="margin-top:10px">확인했어요</button>`;
-    card.querySelector(".chip").onclick = () => done(true);
-  });
 }
 
 // 데모: 목표 지점까지의 경로를 보여주고, 실제로 걸어가듯 실시간으로 이동시킨다
