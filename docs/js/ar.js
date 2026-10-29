@@ -694,7 +694,7 @@ export function startAR(zone, opts = {}) {
       const items = collectedItems();
       if (!items.some((it) => it.id === id)) items.unshift({ id: id || "ar", name: m.name, img: m.img });
       if (otter && !items.some((it) => it.id === "otter")) items.push({ id: "otter", name: RARE.otter.name, img: RARE.otter.img });
-      await openPhotoStudio({ items, start: id || "ar", place: zone.name || "" });
+      await openPhotoStudio({ items, start: id || "ar", place: zone.name || "", zoneId: zone.id || null });   // zoneId → 커뮤니티 #장소 태그
       if (!closed) startCam();
     };
 
@@ -777,7 +777,6 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
             <button class="ps-rv-btn ps-glass" id="ps-retake">↺ 다시 찍기</button>
             ${submit ? `<button class="ps-rv-btn primary" id="ps-submit">✅ 이 사진으로 제출</button>` : ""}
             <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-save">⬇ 저장</button>
-            <button class="ps-rv-btn ps-glass ar-hidden" id="ps-share">📤 공유</button>
           </div>
           <div class="ps-rv-row">
             <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-record">📒 도감에 기록</button>
@@ -1116,9 +1115,6 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
     };
     function openReview() {
       $("ps-photo").src = lastShot;
-      const canShare = !!navigator.canShare?.({ files: [dataUrlToFile(lastShot, "x.jpg")] });
-      // PC는 공유 대신 저장만, 휴대폰은 둘 다
-      $("ps-share").classList.toggle("ar-hidden", !(canShare && isMobile()));
       $("ps-hint").textContent = isIOS()
         ? "아이폰: 사진을 길게 눌러 '사진 앱에 저장'을 누르면 사진첩에 바로 저장돼요. (⬇ 저장은 '파일' 앱에 저장돼요)"
         : /Android/i.test(navigator.userAgent)
@@ -1158,11 +1154,8 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
       try { (await import("./album.js")).shareToCommunity(shot, zoneId); } catch (e) { console.warn(e); }
     };
     if (submit) $("ps-submit").onclick = async () => { await record(true); close({ dataUrl: lastShot, mascot: current.id }); };
-    $("ps-share").onclick = async () => {
-      try {
-        await navigator.share({ files: [dataUrlToFile(lastShot, fileName())], title: "호반우와 함께 📸" });
-      } catch {}
-    };
+    // 외부 앱(인스타그램 등) 공유 버튼은 없앴다. 사진 공유는 "💬 커뮤니티에 공유"로 하고,
+    // 찍은 장소가 #해시태그로 붙어서 커뮤니티에서 장소별로 모아 볼 수 있다.
 
     requestAnimationFrame(fit);
     startCam();

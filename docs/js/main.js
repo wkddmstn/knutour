@@ -9,7 +9,7 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
-         setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
+         setCommentLike, pickBest, GUIDE_QUESTION, toTag } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";   // 캠퍼스 일러스트 지도
 
@@ -57,6 +57,7 @@ let campusMap = null;    // 탐험 화면 지도 (CampusMap)
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
+let communityTag = null;      // 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자
 let communityFilter = "all";   // "all" | "mine" (내 정보 > 내가 쓴 글에서 들어오면 "mine")
 
 /* ================= 구역 이탈 감지(지오펜스) ================= */
@@ -265,6 +266,7 @@ async function goTab(tab, opts = {}) {
     ui.renderMe(zones, onReset, () => {
       communityBoard = "post";
       communityFilter = "mine";
+      communityTag = null;
       goTab("community");
     });
     refreshBellBadge();
@@ -298,22 +300,29 @@ async function startHiddenMission(h) {
 /* ================= 커뮤니티 탭 ================= */
 async function renderCommunityTab() {
   const isQuestion = communityBoard === "question";
-  const posts = await listPosts({ kind: communityBoard, onlyMine: communityFilter === "mine" });
+  // 태그가 장소 이름이면 그 장소(zone_id)로 올린 글도 함께 찾는다
+  const tagZone = communityTag ? zones.find((z) => toTag(z.name) === communityTag) : null;
+  const posts = await listPosts({
+    kind: communityBoard,
+    onlyMine: communityFilter === "mine",
+    tag: communityTag ? { tag: communityTag, zoneId: tagZone?.id || null } : null,
+  });
   // 질문 게시판 "전체"에는 맨 위에 예시 질문(가이드)을 고정해서 어떻게 쓰는지 보여준다
-  if (isQuestion && communityFilter === "all") posts.unshift(structuredClone(GUIDE_QUESTION));
+  if (isQuestion && communityFilter === "all" && !communityTag) posts.unshift(structuredClone(GUIDE_QUESTION));
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
-  ui.renderCommunity(zones, posts, { board: communityBoard, filter: communityFilter }, myId);
+  ui.renderCommunity(zones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag }, myId);
   document.querySelectorAll("#view-community [data-board]").forEach((b) => {
     b.onclick = () => {
       if (communityBoard === b.dataset.board) return;
       communityBoard = b.dataset.board;
       communityFilter = "all";
+      communityTag = null;
       renderCommunityTab();
     };
   });
   document.querySelectorAll("#view-community .filter-chip").forEach((b) => {
-    b.onclick = () => { communityFilter = "all"; renderCommunityTab(); };
+    b.onclick = () => { communityFilter = "all"; communityTag = null; renderCommunityTab(); };
   });
   $("btn-rank-all")?.addEventListener("click", () => goTab("rank"));
   // 내 순위 카드: 랭킹은 서버에서 받아오니 카드를 먼저 그려 두고 숫자는 받아오는 대로 채운다
@@ -364,6 +373,15 @@ async function renderCommunityTab() {
   // 사진은 두 번 빠르게 탭하면 좋아요(이미 눌렀으면 하트 효과만). 모바일·PC 모두 click 두 번으로 판단한다.
   let lastTap = { id: null, t: 0 };
   $("view-community").onclick = async (e) => {
+    // #해시태그를 누르면 그 태그(장소)의 방문 기록만 모아 본다
+    const tagEl = e.target.closest("[data-tag]");
+    if (tagEl) {
+      communityTag = tagEl.dataset.tag;
+      communityFilter = "all";
+      await renderCommunityTab();
+      document.querySelector("#view-community .filter-chip")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const el = e.target.closest("[data-act]");
     const p = byId.get(el?.closest("[data-post]")?.dataset.post);
     if (!p) return;
