@@ -69,3 +69,15 @@ export async function postCommunity(zoneId, nickname, message, photo) {
   });
   return error ? { ok: false, reason: "error" } : { ok: true };
 }
+
+// 게시글 신고. reason은 선택 사항. 성공하면 true.
+export async function reportPost(postId, reason = "") {
+  const me = getCachedProfile();
+  if (!me) return false;
+  const { error } = await client.from("community_reports").insert({
+    post_id: postId,
+    reporter_id: me.id,
+    reason: reason || null,
+  });
+  return !error;
+}

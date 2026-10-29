@@ -316,6 +316,7 @@ export function renderCommunity(announcements, zones, posts, filter) {
             <b>${esc(p.nickname)}${p.zone_id ? ` · <span style="color:var(--primary)">📍 ${esc(zoneName(p.zone_id))}</span>` : ""}</b>
             <span>${esc(p.message)}</span>
           </div>
+          <button class="gb-report" type="button" data-report="${p.id}" title="신고">🚩</button>
         </div>`).join("") : `
         <div class="card" style="text-align:center;margin:0">
           <p style="color:var(--mute);margin:0">${filter === "mine" ? "아직 올린 글이 없어요" : "아직 글이 없어요. 첫 글을 남겨보세요!"}</p>

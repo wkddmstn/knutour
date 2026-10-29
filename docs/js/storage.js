@@ -1,3 +1,5 @@
+import { client, getCachedProfile } from "./supa.js";
+
 const KEY = "knu-quest-v2";
 
 // 로컬 테스트 버전 전용: 탭마다 "다른 사람"으로 테스트하기 위해 sessionStorage를 씁니다.
@@ -44,6 +46,24 @@ export function setVerified(zoneId) {
   save(s);
 }
 
+// 점수를 서버(Supabase profiles.score)에도 실시간으로 올려둔다. 랭킹 탭과 관리자 페이지가 이 값을 본다.
+// 실패해도(오프라인 등) 로컬 진행에는 영향 없도록 조용히 무시한다.
+async function syncScoreToServer(score) {
+  const me = getCachedProfile();
+  if (!me) return;
+  try { await client.from("profiles").update({ score }).eq("id", me.id); } catch { /* 무시 */ }
+}
+
+// 미션 완료 기록을 서버(mission_completions)에도 남겨서, 관리자 페이지의 "구역/미션 진행 현황"에 잡히게 한다
+async function syncMissionCompletionToServer(missionId, pts) {
+  const me = getCachedProfile();
+  if (!me) return;
+  try {
+    await client.from("mission_completions")
+      .upsert({ user_id: me.id, mission_id: missionId, points: pts }, { onConflict: "user_id,mission_id", ignoreDuplicates: true });
+  } catch { /* 무시 */ }
+}
+
 // 점수를 더하면서, 그 사이에 레벨이 오르면 levelLog에 "언제 몇 레벨을 찍었는지" 기록해 둔다
 function addScore(s, amt) {
   const before = getLevel(s.score).level;
@@ -51,6 +71,7 @@ function addScore(s, amt) {
   const after = getLevel(s.score).level;
   s.levelLog = s.levelLog || [];
   for (let lv = before + 1; lv <= after; lv++) s.levelLog.push({ level: lv, at: Date.now() });
+  syncScoreToServer(s.score);
 }
 
 // 미션 완료 기록 + 점수 반영 (중복 득점 방지)
@@ -60,6 +81,7 @@ export function completeMission(missionId, pts) {
   s.done[missionId] = { at: Date.now(), pts };
   addScore(s, pts);
   save(s);
+  syncMissionCompletionToServer(missionId, pts);
   return true;
 }
 

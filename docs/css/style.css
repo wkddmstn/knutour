@@ -337,6 +337,8 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .gb-form textarea.text-in { resize: none; padding: 12px; }
 .gb-form-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .btn-file.small { display: inline-block; padding: 8px 14px; font-size: 13px; }
+.gb-report { align-self: flex-start; background: none; border: none; font-size: 15px; opacity: .45; cursor: pointer; flex: none; padding: 2px; }
+.gb-report:hover { opacity: 1; }
 
 /* 홈 화면 히든미션 카드 */
 .hidden-mission-card {

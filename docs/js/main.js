@@ -9,7 +9,8 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
-import { listPosts, postCommunity } from "./community.js";
+import { listPosts, postCommunity, reportPost } from "./community.js";
+import { isHiddenMissionEnabled } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -259,7 +260,7 @@ async function goTab(tab, opts = {}) {
 
   if (tab === "home") {
     const anns = await listAnnouncements(store.getState().profile?.dept);
-    const hidden = activeHiddenMission();
+    const hidden = await activeHiddenMission();
     ui.renderDashboard(zones, anns, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
     ui.showView("home");
     renderDailySection();
@@ -282,8 +283,11 @@ async function goTab(tab, opts = {}) {
 }
 
 /* ================= 히든미션 (홈 화면) ================= */
-function activeHiddenMission() {
-  return HIDDEN_MISSIONS.find((h) => store.isHiddenMissionAvailable(h.id)) || null;
+// "오늘 아직 안 했는지"(로컬) + "관리자가 켜놨는지"(서버) 둘 다 확인한다
+async function activeHiddenMission() {
+  const h = HIDDEN_MISSIONS.find((h) => store.isHiddenMissionAvailable(h.id));
+  if (!h) return null;
+  return (await isHiddenMissionEnabled(h.id)) ? h : null;
 }
 
 async function startHiddenMission(h) {
@@ -306,6 +310,13 @@ async function renderCommunityTab() {
   ui.renderCommunity(anns, zones, posts, communityFilter);
   document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
     b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
+  });
+  document.querySelectorAll("#view-community [data-report]").forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm("이 글을 신고할까요? 관리자가 확인 후 조치해요.")) return;
+      const ok = await reportPost(btn.dataset.report);
+      ui.toast(ok ? "신고가 접수됐어요." : "신고에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    };
   });
   $("btn-compose")?.addEventListener("click", () => {
     ui.showComposer({
