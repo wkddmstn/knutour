@@ -67,6 +67,16 @@ export async function openNotifPanel() {
     if (el.dataset.kind === "personal" && !el.dataset.read) markNotificationRead(id);
   });
 
+  // 좋아요·댓글 알림을 누르면 패널을 닫고 커뮤니티 탭으로 이동 (탭 이동은 main.js가 처리)
+  panel.querySelectorAll("[data-goto]").forEach((el) => {
+    const go = () => {
+      closeNotifPanel();
+      window.dispatchEvent(new CustomEvent("notif:goto", { detail: el.dataset.goto }));
+    };
+    el.onclick = go;
+    el.onkeydown = (e) => { if (e.key === "Enter") go(); };
+  });
+
   panel.querySelectorAll(".notif-accept").forEach((btn) => {
     btn.onclick = async (e) => {
       e.stopPropagation();
@@ -100,8 +110,11 @@ function renderItem(it) {
     </div>`;
   }
   const isFriendReq = it.type === "friend_request";
-  return `<div class="notif-item" data-kind="personal" data-id="${it.id}" ${it.is_read ? "data-read=1" : ""}>
-    <div class="notif-icon">${it.type === "friend_confirmed" ? "🤝" : it.type === "achievement" ? "🏅" : "🙋"}</div>
+  const isCommunity = it.type === "post_like" || it.type === "post_comment";   // 내 게시글 좋아요·댓글 (DB 트리거가 만듦)
+  const icon = { friend_confirmed: "🤝", achievement: "🏅", post_like: "❤️", post_comment: "💬" }[it.type] || "🙋";
+  return `<div class="notif-item ${isCommunity ? "notif-link" : ""}" data-kind="personal" data-id="${it.id}" ${it.is_read ? "data-read=1" : ""}
+              ${isCommunity ? `data-goto="community" role="button" tabindex="0"` : ""}>
+    <div class="notif-icon">${icon}</div>
     <div class="notif-body">
       <div class="notif-title">${esc(it.title)}</div>
       <div class="notif-time">${timeAgo(it.created_at)}</div>

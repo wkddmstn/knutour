@@ -1,6 +1,6 @@
 import { getState, isDone, getLevel, getLevelTable, getLevelLog } from "./storage.js";
 import { getCachedProfile } from "./supa.js";
-import { pickBest } from "./community.js";
+import { pickBest, toTag } from "./community.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -107,7 +107,8 @@ export function renderOnboard(depts, onSubmit) {
       </label>
       <p id="onb-err" class="err"></p>
       <button id="btn-start" class="btn">시작하기</button>
-    </div>`;
+    </div>
+    <p class="onb-privacy">시작하면 <a href="privacy.html" target="_blank" rel="noopener">접속 기록 · 개인정보 안내</a>에 동의한 것으로 봐요.</p>`;
   const submit = () => {
     const nickname = $("in-nick").value.trim();
     if (nickname.length < 2) { $("onb-err").textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
@@ -460,8 +461,14 @@ function postFootHtml(p) {
     p.comment_count ? `답변 ${p.comment_count}개 보기 · 도움이 된 답변에 ♥를 눌러주세요` : "아직 답변이 없어요 · 첫 답변을 남겨보세요"}</button>`;
 }
 
+// 본문 속 #해시태그를 눌러서 모아 볼 수 있는 버튼으로 바꾼다. esc() 뒤에 돌리므로 "&#39;" 같은 엔티티는
+// 앞이 공백/줄 시작이 아니라 걸리지 않는다.
+const tagBtn = (t) => `<button type="button" class="tag" data-tag="${esc(t)}">#${esc(t)}</button>`;
+const linkifyTags = (html) => html.replace(/(^|\s)#([0-9A-Za-z가-힣_]+)/g, (_, pre, t) => pre + tagBtn(t));
+
 function postCardHtml(p, zoneName, myId) {
   const q = p.kind === "question";
+  const place = p.zone_id ? toTag(zoneName(p.zone_id)) : "";
   return `
     <article class="post ${q ? "q-post" : ""} ${p.guide ? "guide" : ""}" data-post="${esc(p.id)}">
       ${p.guide ? `<div class="guide-ribbon">📌 이렇게 질문해 보세요 · 예시</div>` : ""}
@@ -469,7 +476,7 @@ function postCardHtml(p, zoneName, myId) {
         ${avatar(p.nickname)}
         <div class="post-meta">
           <b>${esc(p.nickname)}${p.guide ? ` <span class="guide-chip">가이드</span>` : ""}</b>
-          <span>${p.zone_id ? `<em>📍 ${esc(zoneName(p.zone_id))}</em> · ` : ""}${p.guide ? "고정됨" : timeAgo(p.created_at)}</span>
+          <span>${place ? `${tagBtn(place)} · ` : ""}${p.guide ? "고정됨" : timeAgo(p.created_at)}</span>
         </div>
         ${!p.guide && p.user_id !== myId ? `<button class="post-report" type="button" data-act="report" aria-label="신고하기" title="신고하기">🚩</button>` : ""}
       </header>
@@ -478,7 +485,7 @@ function postCardHtml(p, zoneName, myId) {
         <img src="${esc(p.photo_url)}" alt="${esc(p.nickname)}님이 올린 사진" loading="lazy">
         <span class="heart-burst" aria-hidden="true">${ICON_HEART}</span>
       </div>` : ""}
-      ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${q ? `<span class="q-mark">Q.</span>` : ""}${esc(p.message)}</p>` : ""}
+      ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${q ? `<span class="q-mark">Q.</span>` : ""}${linkifyTags(esc(p.message))}</p>` : ""}
       <div class="post-actions">
         <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
                 aria-pressed="${p.liked}" aria-label="${q ? "나도 궁금해요" : "좋아요"}">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
@@ -494,9 +501,11 @@ function postCardHtml(p, zoneName, myId) {
 // 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
 // 맨 위는 "내 순위" 대표 카드(누르면 전체 랭킹 상세 화면), 그 아래 게시판.
 // "내 글만 보기"는 탭 안의 탭으로 두지 않고 내 정보 > 내가 쓴 글에서 들어오게 했다 (들어오면 위에 칩이 뜸).
-export function renderCommunity(zones, posts, { board = "post", filter = "all" } = {}, myId = null) {
+// tag: 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자 (위에 "#일청담 · N개" 칩이 뜨고 ✕로 해제)
+export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null } = {}, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   const q = board === "question";
+  const count = posts.filter((p) => !p.guide).length;
   $("view-community").innerHTML = `
     <div class="card card-hero rank-hero" id="rank-hero">
       <div class="qm-head"><span class="qm-title">🏆 내 순위</span></div>
@@ -511,15 +520,18 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all" }
       <button data-board="post" role="tab" aria-selected="${!q}" class="${q ? "" : "on"}">자유게시판</button>
       <button data-board="question" role="tab" aria-selected="${q}" class="${q ? "on" : ""}">❓ 질문</button>
     </div>
-    ${filter === "mine"
+    ${tag
+      ? `<button type="button" class="filter-chip tag-chip" data-f="all"><b>#${esc(tag)}</b> 방문 기록 ${count}개 <span aria-hidden="true">✕</span><span class="sr-only">해시태그 모아 보기 끄기</span></button>`
+      : filter === "mine"
       ? `<button type="button" class="filter-chip" data-f="all">${q ? "내 질문" : "내가 쓴 글"}만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">전체 보기</span></button>`
       : `<p class="map-guide">${q
         ? "캠퍼스·미션에 대해 궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변으로 올라가요."
-        : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요."}</p>`}
+        : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 나눠보세요. #장소 태그를 누르면 그곳의 방문 기록만 모아 볼 수 있어요."}</p>`}
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
-          <p style="color:var(--mute);margin:0">${filter === "mine"
+          <p style="color:var(--mute);margin:0">${tag ? `아직 #${esc(tag)} 태그가 달린 ${q ? "질문" : "글"}이 없어요`
+            : filter === "mine"
             ? (q ? "아직 올린 질문이 없어요" : "아직 올린 글이 없어요")
             : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
         </div>`}
@@ -713,10 +725,12 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
     <div class="modal-card pop-in" style="text-align:left">
       <h2 style="font-size:18px;text-align:center">${title || (photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기")}</h2>
       ${!lockZone && zones ? `
-        <select id="cw-zone" class="text-in" style="margin-bottom:8px">
-          <option value="">📍 장소 선택 안 함</option>
-          ${zones.map((z) => `<option value="${esc(z.id)}" ${z.id === zoneId ? "selected" : ""}>${esc(z.name)}</option>`).join("")}
-        </select>` : (zoneName ? `<div class="sum-foot" style="margin-bottom:8px">📍 ${esc(zoneName)}</div>` : "")}
+        <select id="cw-zone" class="text-in" style="margin-bottom:4px" aria-label="장소 해시태그">
+          <option value=""># 장소 태그 없음</option>
+          ${zones.map((z) => `<option value="${esc(z.id)}" ${z.id === zoneId ? "selected" : ""}>#${esc(toTag(z.name))}</option>`).join("")}
+        </select>
+        <p class="cw-tag-hint">장소 태그를 달면 커뮤니티에서 그 장소의 방문 기록으로 모아 볼 수 있어요. 본문에 #태그를 직접 써도 돼요.</p>`
+        : (zoneName ? `<div class="cw-tag-lock"><span class="tag">#${esc(toTag(zoneName))}</span> 태그가 붙어요</div>` : "")}
       ${photo
         ? `<img class="gb-photo-lg" src="${photoSrc(photo)}" alt="">`
         : `<label class="btn-file small">📷 사진 추가 (선택)<input id="cw-photo" type="file" accept="image/*" hidden></label>
