@@ -809,16 +809,6 @@ export function renderMe(zones, onReset, onMyPosts = null) {
   const st = getState();
   const myCode = getCachedProfile()?.code;
   const lv = getLevel(st.score);
-  // AR 미션은 보너스라 "완료한 미션" 집계에서 빼고, 구역별 메인 미션 1개만 센다 (8구역 = 8개)
-  const missions = zones.flatMap((z) => z.missions).filter((m) => m.type !== "ar");
-  const doneCnt = missions.filter((m) => isDone(m.id)).length;
-  const clearCnt = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
-
-  // 가입한 지 며칠째인지 (개인 정보 한 줄 요약에 사용)
-  const joinedAt = st.startedAt || Date.now();
-  const daysWith = Math.max(1, Math.floor((Date.now() - joinedAt) / 86400000) + 1);
-  const joinedDateText = new Date(joinedAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
-
   const el = $("view-me");
   el.innerHTML = `
     <div class="card card-hero me-hero">
@@ -826,16 +816,11 @@ export function renderMe(zones, onReset, onMyPosts = null) {
       <div class="sum-label">${esc(st.profile.dept)}</div>
       <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>
       <div class="sum-foot" style="margin-top:6px">
-        Lv.${lv.level} ${lv.title} · ${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}
+        Lv.${lv.level} ${lv.title}
         <button id="btn-level-info" class="level-info-btn" type="button" aria-label="레벨 기준 보기">ⓘ</button>
       </div>
       <div class="progress"><i style="width:${lv.pct}%"></i></div>
-      <div class="stats">
-        <div class="stat"><b>${st.score}</b><span>총 XP</span></div>
-        <div class="stat"><b>${doneCnt}/${missions.length}</b><span>완료한 미션 · ${clearCnt}개 구역</span></div>
-        <div class="stat"><b>D+${daysWith}</b><span>함께한 지</span></div>
-      </div>
-      <div class="sum-foot" style="margin-top:10px">${joinedDateText}에 캠퍼스 퀘스트를 시작했어요</div>
+      <div class="me-xp-line"><b>${st.score} XP</b><span>${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}</span></div>
     </div>
     ${myCode ? `
     <div class="card" style="text-align:center;margin-top:16px">

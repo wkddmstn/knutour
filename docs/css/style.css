@@ -1054,4 +1054,6 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 .food-emoji .jelly { width: 34px; height: 34px; }
 .food-emoji.lg .jelly { width: 46px; height: 46px; }
 .al-place .ap-ic .jelly { width: 44px; height: 44px; }
-.jelly-emoji { font-size: 20px; line-height: 1; }
+.jelly-emoji { font-size: 20px; line-height: 1; }/* 내 정보 카드: 경험치 막대 아래 총 XP · 다음 레벨까지 */
+.me-xp-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13px; color: var(--sub); }
+.me-xp-line b { font-size: 15px; color: var(--primary); }
