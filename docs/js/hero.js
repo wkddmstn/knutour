@@ -103,8 +103,7 @@ export function heroHtml(theme, nextZone) {
       <div class="hx-layer hx-far">${FAR}${FAR}</div>
       <div class="hx-layer hx-near">${NEAR}${NEAR}</div>
       ${id === "march" ? `<div class="hx-sprouts"><i style="left:12%"></i><i style="left:31%;animation-delay:.6s"></i><i style="left:74%;animation-delay:1.2s"></i><i style="left:90%;animation-delay:.3s"></i></div>` : ""}
-      <div class="hx-shadow"></div>
-      <div class="hx-walker"><img src="img/mascot/commute1.png" alt=""><img class="hx-f2" src="img/mascot/commute2.png" alt=""></div>
+      <div class="hx-walker"><img class="hx-f1" src="img/mascot/commute1.png" alt=""><img class="hx-f2" src="img/mascot/commute2.png" alt=""></div>
       <div class="hx-bubble">${esc(t.bubble)}</div>
       <span class="hx-heart" style="left:42%;bottom:118px">♥</span><span class="hx-heart" style="left:56%;bottom:108px;animation-delay:1.5s;font-size:11px">♥</span>
       ${particles(t.particles)}

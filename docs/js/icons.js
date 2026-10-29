@@ -1,113 +1,60 @@
-// js/hero.js — 홈 대표 카드의 움직이는 그림 ("캠퍼스 산책")
-// 호반우가 동글동글한 캠퍼스 사이를 걸어가고, 배경이 두 겹으로 천천히 흐른다.
-// 테마(themes.json의 id)마다 색·날리는 장식·말풍선·문구만 바꾼다.
-//   march   (3월 첫 주)  : 민트·하늘색, 새싹과 색종이
-//   cherry  (벚꽃 기간)  : 분홍, 벚꽃잎
-//   midterm (중간고사)   : 보랏빛 저녁, 책·연필·별
-// 다른 테마 id가 오면 march 모양을 쓴다.
+// js/icons.js — 동글동글 젤리 아이콘
+// 이모지는 폰·PC마다 모양이 달라서(윈도우 3D, 아이폰 광택) 앱 그림체와 안 맞는다.
+// 아이콘 자리(장소 목록, 지도 핀, 맛집 종류, 앨범, 퀴즈 결과)에는 이 SVG를 쓴다.
+// 대화·알림 문장 속 이모지는 글자라서 그대로 둔다.
+//
+// 쓰는 법: icon("library")  → 연한 동그라미 배경이 있는 아이콘
+//          icon("library", { bg: false }) → 배경 없이 모양만 (지도 핀 안)
+//          zoneIcon(zone) → 장소 id로 고르고, 없는 장소면 원래 이모지
 
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-// 받침 있으면 "으로", 없거나 ㄹ받침이면 "로"
-function ro(name) {
-  const c = String(name).charCodeAt(String(name).length - 1);
-  if (c < 0xac00 || c > 0xd7a3) return "로";
-  const jong = (c - 0xac00) % 28;
-  return jong === 0 || jong === 8 ? "로" : "으로";
-}
-
-const THEMES = {
-  march: {
-    bubble: "새 학기 시작! 구경 가자 🌱",
-    title: (z) => `오늘은 ${z}${ro(z)} 가볼까?`,
-    sub: "새 학기 캠퍼스와 친해지는 시간이에요",
-    particles: "leaf",
-  },
-  cherry: {
-    bubble: "벚꽃 보러 가자! 🌸",
-    title: (z) => `오늘은 ${z}${ro(z)} 산책 갈까?`,
-    sub: "벚꽃 핀 캠퍼스를 걸어 봐요",
-    particles: "petal",
-  },
-  midterm: {
-    bubble: "시험 화이팅! 📚",
-    title: (z) => `공부하다 지치면 ${z}${ro(z)}!`,
-    sub: "시험 기간에도 쉬엄쉬엄 캠퍼스 한 바퀴",
-    particles: "book",
-  },
+const P = {   // 젤리 색
+  red: "#ff5a5f", pink: "#ff8a93", pinkL: "#ffd1d9", pinkBg: "#fff0f1",
+  mint: "#8fd9b0", mintL: "#c9f0d9", mintBg: "#ecf9f1",
+  sky: "#9cc2ff", skyL: "#c7dcff", skyBg: "#eef4ff",
+  sun: "#ffc85c", sunL: "#ffe3a3", sunBg: "#fff6e3",
+  wood: "#e8b9a0", white: "#fff",
 };
 
-// 먼 건물 (연하게, 천천히)
-const FAR = `<svg viewBox="0 0 600 230" preserveAspectRatio="xMinYMax meet" aria-hidden="true">
-  <path d="M0 200 Q80 150 170 190 T360 185 T600 195 V230 H0Z" fill="var(--hx-hill2)"/>
-  <rect x="40" y="120" width="70" height="80" rx="22" fill="var(--hx-far1)"/><circle cx="75" cy="118" r="26" fill="var(--hx-far2)"/>
-  <circle cx="62" cy="150" r="7" fill="var(--hx-win)"/><circle cx="88" cy="150" r="7" fill="var(--hx-win)"/>
-  <rect x="250" y="110" width="90" height="90" rx="26" fill="var(--hx-far3)"/>
-  <rect x="268" y="132" width="20" height="16" rx="8" fill="var(--hx-win)"/><rect x="302" y="132" width="20" height="16" rx="8" fill="var(--hx-win)"/>
-  <rect x="440" y="130" width="60" height="70" rx="20" fill="var(--hx-far4)"/><circle cx="470" cy="128" r="20" fill="var(--hx-far4)"/>
-</svg>`;
+// 각 아이콘: [배경색, 모양 SVG] (48×48 기준)
+const SHAPES = {
+  // 공식당: 밥그릇
+  gongstaurant: [P.pinkBg, `<path d="M9 25H39Q38 38 24 38Q10 38 9 25Z" fill="${P.pink}"/><path d="M12 25Q13 13 24 13Q35 13 36 25Z" fill="${P.white}"/><ellipse cx="19" cy="19" rx="3" ry="2" fill="${P.pinkL}"/><rect x="13" y="27" width="22" height="3" rx="1.5" fill="${P.red}" opacity=".45"/>`],
+  // 대운동장: 트랙 + 깃발
+  stadium: [P.mintBg, `<ellipse cx="24" cy="29" rx="17" ry="10" fill="${P.mint}"/><ellipse cx="24" cy="29" rx="10" ry="5" fill="${P.mintL}"/><path d="M24 22V9" stroke="${P.pink}" stroke-width="3" stroke-linecap="round"/><path d="M24 9Q34 11 24 16Z" fill="${P.red}"/>`],
+  // 중앙도서관: 책
+  library: [P.skyBg, `<rect x="11" y="13" width="26" height="24" rx="6" fill="${P.sky}"/><rect x="15" y="13" width="22" height="20" rx="5" fill="${P.skyL}"/><rect x="19" y="18" width="12" height="3" rx="1.5" fill="${P.white}"/><path d="M31 13V24L34 21L37 24V13Z" fill="${P.red}"/>`],
+  // 센트럴 파크: 피크닉 바구니
+  centralpark: [P.sunBg, `<path d="M15 21Q15 11 24 11Q33 11 33 21" fill="none" stroke="${P.wood}" stroke-width="3.5" stroke-linecap="round"/><path d="M9 21H39L36 36Q35 38 33 38H15Q13 38 12 36Z" fill="${P.sunL}"/><path d="M9 21H39L38.2 25H9.8Z" fill="${P.pink}"/><path d="M17 28V34M24 28V34M31 28V34" stroke="${P.sun}" stroke-width="2.5" stroke-linecap="round"/>`],
+  // 일청담: 연못과 분수
+  ilcheongdam: [P.skyBg, `<ellipse cx="24" cy="33" rx="16" ry="6" fill="${P.sky}"/><ellipse cx="24" cy="32" rx="11" ry="3.5" fill="${P.skyL}"/><path d="M24 31Q20 22 24 12Q28 22 24 31Z" fill="${P.skyL}"/><circle cx="17" cy="20" r="2.5" fill="${P.sky}"/><circle cx="31" cy="18" r="2" fill="${P.sky}"/><circle cx="24" cy="10" r="2" fill="${P.white}"/>`],
+  // 사랑의 길: 하트
+  loveroad: [P.pinkBg, `<path d="M24 37Q10 28 10 19Q10 12 17 12Q21 12 24 16Q27 12 31 12Q38 12 38 19Q38 28 24 37Z" fill="${P.red}"/><ellipse cx="17" cy="18" rx="3.5" ry="2.5" fill="${P.white}" opacity=".55"/>`],
+  // 벚꽃길: 벚꽃
+  cherryroad: [P.pinkBg, `${[0, 72, 144, 216, 288].map((r) => `<ellipse cx="24" cy="14.5" rx="6" ry="8" fill="${P.pinkL}" transform="rotate(${r} 24 24)"/>`).join("")}<circle cx="24" cy="24" r="5" fill="${P.pink}"/><circle cx="24" cy="24" r="2" fill="${P.sun}"/>`],
+  // 복지관: 동글한 건물
+  bokji: [P.mintBg, `<rect x="11" y="14" width="26" height="24" rx="7" fill="${P.white}"/><rect x="11" y="14" width="26" height="8" rx="4" fill="${P.mint}"/><rect x="15" y="25" width="6" height="6" rx="3" fill="${P.skyL}"/><rect x="27" y="25" width="6" height="6" rx="3" fill="${P.skyL}"/><rect x="21" y="30" width="6" height="8" rx="3" fill="${P.pink}"/>`],
+  // 맛집 종류
+  meal: [P.pinkBg, `<path d="M9 25H39Q38 38 24 38Q10 38 9 25Z" fill="${P.pink}"/><path d="M12 25Q13 13 24 13Q35 13 36 25Z" fill="${P.white}"/><path d="M30 8L22 22M36 10L26 23" stroke="${P.wood}" stroke-width="2.5" stroke-linecap="round"/>`],
+  cafe: [P.sunBg, `<path d="M11 18H33V30Q33 38 22 38Q11 38 11 30Z" fill="${P.wood}"/><path d="M14 18H30V22H14Z" fill="${P.white}" opacity=".7"/><path d="M33 22Q40 22 40 27Q40 32 33 32" fill="none" stroke="${P.wood}" stroke-width="3.5"/><path d="M18 8Q16 11 18 14M24 8Q22 11 24 14" stroke="${P.sun}" stroke-width="2.5" stroke-linecap="round" fill="none"/>`],
+  pub: [P.sunBg, `<rect x="11" y="15" width="22" height="23" rx="5" fill="${P.sun}"/><path d="M11 18Q11 11 17 12Q20 8 25 11Q32 10 33 17Z" fill="${P.white}"/><path d="M33 21Q40 21 40 26Q40 31 33 31" fill="none" stroke="${P.sun}" stroke-width="3.5"/><path d="M17 22V33M24 22V33" stroke="${P.white}" stroke-width="2" stroke-linecap="round" opacity=".6"/>`],
+  // 게시판: 말풍선(자유게시판) · 물음표(질문)
+  chat: [P.pinkBg, `<path d="M10 14Q10 9 15 9H33Q38 9 38 14V27Q38 32 33 32H22L15 38V32Q10 32 10 27Z" fill="${P.pink}"/><circle cx="18" cy="21" r="2.4" fill="${P.white}"/><circle cx="24" cy="21" r="2.4" fill="${P.white}"/><circle cx="30" cy="21" r="2.4" fill="${P.white}"/>`],
+  question: [P.skyBg, `<circle cx="24" cy="24" r="15" fill="${P.sky}"/><ellipse cx="19" cy="16" rx="4" ry="2.4" fill="${P.white}" opacity=".45"/><path d="M19.5 20Q19.5 15 24 15Q28.5 15 28.5 19.5Q28.5 22.5 25.5 23.8Q24 24.5 24 26.5" fill="none" stroke="${P.white}" stroke-width="3.4" stroke-linecap="round"/><circle cx="24" cy="31.5" r="2.2" fill="${P.white}"/>`],
+  // 결과·기타
+  check: [P.pinkBg, `<circle cx="24" cy="24" r="15" fill="${P.red}"/><ellipse cx="19" cy="17" rx="4" ry="2.5" fill="${P.white}" opacity=".5"/><path d="M17 24L22 29L31 19" fill="none" stroke="${P.white}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`],
+  memo: [P.skyBg, `<rect x="13" y="10" width="22" height="28" rx="6" fill="${P.white}"/><rect x="13" y="10" width="22" height="7" rx="3.5" fill="${P.sky}"/><path d="M18 23H30M18 29H26" stroke="${P.skyL}" stroke-width="3" stroke-linecap="round"/>`],
+  pin: [P.pinkBg, `<path d="M24 39Q12 27 12 20Q12 10 24 10Q36 10 36 20Q36 27 24 39Z" fill="${P.red}"/><circle cx="24" cy="20" r="5" fill="${P.white}"/>`],
+};
 
-// 가까운 건물·나무·분수 (또렷하게, 조금 빠르게)
-const NEAR = `<svg viewBox="0 0 600 230" preserveAspectRatio="xMinYMax meet" aria-hidden="true">
-  <path d="M0 206 Q150 186 300 204 T600 204 V230 H0Z" fill="var(--hx-hill)"/>
-  <g><rect x="10" y="118" width="110" height="90" rx="26" fill="var(--hx-wall)"/><path d="M10 140 Q65 84 120 140Z" fill="var(--hx-roof)"/>
-    <circle cx="65" cy="104" r="10" fill="var(--hx-accent)"/>
-    <rect x="30" y="150" width="20" height="22" rx="10" fill="var(--hx-win2)"/><rect x="80" y="150" width="20" height="22" rx="10" fill="var(--hx-win2)"/>
-    <rect x="54" y="176" width="22" height="32" rx="11" fill="var(--hx-door)"/></g>
-  <g><circle cx="168" cy="168" r="24" fill="var(--hx-tree1)"/><circle cx="186" cy="152" r="18" fill="var(--hx-tree2)"/>
-    <circle cx="152" cy="150" r="15" fill="var(--hx-tree2)"/><rect x="163" y="186" width="10" height="22" rx="5" fill="var(--hx-trunk)"/></g>
-  <g><ellipse cx="300" cy="200" rx="46" ry="10" fill="var(--hx-pool)"/><path d="M300 196 Q290 170 300 150 Q310 170 300 196" fill="var(--hx-jet)"/>
-    <circle cx="300" cy="146" r="5" fill="var(--hx-pool)"/><circle cx="286" cy="164" r="3" fill="var(--hx-pool)"/><circle cx="314" cy="160" r="3" fill="var(--hx-pool)"/></g>
-  <g><rect x="390" y="124" width="100" height="84" rx="26" fill="var(--hx-wall)"/><rect x="390" y="124" width="100" height="26" rx="13" fill="var(--hx-roof2)"/>
-    <rect x="408" y="162" width="16" height="16" rx="8" fill="var(--hx-win3)"/><rect x="432" y="162" width="16" height="16" rx="8" fill="var(--hx-win3)"/>
-    <rect x="456" y="162" width="16" height="16" rx="8" fill="var(--hx-win3)"/>
-    <path d="M440 124 V100" stroke="var(--hx-roof)" stroke-width="4" stroke-linecap="round"/><path d="M440 100 Q456 104 440 112" fill="var(--hx-accent)"/></g>
-  <g><circle cx="540" cy="174" r="20" fill="var(--hx-tree3)"/><circle cx="556" cy="160" r="15" fill="var(--hx-tree4)"/>
-    <rect x="536" y="188" width="9" height="20" rx="4.5" fill="var(--hx-trunk)"/></g>
-</svg>`;
+export function hasIcon(name) { return !!SHAPES[name]; }
 
-// 날리는 장식 (자리·속도는 고정값으로 흩어 놓아 매번 같은 모양)
-const SPOTS = [[8, 6.2, 0.5, 13], [22, 8.4, 3.1, 11], [37, 7.1, 6.0, 16], [51, 9.3, 1.7, 12], [64, 6.8, 4.4, 15],
-               [77, 8.9, 7.3, 11], [88, 7.6, 2.4, 14], [96, 9.8, 5.5, 12]];
-const BOOK_SVG = (c) => `<svg viewBox="0 0 20 16"><rect x="1" y="2" width="18" height="12" rx="3" fill="${c}"/><rect x="4" y="2" width="13" height="10" rx="2" fill="#fff" opacity=".7"/><rect x="9.2" y="2" width="1.6" height="12" fill="${c}"/></svg>`;
-function particles(kind) {
-  return SPOTS.map(([left, dur, delay, size], i) => {
-    const style = `left:${left}%;width:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s`;
-    if (kind === "petal") return `<img class="hx-p" src="img/hobanu/petal.png" alt="" style="${style}">`;
-    if (kind === "book") {
-      const c = ["#9c8cff", "#7fb3ff", "#ff9fb2", "#8fd9b0"][i % 4];
-      return i % 3 === 2
-        ? `<span class="hx-p hx-star" style="${style}">✦</span>`
-        : `<span class="hx-p hx-book" style="${style}">${BOOK_SVG(c)}</span>`;
-    }
-    // leaf: 새싹 잎 + 색종이
-    return i % 2
-      ? `<span class="hx-p hx-leaf" style="${style}"></span>`
-      : `<span class="hx-p hx-conf" style="${style};background:${["#ff8a93", "#7fb3ff", "#ffd27a", "#8fd9b0"][i % 4]}"></span>`;
-  }).join("");
+export function icon(name, { bg = true, size = null, cls = "" } = {}) {
+  const s = SHAPES[name] || SHAPES.pin;
+  const wh = size ? ` width="${size}" height="${size}"` : "";
+  return `<svg class="jelly ${cls}" viewBox="0 0 48 48"${wh} aria-hidden="true">${bg ? `<circle cx="24" cy="24" r="22" fill="${s[0]}"/>` : ""}${s[1]}</svg>`;
 }
 
-// 홈 카드 안에 넣을 그림 + 문구
-// theme: 지금 테마(themes.js), nextZone: 다음에 갈 장소(없으면 다 깬 상태)
-export function heroHtml(theme, nextZone) {
-  const id = THEMES[theme?.id] ? theme.id : "march";
-  const t = THEMES[id];
-  const title = nextZone ? t.title(nextZone.name) : "모든 장소를 다 돌았어요! 🎉";
-  const sub = nextZone ? t.sub : "다른 테마가 열리면 또 만나요";
-  return `
-    <div class="hx-stage hx-${id}" aria-hidden="true">
-      <div class="hx-sun"></div>
-      <div class="hx-cloud" style="top:28px;width:58px;animation-duration:32s;animation-delay:-6s"></div>
-      <div class="hx-cloud" style="top:60px;width:44px;animation-duration:40s;animation-delay:-24s"></div>
-      ${id === "midterm" ? `<span class="hx-twinkle" style="left:18%;top:20px">✦</span><span class="hx-twinkle" style="left:44%;top:40px;animation-delay:.8s">✦</span><span class="hx-twinkle" style="left:70%;top:16px;animation-delay:1.6s">✦</span>` : ""}
-      <div class="hx-layer hx-far">${FAR}${FAR}</div>
-      <div class="hx-layer hx-near">${NEAR}${NEAR}</div>
-      ${id === "march" ? `<div class="hx-sprouts"><i style="left:12%"></i><i style="left:31%;animation-delay:.6s"></i><i style="left:74%;animation-delay:1.2s"></i><i style="left:90%;animation-delay:.3s"></i></div>` : ""}
-      <div class="hx-walker"><img class="hx-f1" src="img/mascot/commute1.png" alt=""><img class="hx-f2" src="img/mascot/commute2.png" alt=""></div>
-      <div class="hx-bubble">${esc(t.bubble)}</div>
-      <span class="hx-heart" style="left:42%;bottom:118px">♥</span><span class="hx-heart" style="left:56%;bottom:108px;animation-delay:1.5s;font-size:11px">♥</span>
-      ${particles(t.particles)}
-    </div>
-    <div class="hx-title">${esc(title)}</div>
-    <div class="hx-sub">${esc(sub)}</div>`;
+// 장소 아이콘: 등록된 장소면 젤리 아이콘, 아니면 zones.json의 이모지 글자
+export function zoneIcon(z, opts) {
+  return z && SHAPES[z.id] ? icon(z.id, opts) : `<span class="jelly-emoji">${String(z?.emoji || "📍").replace(/[<>&"]/g, "")}</span>`;
 }
