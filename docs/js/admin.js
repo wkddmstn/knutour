@@ -54,7 +54,7 @@ async function loadAnnouncements() {
   }
   list.innerHTML = data.map((a) => `
     <div class="ann-item">
-      <h3>${esc(a.title)}</h3>
+      <h3>${a.dept ? `<span style="color:var(--primary)">[${esc(a.dept)}]</span> ` : ""}${esc(a.title)}</h3>
       <p>${esc(a.body)}</p>
       <div class="meta">
         <time>${new Date(a.created_at).toLocaleString("ko-KR")}</time>
@@ -76,12 +76,14 @@ async function deleteAnnouncement(id) {
 $("ann-submit").onclick = async () => {
   const title = $("ann-title").value.trim();
   const body = $("ann-body").value.trim();
+  const dept = $("ann-dept").value;
   $("ann-err").textContent = "";
   if (!title || !body) { $("ann-err").textContent = "제목과 내용을 모두 입력해주세요."; return; }
-  const { error } = await client.rpc("admin_add_announcement", { p_password: password, p_title: title, p_body: body });
+  const { error } = await client.rpc("admin_add_announcement", { p_password: password, p_title: title, p_body: body, p_dept: dept });
   if (error) { $("ann-err").textContent = "등록 실패: " + error.message; return; }
   $("ann-title").value = "";
   $("ann-body").value = "";
+  $("ann-dept").value = "";
   loadAnnouncements();
 };
 
