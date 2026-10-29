@@ -203,8 +203,10 @@ async function photo(m, zone) {
     }
 
     // 2단계(AI): 재사용 사진이 아니면, 그제서야 Gemini한테 미션 내용과 맞는 사진인지 물어본다.
+    // 검사는 바로 시작하고, 그동안 "확인하고 있어요" 말풍선을 보여준다 (말풍선 애니메이션을 기다렸다 시작하면 그만큼 느려짐)
+    const verdictP = verifyMissionPhoto(m.title, m.desc, shot, m.id);
     await chat.bot("사진을 확인하고 있어요... 🔍");
-    const verdict = await verifyMissionPhoto(m.title, m.desc, shot, m.id);
+    const verdict = await verdictP;
     if (!verdict.ok) {
       await chat.bot(
         (verdict.reason ? `음, ${verdict.reason}` : "이 미션이랑 잘 안 맞는 사진 같아.") + " 다른 사진으로 다시 찍어볼래?"

@@ -13,41 +13,42 @@ import { getRule } from "./photo-rules.js";
 // ⬇️ Google Cloud > API 및 서비스 > 사용자 인증 정보에서 만든 API 키를 넣으세요
 const VISION_API_KEY = "AIzaSyAb8Q4rv31_aiVWVWQ2tCd8eNKYNbflhVo";
 
-const MAX_SIDE = 1280;   // 긴 변을 이 크기로 줄여서 보낸다 (전송이 빨라지고, 인식 정확도에는 거의 영향 없음)
+const MAX_SIDE = 800;    // 긴 변을 이 크기로 줄여서 보낸다 (물체·장면 인식엔 충분하고, 전송·분석이 훨씬 빨라짐)
+const TIMEOUT_MS = 8000; // 이보다 오래 걸리면 기다리지 않고 통과 처리
 
-// File 객체 또는 "data:"로 시작하는 dataURL을 받아서, 크기를 줄인 JPEG의 순수 base64로 바꾼다
+// File 객체 또는 "data:"로 시작하는 dataURL을 받아서, 크기를 줄인 JPEG의 순수 base64로 바꾼다.
+// 휴대폰 원본(수 MB)을 문자열로 통째로 읽지 않고 바로 줄여서 그리기 때문에 빠르다.
 async function toBase64(photo) {
-  const src = typeof photo === "string" ? photo : await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(photo);
-  });
+  const url = typeof photo === "string" ? photo : URL.createObjectURL(photo);
   try {
     const img = await new Promise((resolve, reject) => {
       const i = new Image();
+      i.decoding = "async";
       i.onload = () => resolve(i);
       i.onerror = reject;
-      i.src = src;
+      i.src = url;
     });
     const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
     const c = document.createElement("canvas");
     c.width = Math.round(img.naturalWidth * scale);
     c.height = Math.round(img.naturalHeight * scale);
     c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.85).split(",")[1];
+    return c.toDataURL("image/jpeg", 0.8).split(",")[1];
   } catch {
-    return src.slice(src.indexOf(",") + 1);   // 줄이기에 실패하면 원본 그대로
+    return typeof photo === "string" ? photo.slice(photo.indexOf(",") + 1) : null;   // 줄이기에 실패하면 원본(dataURL)이라도
+  } finally {
+    if (typeof photo !== "string") URL.revokeObjectURL(url);
   }
 }
 
-// Google Vision 호출: 라벨(사진 속 물체·장면) + 글자(OCR)
-async function annotate(base64) {
+// Google Vision 호출: 라벨(사진 속 물체·장면) + 필요할 때만 글자(OCR)
+// 글자 인식은 식권·대출 화면처럼 글자가 핵심인 미션(규칙에 textHints가 있는 미션)에서만 요청한다 → 더 빠르고 요청 수도 절반
+async function annotate(base64, withText) {
   let res = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
       res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${encodeURIComponent(VISION_API_KEY)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +57,7 @@ async function annotate(base64) {
             image: { content: base64 },
             features: [
               { type: "LABEL_DETECTION", maxResults: 15 },
-              { type: "TEXT_DETECTION", maxResults: 5 },
+              ...(withText ? [{ type: "TEXT_DETECTION", maxResults: 5 }] : []),
             ],
           }],
         }),
@@ -66,9 +67,9 @@ async function annotate(base64) {
     } catch {
       res = null;
     }
-    // 일시적인 문제(과부하·요청 몰림)일 때만 다시 시도
-    if (res && (res.ok || (res.status !== 503 && res.status !== 429))) break;
-    if (attempt < 2) await new Promise((r) => setTimeout(r, 1200));
+    // 일시적인 문제(과부하·요청 몰림)일 때만 한 번 더 시도 (시간 초과·키 오류·결제 미설정 등은 바로 포기)
+    if (!res || res.ok || (res.status !== 503 && res.status !== 429)) break;
+    if (attempt < 1) await new Promise((r) => setTimeout(r, 600));
   }
   if (!res || !res.ok) {
     if (res) console.warn("[사진 인증] Vision API 요청 실패", res.status, await res.text().catch(() => ""));
@@ -93,13 +94,14 @@ export async function verifyMissionPhoto(missionTitle, missionDesc, photo, missi
   if (VISION_API_KEY.startsWith("CHANGE_ME")) return { ok: true, reason: "" };   // 아직 키를 안 넣음
 
   try {
+    const rule = getRule(missionId);
+    if (!rule) return { ok: true, reason: "" };               // 규칙 없는 새 미션 → 부를 필요 없이 통과
+
     const base64 = await toBase64(photo);
     if (!base64) return { ok: true, reason: "" };
 
-    const rule = getRule(missionId);
-    const a = await annotate(base64);
+    const a = await annotate(base64, rule.textHints.length > 0);
     if (!a) return { ok: true, reason: "", review: true };   // 분석 실패 → 막지 않음
-    if (!rule) return { ok: true, reason: "" };               // 규칙 없는 새 미션 → 통과
 
     const labelMatch = a.labels.some((l) =>
       l.score >= rule.minLabelScore && rule.labels.some((want) => l.desc.includes(want.toLowerCase())));
