@@ -299,6 +299,7 @@ async function goTab(tab, opts = {}) {
     refreshBellBadge();
   } else if (tab === "me") {
     ui.renderMe(zones, onReset);
+    try { tour?.renderBadges($("view-me")); } catch (e) { console.warn("[투어]", e); }   // 스탬프·투어 뱃지 (장주연)
     refreshBellBadge();
     ui.showView("me");
   }

@@ -10,6 +10,7 @@ export const TOUR_ON = true;          // false로 바꾸면 투어 카드/버튼
 const DEMO_WALK = true;               // 시연용 "데모로 걸어가기" 버튼 (실제 운영 때는 false)
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";   // ?debug=1 : 지도를 누르면 좌표 표시
 const KEY = "knu-tour-v1";
+const BADGE_KEY = "knu-tour-badges";      // { courseId: 받은 시각 }
 const VOICE_KEY = "knu-tour-voice";
 
 // 출발 위치. 정문 좌표는 추정값이에요 → ?debug=1 로 지도를 눌러 정확한 좌표를 찾아 바꿔 주세요.
@@ -19,11 +20,11 @@ const GATES = {
 };
 
 const COURSES = [
-  { id: "godsaeng", name: "갓생 살기 코스", emoji: "📚", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
+  { id: "godsaeng", name: "갓생 살기 코스", emoji: "📚", badge: "갓생 새내기", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
     stops: ["loveroad", "ilcheongdam", "library", "bokji", "centralpark"] },
-  { id: "healing", name: "힐링 코스", emoji: "🌸", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
+  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
     stops: ["loveroad", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
-  { id: "full", name: "전체 코스", emoji: "🗺️", desc: "캠퍼스 한 바퀴 완주",
+  { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", desc: "캠퍼스 한 바퀴 완주",
     stops: ["loveroad", "centralpark", "bokji", "library", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
 ];
 
@@ -57,7 +58,6 @@ const POIS = [];
 let app = null;   // { zones(), openZone, goTab, store, ui }
 export function initTour(api) {
   app = api;
-  watchChatVoice();
 }
 const zoneById = (id) => app?.zones().find((z) => z.id === id);
 // 받침에 따라 "이야/야", "으로/로" 붙이기
@@ -68,6 +68,34 @@ const course = (id) => COURSES.find((c) => c.id === id);
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } }
 function save(st) { try { st ? localStorage.setItem(KEY, JSON.stringify(st)) : localStorage.removeItem(KEY); } catch {} }
 export const isActive = () => TOUR_ON && !!load();
+const getBadges = () => { try { return JSON.parse(localStorage.getItem(BADGE_KEY)) || {}; } catch { return {}; } };
+function giveBadge(id) {
+  const b = getBadges();
+  if (b[id]) return false;
+  b[id] = Date.now();
+  try { localStorage.setItem(BADGE_KEY, JSON.stringify(b)); } catch {}
+  return true;
+}
+const badgeHtml = (c, on, big = false) => `<div class="tb-badge ${on ? "on" : ""} ${big ? "big" : ""}">
+  <i>${c.emoji}</i><b>${c.badge}</b><span>${on ? new Date(on).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) + " 획득" : c.name + " 완주 시"}</span></div>`;
+// 내 정보 탭에 "스탬프 · 뱃지" 카드 (main.js가 내 정보 화면을 그린 뒤 부름)
+export function renderBadges(container) {
+  if (!TOUR_ON || !container || !app) return;
+  injectStyle();
+  container.querySelector(".tb-card")?.remove();
+  const got = getBadges();
+  const zones = app.zones();
+  const cleared = zones.filter((z) => z.missions.every((m) => app.store.isDone(m.id)));
+  const card = document.createElement("div");
+  card.className = "card tb-card";
+  card.innerHTML = `
+    <div class="sum-label">구역 스탬프 · ${cleared.length}/${zones.length}</div>
+    <div class="tb-stamps">${zones.map((z) => `<span class="${cleared.includes(z) ? "on" : ""}" title="${z.name}">${z.emoji || "📍"}</span>`).join("")}</div>
+    <div class="sum-label" style="margin-top:14px">투어 뱃지 · ${Object.keys(got).length}/${COURSES.length}</div>
+    <div class="tb-badges">${COURSES.map((c) => badgeHtml(c, got[c.id])).join("")}</div>`;
+  const hero = container.querySelector(".card-hero");
+  hero ? hero.insertAdjacentElement("afterend", card) : container.prepend(card);
+}
 const curStopId = () => { const st = load(); return st ? course(st.course)?.stops[st.idx] : null; };
 
 /* ---------------- 음성 (브라우저 내장 TTS) ---------------- */
@@ -95,31 +123,26 @@ function speak(text, { interrupt = false } = {}) {
     speechSynthesis.speak(u);
   } catch {}
 }
-// 투어 중에는 구역 채팅의 호반우 말도 읽어 준다 (chat.js는 건드리지 않고 화면 변화만 지켜봄)
-let skipGreeting = false;
-function watchChatVoice() {
-  const chatEl = document.getElementById("chat");
-  if (!chatEl || watchChatVoice.on) return;
-  watchChatVoice.on = true;
-  new MutationObserver((muts) => {
-    if (!isActive() || document.body.dataset.view !== "zone") return;
-    // 저장된 대화를 한꺼번에 복원할 때(노드 여러 개)는 읽지 않고, 새로 하나씩 올라오는 말만 읽는다
-    muts.forEach((m) => m.addedNodes.length === 1 && m.addedNodes.forEach((n) => {
-      if (!(n instanceof HTMLElement) || !n.classList.contains("bot")) return;
-      const b = n.querySelector(".bubble:not(.typing)");
-      if (!b) return;
-      if (skipGreeting) { skipGreeting = false; return; }   // 도착 소개를 이미 읽었으면 첫 인사는 건너뜀
-      speak(b.innerHTML);
-    }));
-  }).observe(chatEl, { childList: true });
-}
-
 /* ---------------- 스타일 ---------------- */
 function injectStyle() {
   if (document.getElementById("tour-style")) return;
   const s = document.createElement("style");
   s.id = "tour-style";
   s.textContent = `
+  .tb-card{margin-top:16px}
+  .tb-stamps{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
+  .tb-stamps span{aspect-ratio:1;display:grid;place-items:center;font-size:20px;border-radius:12px;background:var(--cream-weak,#f3ead9);filter:grayscale(1);opacity:.4}
+  .tb-stamps span.on{filter:none;opacity:1;background:var(--primary-weak,#fbe7e5)}
+  .tb-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .tb-badge{text-align:center;padding:10px 4px;border-radius:14px;background:var(--cream-weak,#f3ead9);filter:grayscale(1);opacity:.5}
+  .tb-badge.on{filter:none;opacity:1;background:linear-gradient(160deg,#fff4de,#fbe7e5)}
+  .tb-badge i{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 6px;border-radius:50%;font-style:normal;font-size:24px;
+    background:#fff;box-shadow:0 0 0 3px #e7c26b,0 3px 8px rgba(0,0,0,.15)}
+  .tb-badge b{display:block;font-size:12.5px}
+  .tb-badge span{display:block;font-size:10.5px;color:var(--sub,#6b5f52);margin-top:2px}
+  .tb-badge.big{filter:none;opacity:1;width:150px;margin:6px auto 12px;background:linear-gradient(160deg,#fff4de,#fbe7e5);animation:tm-pop .6s}
+  .tb-badge.big i{width:70px;height:70px;font-size:36px}
+  .tb-badge.big b{font-size:15px}
   .tour-card{background:linear-gradient(135deg,var(--primary,#d4121a),#ff6a5b);color:#fff;border-radius:20px;padding:16px 18px;margin:4px 0 14px;
     display:flex;align-items:center;gap:12px;box-shadow:0 10px 24px -12px rgba(212,18,26,.6)}
   .tour-card img{width:58px;height:58px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
@@ -172,16 +195,23 @@ function injectStyle() {
   #tour-move .tm-arrive{animation:tm-pop .5s var(--ease-toss,ease-out)}
   .tour-pin{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--primary,#d4121a);display:flex;align-items:center;justify-content:center;
     font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,.25)}
+  .tour-tip{background:#d4121a;color:#fff;border:none;border-radius:999px;padding:3px 9px;font-weight:800;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .tour-tip::before{display:none}
+  .tour-tip.me{background:#2f6fed}
+  .tour-from{background:#fff;color:#241c16;border:2px solid #241c16;border-radius:999px;font-size:11px;font-weight:800;text-align:center;line-height:18px}
+  .tm-legend{display:flex;gap:12px;flex-wrap:wrap;padding:6px 18px 0;font-size:11.5px;color:var(--sub,#6b5f52)}
+  .tm-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
   .tour-me{width:18px;height:18px;border-radius:50%;background:#2f6fed;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,111,237,.25)}
   @keyframes tm-pop{0%{transform:scale(.9);opacity:.3}100%{transform:none;opacity:1}}
   /* PC(넓은 화면)·휴대폰 가로: 왼쪽 큰 지도 + 오른쪽 안내 */
   @media (orientation:landscape) and (max-height:520px){ #tour-move .tm-guide img{width:56px!important;height:56px!important}
     #tour-move .tm-bubble{font-size:13.5px!important;padding:8px 12px} #tour-move .tm-btns button{padding:11px} #tour-move .tm-arrow{width:52px;height:52px} }
   @media (min-width:900px), (orientation:landscape) and (max-height:520px){
-    #tour-move{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);grid-template-rows:auto auto minmax(0,1fr)}
+    #tour-move{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);grid-template-rows:auto auto minmax(0,1fr) auto}
     #tour-move .tm-head,#tour-move .tm-steps{grid-column:1 / -1}
-    #tour-map{margin:0 0 16px 16px;min-height:0}
-    #tour-move .tm-side{display:flex;flex-direction:column;justify-content:center;padding:0 8px 16px}
+    #tour-map{grid-column:1;grid-row:3;margin:0 0 0 16px;min-height:0}
+    #tour-move .tm-legend{grid-column:1;grid-row:4;padding:6px 16px 12px}
+    #tour-move .tm-side{grid-column:2;grid-row:3 / 5;display:flex;flex-direction:column;justify-content:center;padding:0 8px 16px}
     #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} }`;
   document.head.appendChild(s);
 }
@@ -201,16 +231,23 @@ export function renderQuestCard(container) {
   const c = st && course(st.course);
   const card = document.createElement("div");
   card.className = "tour-card";
+  const curZone = c && zoneById(c.stops[st.idx]);
+  const here = c && st.arrived === st.idx;        // 지금 장소에 이미 도착해 있음 (미션 중)
+  const nextZone = c && zoneById(c.stops[st.idx + 1]);
   card.innerHTML = c
     ? `<img src="img/hobanu/react-hi.png" alt=""><div class="tc-body"><b>${c.emoji} ${c.name} 진행 중</b>
-         <span>${Math.min(st.idx + 1, c.stops.length)} / ${c.stops.length} · 다음: ${zoneById(c.stops[st.idx])?.name || ""}</span></div>
-       <div class="tc-btns"><button data-a="go">이어서 하기</button><button class="ghost" data-a="stop">그만하기</button></div>`
+         <span>${Math.min(st.idx + 1, c.stops.length)} / ${c.stops.length} · ${here ? `지금: ${curZone?.name || ""}` : `다음: ${curZone?.name || ""}`}</span></div>
+       <div class="tc-btns">${here
+         ? `<button data-a="next">${nextZone ? "다음 장소로 →" : "🏁 완주하기"}</button><button class="ghost" data-a="zone">${curZone?.name || ""} 미션</button>`
+         : `<button data-a="go">이어서 하기</button>`}<button class="ghost" data-a="stop">그만하기</button></div>`
     : `<img src="img/hobanu/react-hi.png" alt=""><div class="tc-body"><b>호반우와 캠퍼스 투어</b>
          <span>정문에서 출발해 길 안내·장소 소개·미션까지 한 번에!</span></div>
        <div class="tc-btns"><button data-a="pick">코스 고르기</button></div>`;
   container.prepend(card);
   card.querySelector('[data-a="pick"]')?.addEventListener("click", openCourseSheet);
   card.querySelector('[data-a="go"]')?.addEventListener("click", () => { unlockAudio(); openMove(); });
+  card.querySelector('[data-a="next"]')?.addEventListener("click", () => { unlockAudio(); next(curZone); });
+  card.querySelector('[data-a="zone"]')?.addEventListener("click", () => curZone && app.openZone(curZone));
   card.querySelector('[data-a="stop"]')?.addEventListener("click", () => {
     if (!confirm("투어를 그만할까요? (지금까지 한 미션과 XP는 그대로 남아요)")) return;
     save(null); renderQuestCard(container);
@@ -302,6 +339,7 @@ function _openMove(first) {
     </div>
     <div class="tm-steps">${c.stops.map((_, i) => `<i class="${i < st.idx ? "done" : i === st.idx ? "now" : ""}"></i>`).join("")}</div>
     <div id="tour-map"></div>
+    <div class="tm-legend"><span><i style="background:#2f6fed"></i>내 위치</span><span><i style="background:#d4121a"></i>도착 지점 (빨간 영역에 들어오면 도착)</span><span>점선: 걸어갈 길</span></div>
     <div class="tm-side">
       <div class="tm-next">
         <div class="tm-arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L33 34 L20 27 L7 34 Z" fill="var(--primary,#d4121a)"/></svg></div>
@@ -325,8 +363,12 @@ function _openMove(first) {
   if (L) {
     map = L.map("tour-map", { zoomControl: false, attributionControl: false }).setView([zone.lat, zone.lng], 17);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, subdomains: "abc" }).addTo(map);
-    L.marker([zone.lat, zone.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-pin">${zone.emoji || "📍"}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).addTo(map);
-    L.circle([zone.lat, zone.lng], { radius: zone.radius || 40, color: "#d4121a", weight: 1, fillOpacity: .08 }).addTo(map);
+    // 도착 지점 = 빨간 핀(그 장소 이모지), 주황색 영역 = 이 안에 들어오면 도착으로 인정되는 구역
+    if (zone.polygon?.length >= 3) L.polygon(zone.polygon.map((q) => [q.lat, q.lng]), { color: "#d4121a", weight: 2, fillOpacity: .14 }).addTo(map);
+    else L.circle([zone.lat, zone.lng], { radius: zone.radius || 40, color: "#d4121a", weight: 2, fillOpacity: .12 }).addTo(map);
+    L.marker([zone.lat, zone.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-pin">${zone.emoji || "📍"}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 400 })
+      .addTo(map).bindTooltip(`도착: ${zone.name}`, { permanent: true, direction: "top", offset: [0, -18], className: "tour-tip" });
+    L.marker([prev.lat, prev.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-from">출발</div>`, iconSize: [40, 22], iconAnchor: [20, 11] }) }).addTo(map);
     POIS.forEach((p) => L.circleMarker([p.lat, p.lng], { radius: 5, color: "#a86400", weight: 2, fillOpacity: .6 }).addTo(map).bindTooltip(p.name));
     if (DEBUG) map.on("click", (e) => {
       const t = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
@@ -344,7 +386,8 @@ function _openMove(first) {
   }
   function setMe(p) {
     if (!map) return;
-    if (!meMk) meMk = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-me"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 500 }).addTo(map);
+    if (!meMk) meMk = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-me"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 500 })
+      .addTo(map).bindTooltip("나", { permanent: true, direction: "bottom", offset: [0, 10], className: "tour-tip me" });
     else meMk.setLatLng([p.lat, p.lng]);
   }
   let route = [prev, zone].map((p) => ({ lat: p.lat, lng: p.lng }));
@@ -397,8 +440,9 @@ function _openMove(first) {
       $(".tm-dist span").textContent = `${Math.round(d)}m 남았어 · 걸어서 약 ${walkMin(d)}분` + (heading == null ? " · 화살표는 지도 위쪽(북) 기준" : "");
     }
     // 도착 판정: 구역 안(정확도 OK)이거나 25m 이내
+    // 실제로 걸을 때: 빨간 구역 안에 들어오거나 핀에서 25m 이내면 도착. 데모 걷기는 핀까지 끝까지 걸어간다
     const ev = geo.evaluate(p, zone);
-    if (ev.status === "inside" || d <= 25) return arrive();
+    if ((!sim && ev.status === "inside") || d <= (sim ? 3 : 25)) return arrive();
     if (!said.half && d0 > 80 && d <= d0 * 0.55) { said.half = true; bubble(HALF[zone.id] || "벌써 반이나 왔어!"); return; }
     if (!said.near && d0 > 90 && d <= 60) { said.near = true; bubble(`거의 다 왔어! 저 앞이 ${iya(zone.name)}`); return; }
     if (!sim && d > minD + 30 && Date.now() - lastWrong > 20000) { lastWrong = Date.now(); bubble("어, 반대쪽 같아! 화살표 방향으로 가 줘", { interrupt: true }); return; }
@@ -463,7 +507,9 @@ function _openMove(first) {
     paintBtns();
     if (map) map.flyTo([zone.lat, zone.lng], 18, { duration: .8 });
   }
+  function markArrived() { const s = load(); if (s) { s.arrived = s.idx; save(s); } }
   function goZone() {
+    markArrived();
     // 투어로 도착했으니 위치 인증은 끝난 것으로 처리 → 채팅에서 바로 미션 메뉴로
     try {
       if (!app.store.isVerified(zone.id)) {
@@ -471,17 +517,16 @@ function _openMove(first) {
         if (app.store.grantBonus("arrive:" + zone.id, 10)) app.ui.reward(10);
       }
     } catch {}
-    skipGreeting = true;
-    setTimeout(() => (skipGreeting = false), 6000);
     closeMove();
     app.openZone(zone);
   }
   function paintBtns() {
     const box = $(".tm-btns");
     box.innerHTML = arrived
-      ? `<button class="primary" data-a="zone">${zone.emoji || ""} ${zone.name} 미션 하러 가기</button>`
+      ? `<button data-a="skip">${st.idx + 1 < c.stops.length ? "다음 장소로 →" : "🏁 완주하기"}</button><button class="primary" data-a="zone">${zone.emoji || ""} ${zone.name} 미션 하러 가기</button>`
       : `${DEMO_WALK ? `<button data-a="demo">▶ 데모로 걷기</button>` : ""}<button data-a="here">도착했어요</button>`;
     box.querySelector('[data-a="zone"]')?.addEventListener("click", goZone);
+    box.querySelector('[data-a="skip"]')?.addEventListener("click", () => { markArrived(); closeMove(); next(zone); });   // 미션은 건너뛰고 투어 계속
     box.querySelector('[data-a="demo"]')?.addEventListener("click", (e) => { e.currentTarget.disabled = true; demoWalk(); });
     box.querySelector('[data-a="here"]')?.addEventListener("click", () => {
       // GPS가 부정확할 때를 위한 수동 도착 (100m 안이거나 위치를 모를 때만)
@@ -523,15 +568,18 @@ function finish(st) {
   const mins = Math.max(1, Math.round((Date.now() - (st.startedAt || Date.now())) / 60000));
   const first = app.store.grantBonus("tour:" + c.id, 100);
   if (first) app.ui.reward(100);
+  const newBadge = giveBadge(c.id);
   const el = document.createElement("div");
   el.id = "tour-sheet";
   el.innerHTML = `<div class="ts" style="text-align:center">
-    <img src="img/hobanu/react-love.png" alt="" style="width:120px;height:120px;object-fit:contain">
+    <img src="img/hobanu/react-love.png" alt="" style="width:90px;height:90px;object-fit:contain">
     <h3>${c.emoji} ${c.name} 완주!</h3>
+    ${badgeHtml(c, getBadges()[c.id], true)}
+    <p class="ts-sub" style="margin:0 0 6px;font-weight:800;color:var(--primary,#d4121a)">${newBadge ? `🏅 '${c.badge}' 뱃지를 받았어요!` : "이미 받은 뱃지예요"} · 내 정보 탭에서 볼 수 있어요</p>
     <p class="ts-sub">${c.stops.length}곳을 ${mins}분 동안 함께 돌았어요.${first ? " 완주 보너스 100 XP!" : ""}</p>
     <div class="r" style="font-size:13px;line-height:1.8;margin-bottom:12px">정문 → ${c.stops.map((id) => zoneById(id)?.name || id).join(" → ")}</div>
     <button class="ts-close" style="background:var(--primary,#d4121a);color:#fff">좋아!</button></div>`;
   document.body.appendChild(el);
   el.querySelector(".ts-close").onclick = () => { el.remove(); try { app.goTab("quest"); } catch {} };
-  speak(`${c.name} 완주! 같이 돌아서 즐거웠어. 다음에 또 놀러 와!`, { interrupt: true });
+  speak(`${c.name} 완주! ${c.badge} 뱃지를 받았어. 같이 돌아서 즐거웠어!`, { interrupt: true });
 }
