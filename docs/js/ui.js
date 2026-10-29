@@ -18,14 +18,12 @@ export function showView(name) {
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
-/* ---------- 상단 XP ---------- */
+/* ---------- 레벨 업 알림 ---------- */
+// 상단 고정 바(레벨·XP 표시)는 없앴다. 레벨·XP는 홈 "진행 상황" 카드와 내 정보 탭에서 보여주고,
+// 여기서는 점수가 바뀔 때 레벨이 올랐는지만 확인해서 알려준다.
 let lastLevel = 0;
 export function updateHud() {
-  const s = getState();
-  const lv = getLevel(s.score);
-  $("lv").textContent = `Lv.${lv.level}`;
-  $("score").textContent = `${s.score} XP`;
-  $("xpfill").style.width = lv.pct + "%";
+  const lv = getLevel(getState().score);
   if (lastLevel && lv.level > lastLevel) toast(`레벨 업! Lv.${lv.level}이 되었어요`);
   lastLevel = lv.level;
 }
@@ -43,10 +41,6 @@ export function toast(msg) {
 export function reward(pts) {
   toast(`+${pts} XP`);
   updateHud();
-  const sc = $("score");
-  sc.classList.remove("pop");
-  void sc.offsetWidth;
-  sc.classList.add("pop");
 }
 
 /* ---------- 온보딩 ---------- */
@@ -63,7 +57,7 @@ export function renderOnboard(depts, onSubmit) {
         <span class="onb-badge-ring">KNU</span>
         <strong>캠퍼스 퀘스트</strong>
       </div>
-      <img class="mascot-hero" src="img/mascot/commute1.png" alt="등교하는 호반우">
+      <img class="onb-logo" src="img/logo.png" alt="캠퍼스 퀘스트 로고">
     </div>
     <h1 class="onb-title onb-title-display">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
     <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
@@ -99,8 +93,13 @@ export function renderDashboard(zones, onGoQuest, hidden = null, onHidden = null
   const nextZone = zones.find((z) => z.missions.some((m) => !isDone(m.id)));
 
   $("view-home").innerHTML = `
-    <div style="position:relative">
+    <div class="home-head">
       <img class="mascot-corner" src="img/mascot/cheer.png" alt="응원하는 호반우">
+      <!-- 알림은 앱의 출발점인 홈 머리 오른쪽에 둔다. 다른 탭에선 하단 "홈" 탭의 빨간 점으로 새 알림을 알린다 -->
+      <button id="bell-btn" class="bell-btn" type="button" aria-label="알림 보기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        <span id="bell-badge" class="bell-badge hidden">0</span>
+      </button>
       <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
       <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
     </div>

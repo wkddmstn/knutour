@@ -32,8 +32,10 @@ const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
 const DEMO_MODE = true;
 
 // 소속 목록은 학교 상황에 맞게 수정하세요
-const DEPTS = ["인문대학", "사회과학대학", "자연과학대학", "경영대학", "공과대학", "IT대학",
-               "농업생명과학대학", "사범대학", "의과대학", "기타"];
+const DEPTS = ["인문대학", "사회과학대학", "자연과학대학", "경상대학", "공과대학", "IT대학",
+               "AI대학", "농업생명과학대학", "예술대학", "사범대학", "의과대학", "치과대학",
+               "수의과대학", "생활과학대학", "간호대학", "약학대학", "첨단기술융합대학", "행정학부",
+               "자율전공학부", "공학첨단자율학부"];
 
 // 히든미션: 홈 화면에만 가끔 나타나는 보너스 미션. 지금은 데모용으로 1개만 두고,
 // "하루에 한 번"이면 나타날 수 있게 했다. 나중에 특정 시간대 조건을 추가하려면
@@ -228,11 +230,6 @@ async function init() {
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
   $("btn-back")?.addEventListener("click", () => goTab("quest"));
   $("btn-map")?.addEventListener("click", toggleMap);
-  if ($("bell-btn")) {
-    $("bell-btn").onclick = openNotifPanel;
-  } else {
-    console.warn("[캠퍼스 퀘스트] #bell-btn 요소가 없어요 — index.html이 최신 버전인지 확인해 주세요. 알림 기능은 비활성화됩니다.");
-  }
 
   if (store.hasProfile()) {
     await ensureProfile(store.getState().profile);   // Supabase 프로필 보장 (친구 코드 발급)
@@ -282,6 +279,7 @@ async function goTab(tab, opts = {}) {
   if (tab === "home") {
     const hidden = await activeHiddenMission();
     ui.renderDashboard(zones, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
+    $("bell-btn").onclick = openNotifPanel;
     ui.showView("home");
     renderDailySection();
     refreshBellBadge();

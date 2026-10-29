@@ -20,7 +20,7 @@
   --amber: #a86400;
   --amber-weak: #fff4de;
   --red: #f04452;
-  --topbar: 56px;
+  --topbar: 0px;   /* 상단 고정 바를 없애서 0. 구역 화면의 sticky 영역들이 화면 맨 위에 붙는다 */
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
           "Malgun Gothic", system-ui, sans-serif;
   --ease-toss: cubic-bezier(.22, 1, .36, 1);  /* 토스 느낌의 스프링감 있는 이징 */
@@ -41,24 +41,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 h1, h2, h3 { margin: 0; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-/* ============ 상단 바 ============ */
-#topbar {
-  position: sticky; top: 0; z-index: 1100; height: var(--topbar);
-  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
-  background: rgba(255, 255, 255, .94); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-}
-.brand { font-size: 17px; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; }
-.xp { display: flex; align-items: center; gap: 8px; }
-#lv { padding: 3px 8px; border-radius: 8px; background: var(--primary-weak); color: var(--primary-dark);
-      font-size: 12px; font-weight: 700; }
-#score { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-#score.pop { animation: pop .4s; }
-.xpbar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--line); }
-#xpfill { display: block; height: 100%; width: 0; background: var(--primary); transition: width .5s; }
-body[data-view="onboard"] #topbar { display: none; }
-
-main { padding: 8px 16px 110px; }
+main { padding: calc(8px + env(safe-area-inset-top)) 16px 110px; }
 body[data-view="zone"] main { padding-bottom: 40px; }
 .view { animation: viewIn .38s var(--ease-toss); }
 
@@ -128,6 +111,9 @@ body[data-view="zone"] main { padding-bottom: 40px; }
 .onb-badge-ring { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%;
                    background: var(--primary); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .02em; }
 .onb-badge strong { font-size: 13px; font-weight: 700; color: var(--primary-dark); }
+/* 캠퍼스 퀘스트 로고 (원형, 바깥은 투명) */
+.onb-logo { position: relative; z-index: 1; display: block; width: 148px; height: 148px; margin: 14px auto 20px;
+            filter: drop-shadow(0 10px 18px rgba(212, 18, 26, .18)); animation: walkIn .7s var(--ease-toss) both; }
 .onb-scene .mascot-hero { position: relative; z-index: 1; margin: 10px auto 0; animation: float 3.4s ease-in-out infinite,
                             walkIn .7s var(--ease-toss) both; }
 @keyframes walkIn {
@@ -575,20 +561,34 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
 /* ============ 알림 종 버튼 + 패널 ============ */
-.bell-btn { position: relative; margin-left: auto; margin-right: 8px; }
+/* 홈 머리: 인사말 왼쪽, 오른쪽 위 끝에 종 버튼, 그 아래에 마스코트 */
+.home-head { position: relative; padding-right: 128px; }
+.home-head .mascot-corner { right: 46px; width: 68px; }
+.bell-btn { position: absolute; top: 10px; right: 0; z-index: 1; width: 44px; height: 44px; display: grid; place-items: center;
+            border-radius: 50%; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow-card);
+            transition: transform .15s var(--ease-toss); }
+.bell-btn:active { transform: scale(.92); }
 .bell-btn svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 1.8;
                 stroke-linecap: round; stroke-linejoin: round; }
-.bell-badge { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 3px;
-              display: grid; place-items: center; background: var(--primary); color: #fff;
-              font-size: 10px; font-weight: 700; border-radius: 999px; }
+.bell-badge { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px;
+              display: grid; place-items: center; background: var(--primary); color: #fff; border: 2px solid var(--card);
+              font-size: 10px; font-weight: 800; border-radius: 999px; box-sizing: content-box; animation: pop .4s; }
 
-#notif-panel { position: fixed; top: var(--topbar); left: 50%; transform: translateX(-50%);
-               width: 100%; max-width: 480px; max-height: 70vh; overflow-y: auto; z-index: 1400;
-               background: var(--card); border-radius: 0 0 20px 20px; box-shadow: 0 12px 28px rgba(36, 28, 22, .18);
-               animation: sheet .2s; }
+/* 새 알림이 있으면 하단 "홈" 탭 아이콘 옆에 빨간 점 */
+#tabbar button[data-tab="home"] { position: relative; }
+#tabbar button.has-unread::after { content: ""; position: absolute; top: 8px; left: calc(50% + 9px); width: 8px; height: 8px;
+                                   border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--card); }
+
+/* 알림 패널: 아래에서 올라오는 시트 + 뒤쪽 어둡게 */
+#notif-panel { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+               width: 100%; max-width: 480px; max-height: 75vh; overflow-y: auto; overscroll-behavior: contain; z-index: 2400;
+               padding-bottom: env(safe-area-inset-bottom);
+               background: var(--card); border-radius: 24px 24px 0 0; box-shadow: 0 0 0 100vmax rgba(36, 28, 22, .45);
+               animation: notifUp .3s var(--ease-toss); }
+@keyframes notifUp { from { transform: translate(-50%, 100%); } }
 .notif-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center;
               padding: 14px 18px; font-weight: 700; font-size: 15px; background: var(--card); border-bottom: 1px solid var(--line); }
-.notif-close { font-size: 14px; color: var(--mute); }
+.notif-close { width: 40px; height: 40px; margin: -10px -10px -10px 0; border-radius: 50%; font-size: 16px; color: var(--mute); }
 .notif-empty { padding: 32px 18px; text-align: center; color: var(--mute); font-size: 14px; }
 .notif-list { display: flex; flex-direction: column; }
 .notif-item { display: flex; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
@@ -679,7 +679,6 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
     --shadow-btn: 0 10px 22px -10px rgba(239, 65, 73, .5);
   }
 
-  #topbar { background: rgba(27, 23, 18, .9); }
   .zone-top { background: rgba(27, 23, 18, .92); }
   .toast { background: rgba(243, 234, 217, .92); color: #1b1712; }
   #modal { background: rgba(0, 0, 0, .65); }
