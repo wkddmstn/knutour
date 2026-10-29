@@ -1,6 +1,6 @@
 {
-  "_설명": "맛집 데이터. themes는 밥집·카페·술집, gates는 경북대 출입문 위치, restaurants는 가게 목록 (r-로 시작하는 id는 돌림판 추천용 초안, lat이 0이면 지도에 안 나옴). tip=true는 선배 꿀팁으로 고른 가게(comment는 꿀팁 요약), tip=false는 카카오맵 검색 상위 가게. category는 센트럴파크 돌림판 칸(categories)과 연결, receipt는 나중에 영수증 인증할 때 사용. 좌표·주소·url은 카카오 로컬 API(2026-10)로 확인.",
-  "_초안안내": "2026년 10월 웹 검색(다이닝코드·식도락대학 등에 경북대 근처로 등록된 가게) 기반 초안. 영업 여부·위치·메뉴는 바뀔 수 있으니 실제로 확인한 뒤 고치거나 지워 주세요. address/lat/lng는 2026년 10월 카카오 로컬 API로 채움 (못 찾은 가게는 0으로 남김).",
+  "_설명": "맛집 데이터. themes는 밥집·카페·술집, gates는 경북대 출입문 위치, restaurants는 가게 목록 (r-로 시작하는 id는 돌림판 추천용 초안). tip=true는 선배 꿀팁으로 고른 가게(comment는 꿀팁 요약), tip=false는 카카오맵 검색 상위 가게. category는 센트럴파크 돌림판 칸(categories)과 연결, receipt는 나중에 영수증 인증할 때 사용. 좌표·주소·url은 카카오 로컬 API(2026-10)로 확인.",
+  "_초안안내": "2026년 10월 웹 검색(다이닝코드·식도락대학 등에 경북대 근처로 등록된 가게) 기반 초안. 영업 여부·위치·메뉴는 바뀔 수 있으니 실제로 확인한 뒤 고치거나 지워 주세요. address/lat/lng는 2026년 10월 카카오 로컬 API로 채움 (카카오맵에서 못 찾은 가게는 삭제).",
   "categories": [
     {
       "id": "chicken",
@@ -45,22 +45,6 @@
   ],
   "restaurants": [
     {
-      "id": "r-001",
-      "name": "거인통닭 경대직영점",
-      "category": "chicken",
-      "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "옛날 통닭 스타일! 피크닉에 딱이야 🍗",
-      "receipt": {
-        "keywords": [
-          "거인통닭"
-        ],
-        "points": 50
-      }
-    },
-    {
       "id": "r-002",
       "name": "청년치킨 경북대점",
       "category": "chicken",
@@ -100,22 +84,6 @@
       "kind": "치킨",
       "url": "https://place.map.kakao.com/873450885",
       "tip": false
-    },
-    {
-      "id": "r-004",
-      "name": "치킨매니아 산격점",
-      "category": "chicken",
-      "area": "산격동",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "치킨에 왕새우까지 있대!",
-      "receipt": {
-        "keywords": [
-          "치킨매니아"
-        ],
-        "points": 50
-      }
     },
     {
       "id": "r-005",
@@ -179,40 +147,6 @@
       "tip": true
     },
     {
-      "id": "r-008",
-      "name": "티엠티피자 대구경북대점",
-      "category": "pizza",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "가성비 피자 찾으면 여기!",
-      "receipt": {
-        "keywords": [
-          "티엠티피자",
-          "TMT"
-        ],
-        "points": 50
-      }
-    },
-    {
-      "id": "r-009",
-      "name": "1.2.3김밥",
-      "category": "kimbap",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "피크닉엔 역시 김밥이지 🍙",
-      "receipt": {
-        "keywords": [
-          "1.2.3김밥",
-          "123김밥"
-        ],
-        "points": 50
-      }
-    },
-    {
       "id": "r-010",
       "name": "삼첩분식 본점",
       "category": "kimbap",
@@ -273,23 +207,6 @@
       "tip": false
     },
     {
-      "id": "r-013",
-      "name": "4242샌드위치 경북대점",
-      "category": "sandwich",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "쌀빵 샌드위치! 가볍게 피크닉 🥪",
-      "receipt": {
-        "keywords": [
-          "4242샌드위치",
-          "4242"
-        ],
-        "points": 50
-      }
-    },
-    {
       "id": "r-014",
       "name": "다니상점",
       "category": "sandwich",
@@ -308,39 +225,6 @@
       "kind": "패스트푸드 · 샌드위치",
       "url": "https://place.map.kakao.com/512480414",
       "tip": false
-    },
-    {
-      "id": "r-015",
-      "name": "반미리코 본점",
-      "category": "sandwich",
-      "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "직접 구운 바게트로 만든 반미래!",
-      "receipt": {
-        "keywords": [
-          "반미리코"
-        ],
-        "points": 50
-      }
-    },
-    {
-      "id": "r-016",
-      "name": "서브웨이 경북대점",
-      "category": "sandwich",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "내 맘대로 골라 담는 샌드위치",
-      "receipt": {
-        "keywords": [
-          "서브웨이",
-          "SUBWAY"
-        ],
-        "points": 50
-      }
     },
     {
       "id": "r-017",
