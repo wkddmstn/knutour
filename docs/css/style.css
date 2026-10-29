@@ -1050,15 +1050,18 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 .me-xp-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13px; color: var(--sub); }
 .me-xp-line b { font-size: 15px; color: var(--primary); }
 /* ============ 커뮤니티 첫 화면: 게시판 카드 (최근 글 미리보기) ============ */
-.board-card { display: block; width: 100%; text-align: left; margin-bottom: 12px; padding: 16px 18px; transition: transform .12s var(--ease-toss); }
-.board-card:active { transform: scale(.985); }
+.board-hub { padding: 18px 18px 8px; }
+.board-hub .qm-head { margin-bottom: 4px; }
+.board-sec { display: block; width: 100%; text-align: left; margin: 0 -10px; width: calc(100% + 20px); padding: 12px 10px; border-radius: 14px;
+  transition: background .15s, transform .12s var(--ease-toss); }
+.board-sec + .board-sec { border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; }
+.board-sec:active { background: var(--cream-weak); transform: scale(.99); }
 .bc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.bc-head b { font-size: 17px; }
+.bc-head b { font-size: 15px; }
 .bc-more { font-size: 13px; font-weight: 700; color: var(--primary); white-space: nowrap; }
-.bc-sub { display: block; margin-top: 2px; font-size: 13px; color: var(--mute); }
 .bc-empty { display: block; margin-top: 12px; font-size: 13px; color: var(--sub); }
-.bp-list { list-style: none; margin: 12px 0 0; padding: 0; }
-.bp-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.bp-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.bp-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
 .bp-thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--cream-weak); }
 .bp-body { min-width: 0; flex: 1; }
 .bp-text { display: block; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
