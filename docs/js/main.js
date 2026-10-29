@@ -60,6 +60,8 @@ let campusMap = null;    // 탐험 화면 지도 (CampusMap)
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
+let exploreMode = "zones";    // 캠퍼스 탐험 화면: "zones"(미션 장소) | "food"(맛집)
+const food = { data: null, theme: "all", tipOnly: false, selId: null };   // 맛집 화면 상태
 let communityTag = null;      // 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자
 let communityFilter = "all";   // "all" | "mine" (내 정보 > 내가 쓴 글에서 들어오면 "mine")
 
@@ -260,10 +262,13 @@ async function goTab(tab, opts = {}) {
     refreshBellBadge();
   } else if (tab === "explore") {
     const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
-    ui.renderExplore(clearedCount, zones.length, themes.currentTheme());
+    ui.renderExplore(clearedCount, zones.length, exploreMode, themes.currentTheme());
     ui.showView("explore");
-    initCampusMap(openZone);
-    renderZoneListSection();
+    $("view-explore").querySelectorAll("[data-mode]").forEach((b) => {
+      b.onclick = () => { if (exploreMode !== b.dataset.mode) { exploreMode = b.dataset.mode; goTab("explore"); } };
+    });
+    if (exploreMode === "food") renderFoodSection();
+    else { initCampusMap(openZone); renderZoneListSection(); }
   } else if (tab === "dex") {
     renderHobanuPane($("view-dex"));   // 도감 화면 (dex-tab.js, 장주연). 못 불러오면 예전 호반우 화면으로 대신 그림
     ui.showView("dex");
@@ -502,6 +507,58 @@ function leaveZone() {
   chat.clear();
   resetZoneTheme();
   if (map) { map.destroy(); map = null; }
+}
+
+/* ================= 맛집 (캠퍼스 탐험 > 맛집) ================= */
+// data/restaurants.json: 선배 꿀팁 가게(tip) + 문 주변 카카오맵 검색 가게. 밥집·카페·술집(theme)과 가까운 문(area)으로 나뉜다.
+async function loadFood() {
+  if (food.data) return food.data;
+  try { food.data = await (await fetch("data/restaurants.json")).json(); } catch { food.data = {}; }
+  if (!Array.isArray(food.data.restaurants)) food.data.restaurants = [];
+  return food.data;
+}
+
+async function renderFoodSection() {
+  const data = await loadFood();
+  if (!$("food-pane")) return;   // 그사이 다른 화면으로 갔으면 그리지 않음
+  // 위치가 확인된 가게만 (돌림판 초안 중 카카오맵에서 못 찾은 곳은 lat이 0), 같은 가게(같은 카카오맵 링크)는 한 번만
+  const seenUrl = new Set();
+  const list = data.restaurants.filter((r) => {
+    if (!r.lat || !r.theme || (r.url && seenUrl.has(r.url))) return false;
+    if (r.url) seenUrl.add(r.url);
+    return (food.theme === "all" || r.theme === food.theme) && (!food.tipOnly || r.tip);
+  });
+  if (!list.some((r) => r.id === food.selId)) food.selId = null;
+  ui.renderFood(data, list, food);
+
+  // 지도: 처음 한 번 만들고, 필터가 바뀌면 핀만 다시 꽂는다
+  if (!campusMap && campusDataReady() && $("campus-map")) campusMap = new CampusMap($("campus-map"));
+  const emojiOf = (r) => data.themes?.find((t) => t.id === r.theme)?.emoji || "🍽️";
+  // 캠퍼스 밖은 길이 거의 안 그려져 있어서, 북문·정문 같은 문 위치(🚪)도 함께 꽂아 방향을 잡기 쉽게 한다
+  const gatePins = (data.gates || []).map((g) => ({ ...g, id: "gate-" + g.id, emoji: "🚪", gate: true }));
+  campusMap?.setZones([...gatePins, ...list.map((r) => ({ ...r, emoji: emojiOf(r) }))], {
+    status: (r) => r.gate ? "gate" : ["food", r.tip ? "tip" : "", r.id === food.selId ? "sel" : ""].join(" "),
+    onSelect: (r) => { if (!r.gate) selectFood(r.id, false); },
+    bubble: false,
+  });
+  const sel = list.find((r) => r.id === food.selId);
+  if (sel) campusMap?.fit([sel], 220);   // 너무 확대하면 캠퍼스 밖은 길이 안 그려져 빈 땅처럼 보여서, 근처 문·가게가 함께 보이게
+  else if (list.length) campusMap?.fit(list, 40);
+
+  const pane = $("food-pane");
+  pane.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { food.theme = b.dataset.theme; renderFoodSection(); }));
+  pane.querySelector("[data-tip]").onclick = () => { food.tipOnly = !food.tipOnly; renderFoodSection(); };
+  pane.querySelectorAll("[data-rest]").forEach((b) => (b.onclick = () => selectFood(b.dataset.rest, true)));
+  pane.querySelector("[data-close]")?.addEventListener("click", () => { food.selId = null; renderFoodSection(); });
+}
+
+// 가게 선택: 지도에서 그 가게로 확대하고, 지도 바로 아래에 상세 카드를 띄운다.
+// 목록에서 눌렀으면(fromList) 지도와 상세 카드가 보이도록 위로 올려 준다.
+async function selectFood(id, fromList) {
+  food.selId = id;
+  await renderFoodSection();
+  const target = fromList ? $("campus-map") : $("food-detail");
+  target?.scrollIntoView({ behavior: "smooth", block: fromList ? "start" : "nearest" });
 }
 
 function clearCampusMap() {

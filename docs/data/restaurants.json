@@ -1,6 +1,6 @@
 {
-  "_설명": "맛집 추천 데이터. categories는 센트럴파크 돌림판 칸, restaurants는 추천 맛집 목록. receipt는 나중에 영수증 인증할 때 사용 (keywords: 영수증에 찍히는 가게 이름, points: 인증 시 포인트).",
-  "_초안안내": "2026년 10월 웹 검색(다이닝코드·식도락대학 등에 경북대 근처로 등록된 가게) 기반 초안. 영업 여부·위치·메뉴는 바뀔 수 있으니 실제로 확인한 뒤 고치거나 지워 주세요. address/lat/lng는 비워 둠.",
+  "_설명": "맛집 데이터. themes는 밥집·카페·술집, gates는 경북대 출입문 위치, restaurants는 가게 목록 (r-로 시작하는 id는 돌림판 추천용 초안, lat이 0이면 지도에 안 나옴). tip=true는 선배 꿀팁으로 고른 가게(comment는 꿀팁 요약), tip=false는 카카오맵 검색 상위 가게. category는 센트럴파크 돌림판 칸(categories)과 연결, receipt는 나중에 영수증 인증할 때 사용. 좌표·주소·url은 카카오 로컬 API(2026-10)로 확인.",
+  "_초안안내": "2026년 10월 웹 검색(다이닝코드·식도락대학 등에 경북대 근처로 등록된 가게) 기반 초안. 영업 여부·위치·메뉴는 바뀔 수 있으니 실제로 확인한 뒤 고치거나 지워 주세요. address/lat/lng는 2026년 10월 카카오 로컬 API로 채움 (못 찾은 가게는 0으로 남김).",
   "categories": [
     {
       "id": "chicken",
@@ -64,26 +64,30 @@
       "id": "r-002",
       "name": "청년치킨 경북대점",
       "category": "chicken",
-      "area": "산격동",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "북문",
+      "address": "대구 북구 산격로 75",
+      "lat": 35.897344,
+      "lng": 128.605495,
       "comment": "포장해서 센팍 잔디밭으로 가자!",
       "receipt": {
         "keywords": [
           "청년치킨"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "치킨 · 청년치킨",
+      "url": "https://place.map.kakao.com/1367367441",
+      "tip": false
     },
     {
       "id": "r-003",
       "name": "이거 숯불양념치킨 산격점",
       "category": "chicken",
-      "area": "산격동",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "쪽문",
+      "address": "대구 북구 대현로 90",
+      "lat": 35.88253,
+      "lng": 128.608787,
       "comment": "숯불 향 나는 양념치킨 어때?",
       "receipt": {
         "keywords": [
@@ -91,7 +95,11 @@
           "숯불양념치킨"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "치킨",
+      "url": "https://place.map.kakao.com/873450885",
+      "tip": false
     },
     {
       "id": "r-004",
@@ -114,25 +122,29 @@
       "name": "피자덕 경북대점",
       "category": "pizza",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 대학로9길 4",
+      "lat": 35.891242,
+      "lng": 128.606013,
       "comment": "북문 피자집! 친구들이랑 나눠 먹기 좋아 🍕",
       "receipt": {
         "keywords": [
           "피자덕"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "양식 · 피자",
+      "url": "https://place.map.kakao.com/365991437",
+      "tip": false
     },
     {
       "id": "r-006",
       "name": "비스트로피자 본점",
       "category": "pizza",
-      "area": "대현로",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "서문",
+      "address": "대구 북구 대현로3길 18",
+      "lat": 35.887292,
+      "lng": 128.604221,
       "comment": "피자랑 함박 둘 다 유명한 곳이야",
       "receipt": {
         "keywords": [
@@ -140,23 +152,31 @@
           "비스트로 피자"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "양식 · 피자",
+      "url": "https://place.map.kakao.com/590546177",
+      "tip": false
     },
     {
       "id": "r-007",
       "name": "메타피자",
       "category": "pizza",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "북문 피자 한 판 들고 피크닉!",
+      "address": "대구 북구 대학로 103",
+      "lat": 35.894046,
+      "lng": 128.610661,
+      "comment": "기분 내고 싶은 날 추천하는 피자집.",
       "receipt": {
         "keywords": [
           "메타피자"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "양식 · 피자",
+      "url": "https://place.map.kakao.com/27460007",
+      "tip": true
     },
     {
       "id": "r-008",
@@ -197,48 +217,60 @@
       "name": "삼첩분식 본점",
       "category": "kimbap",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 대학로 71",
+      "lat": 35.892178,
+      "lng": 128.608284,
       "comment": "김밥이랑 분식 한 상 포장 어때?",
       "receipt": {
         "keywords": [
           "삼첩분식"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "분식 · 삼첩분식",
+      "url": "https://place.map.kakao.com/1645363478",
+      "tip": false
     },
     {
       "id": "r-011",
       "name": "기프트버거 경대점",
       "category": "burger",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "북문",
+      "address": "대구 북구 대학로17길 15",
+      "lat": 35.893734,
+      "lng": 128.608737,
       "comment": "수제버거랑 새우버거가 맛있대 🍔",
       "receipt": {
         "keywords": [
           "기프트버거"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "양식 · 햄버거",
+      "url": "https://place.map.kakao.com/1893783073",
+      "tip": false
     },
     {
       "id": "r-012",
       "name": "벙커버거 경대점",
       "category": "burger",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "정문",
+      "address": "대구 동구 경대로 60",
+      "lat": 35.886173,
+      "lng": 128.615848,
       "comment": "든든한 수제버거로 배 채우자!",
       "receipt": {
         "keywords": [
           "벙커버거"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "양식 · 햄버거",
+      "url": "https://place.map.kakao.com/1493597795",
+      "tip": false
     },
     {
       "id": "r-013",
@@ -261,17 +293,21 @@
       "id": "r-014",
       "name": "다니상점",
       "category": "sandwich",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "동문",
+      "address": "대구 동구 신암북로7길 99",
+      "lat": 35.888223,
+      "lng": 128.616975,
       "comment": "샌드위치랑 샐러드로 산뜻하게",
       "receipt": {
         "keywords": [
           "다니상점"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "패스트푸드 · 샌드위치",
+      "url": "https://place.map.kakao.com/512480414",
+      "tip": false
     },
     {
       "id": "r-015",
@@ -311,145 +347,1750 @@
       "name": "삼첩분식 본점",
       "category": "tteokbokki",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 대학로 71",
+      "lat": 35.892178,
+      "lng": 128.608284,
       "comment": "로제떡볶이가 유명한 곳이야 🌶️",
       "receipt": {
         "keywords": [
           "삼첩분식"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "분식 · 삼첩분식",
+      "url": "https://place.map.kakao.com/1645363478",
+      "tip": false
     },
     {
       "id": "r-018",
       "name": "쪽문분식",
       "category": "tteokbokki",
       "area": "쪽문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 경대로7길 34",
+      "lat": 35.885776,
+      "lng": 128.61025,
       "comment": "쪽문 떡볶이 맛집!",
       "receipt": {
         "keywords": [
           "쪽문분식"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "분식",
+      "url": "https://place.map.kakao.com/21367635",
+      "tip": false
     },
     {
       "id": "r-019",
       "name": "종이밥",
       "category": "dosirak",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 31",
+      "lat": 35.885564,
+      "lng": 128.610458,
       "comment": "컵밥이랑 폭탄밥, 들고 다니기 편해 🍱",
       "receipt": {
         "keywords": [
           "종이밥"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "도시락",
+      "url": "https://place.map.kakao.com/21960494",
+      "tip": false
     },
     {
       "id": "r-020",
       "name": "맛있는집",
       "category": "dosirak",
-      "area": "경북대 근처",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "area": "서문",
+      "address": "대구 북구 대현로3길 17-9",
+      "lat": 35.887703,
+      "lng": 128.603844,
       "comment": "집밥 같은 한식이 생각날 때",
       "receipt": {
         "keywords": [
           "맛있는집"
         ],
         "points": 50
-      }
+      },
+      "theme": "meal",
+      "kind": "한식",
+      "url": "https://place.map.kakao.com/16322416",
+      "tip": false
     },
     {
       "id": "r-021",
       "name": "타르트에반하다",
       "category": "dessert",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 산격로6길 10-2",
+      "lat": 35.892381,
+      "lng": 128.606344,
       "comment": "디저트는 타르트로 마무리 🥧",
       "receipt": {
         "keywords": [
           "타르트에반하다"
         ],
         "points": 50
-      }
+      },
+      "theme": "cafe",
+      "kind": "카페 · 디저트카페",
+      "url": "https://place.map.kakao.com/22320050",
+      "tip": false
     },
     {
       "id": "r-022",
       "name": "코펜하겐커피",
       "category": "dessert",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
-      "comment": "북문 카페에서 커피 한 잔 챙겨 가자 ☕",
+      "address": "대구 북구 대학로13길 13",
+      "lat": 35.892931,
+      "lng": 128.607547,
+      "comment": "특색 있는 음료와 좋은 분위기. 그림 그린다고 하면 종이·파스텔을 줘요 (데이트 코스 추천).",
       "receipt": {
         "keywords": [
           "코펜하겐커피",
           "코펜하겐"
         ],
         "points": 50
-      }
+      },
+      "theme": "cafe",
+      "kind": "카페 · 갤러리카페",
+      "url": "https://place.map.kakao.com/1098160051",
+      "tip": true
     },
     {
       "id": "r-023",
       "name": "그린힐즈",
       "category": "dessert",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 대학로15길 16",
+      "lat": 35.893522,
+      "lng": 128.608544,
       "comment": "북문 카페! 음료 들고 센팍으로",
       "receipt": {
         "keywords": [
           "그린힐즈"
         ],
         "points": 50
-      }
+      },
+      "theme": "cafe",
+      "kind": "카페",
+      "url": "https://place.map.kakao.com/1269739157",
+      "tip": false
     },
     {
       "id": "r-024",
       "name": "스타벅스 경북대점",
       "category": "dessert",
       "area": "북문",
-      "address": "",
-      "lat": 0,
-      "lng": 0,
+      "address": "대구 북구 대학로 75",
+      "lat": 35.892296,
+      "lng": 128.608566,
       "comment": "익숙한 메뉴가 좋다면 여기!",
       "receipt": {
         "keywords": [
           "스타벅스"
         ],
         "points": 50
+      },
+      "theme": "cafe",
+      "kind": "카페 · 커피전문점",
+      "url": "https://place.map.kakao.com/17884722",
+      "tip": false
+    },
+    {
+      "id": "k27359456",
+      "name": "고니식탁",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "한식",
+      "area": "북문",
+      "address": "대구 북구 대학로 71",
+      "lat": 35.892169,
+      "lng": 128.608295,
+      "comment": "밥이 술술 넘어가는 집. 유자두루치기는 꼭! 은은한 유자 단맛이 의외로 찰떡이에요.",
+      "url": "https://place.map.kakao.com/27359456",
+      "receipt": {
+        "keywords": [
+          "고니식탁"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1985467681",
+      "name": "깨꼬닭 본점",
+      "theme": "meal",
+      "tip": true,
+      "category": "chicken",
+      "kind": "한식 · 육류,고기",
+      "area": "북문",
+      "address": "대구 북구 산격로8길 35",
+      "lat": 35.893725,
+      "lng": 128.609117,
+      "comment": "도리찜닭 1단계 + 얇은 둥근 당면 추천. 당면에 양념이 쏙 배어 있어요.",
+      "url": "https://place.map.kakao.com/1985467681",
+      "receipt": {
+        "keywords": [
+          "깨꼬닭"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1681681485",
+      "name": "고운라멘",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "일식 · 일본식라면",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 20-1",
+      "lat": 35.894175,
+      "lng": 128.609707,
+      "comment": "국물 진한 곱창라멘이 대표. 배달해도 면이 안 불고, 가게 분위기도 좋아요.",
+      "url": "https://place.map.kakao.com/1681681485",
+      "receipt": {
+        "keywords": [
+          "고운라멘"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1389211470",
+      "name": "도톤",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "일식 · 돈까스,우동",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 18-3",
+      "lat": 35.894283,
+      "lng": 128.609842,
+      "comment": "비주얼은 독특하지만 줄 서서 먹는 집. '샤돈브리앙'이 계속 생각나요.",
+      "url": "https://place.map.kakao.com/1389211470",
+      "receipt": {
+        "keywords": [
+          "도톤"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k19237886",
+      "name": "테이크어바이트",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "양식",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 30",
+      "lat": 35.89344,
+      "lng": 128.609196,
+      "comment": "특색 있는 양식집. 디저트도 함께 나와요.",
+      "url": "https://place.map.kakao.com/19237886",
+      "receipt": {
+        "keywords": [
+          "테이크어바이트"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k63552685",
+      "name": "미들31",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "양식",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 11",
+      "lat": 35.894508,
+      "lng": 128.610596,
+      "comment": "분위기 좋은 양식집.",
+      "url": "https://place.map.kakao.com/63552685",
+      "receipt": {
+        "keywords": [
+          "미들31"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1604816649",
+      "name": "벨로",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "양식 · 이탈리안",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 14",
+      "lat": 35.894641,
+      "lng": 128.610372,
+      "comment": "분위기 좋은 이탈리안.",
+      "url": "https://place.map.kakao.com/1604816649",
+      "receipt": {
+        "keywords": [
+          "벨로"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k328733530",
+      "name": "낭만놀이",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "양식",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 18-9",
+      "lat": 35.894419,
+      "lng": 128.609756,
+      "comment": "오늘 더 기분 내고 싶다면! 분위기 좋은 양식집, 디저트도 나와요.",
+      "url": "https://place.map.kakao.com/328733530",
+      "receipt": {
+        "keywords": [
+          "낭만놀이"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1812838308",
+      "name": "도리집 경대북문점",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "일식",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 19",
+      "lat": 35.89411,
+      "lng": 128.609958,
+      "comment": "가격 착한 가성비 맛집. 도리밥 종류, 투움바 도리면 추천.",
+      "url": "https://place.map.kakao.com/1812838308",
+      "receipt": {
+        "keywords": [
+          "도리집"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1397461123",
+      "name": "덮덮밥 대구본점",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "한식 · 덮덮밥",
+      "area": "북문",
+      "address": "대구 북구 대학로 71",
+      "lat": 35.892178,
+      "lng": 128.608294,
+      "comment": "과방 배달 단골. 다 맛있지만 항정살덮밥 추천.",
+      "url": "https://place.map.kakao.com/1397461123",
+      "receipt": {
+        "keywords": [
+          "덮덮밥"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k26987373",
+      "name": "면탐정 경대점",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "퓨전요리",
+      "area": "북문",
+      "address": "대구 북구 산격로8길 36",
+      "lat": 35.893537,
+      "lng": 128.609109,
+      "comment": "맛있다는 평이 많은 집 (선배는 아직 안 가봤대요).",
+      "url": "https://place.map.kakao.com/26987373",
+      "receipt": {
+        "keywords": [
+          "면탐정"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k21749228",
+      "name": "홍대함바그",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "양식",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 19-4",
+      "lat": 35.893906,
+      "lng": 128.610006,
+      "comment": "맛있다는 평이 많은 함박스테이크집 (선배는 아직 안 가봤대요).",
+      "url": "https://place.map.kakao.com/21749228",
+      "receipt": {
+        "keywords": [
+          "홍대함바그"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k26425033",
+      "name": "은화수식당 대구본점",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "일식 · 돈까스,우동",
+      "area": "북문",
+      "address": "대구 북구 대동로6길 38",
+      "lat": 35.894054,
+      "lng": 128.609386,
+      "comment": "맛있다는 평이 많은 돈까스집 (선배는 아직 안 가봤대요).",
+      "url": "https://place.map.kakao.com/26425033",
+      "receipt": {
+        "keywords": [
+          "은화수식당"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1967613058",
+      "name": "한끼갈비",
+      "theme": "meal",
+      "tip": true,
+      "category": null,
+      "kind": "한식 · 육류,고기",
+      "area": "북문",
+      "address": "대구 북구 산격로8길 34",
+      "lat": 35.893539,
+      "lng": 128.608965,
+      "comment": "선배가 꼽은 북문 단골 후보.",
+      "url": "https://place.map.kakao.com/1967613058",
+      "receipt": {
+        "keywords": [
+          "한끼갈비"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1513662776",
+      "name": "프로방스 P",
+      "theme": "cafe",
+      "tip": true,
+      "category": "dessert",
+      "kind": "간식 · 제과,베이커리",
+      "area": "북문",
+      "address": "대구 북구 대학로 117",
+      "lat": 35.894981,
+      "lng": 128.611652,
+      "comment": "크로글(크로와상+베이글) 맛집. 소금·쪽파크림 크로글 추천.",
+      "url": "https://place.map.kakao.com/1513662776",
+      "receipt": {
+        "keywords": [
+          "프로방스"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k689287830",
+      "name": "블라인드멜론 북문점",
+      "theme": "cafe",
+      "tip": true,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "북문",
+      "address": "대구 북구 대학로 111",
+      "lat": 35.894607,
+      "lng": 128.611335,
+      "comment": "디저트 맛집. 작은 치즈케이크·바스크 치즈케이크. 2층은 공부, 1층은 수다.",
+      "url": "https://place.map.kakao.com/689287830",
+      "receipt": {
+        "keywords": [
+          "블라인드멜론"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k757153933",
+      "name": "루트커피",
+      "theme": "cafe",
+      "tip": true,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "북문",
+      "address": "대구 북구 대학로 107",
+      "lat": 35.894338,
+      "lng": 128.611043,
+      "comment": "메뉴가 많고 자리마다 스탠드가 있는 공부 카페. 빵도 가성비 좋아요.",
+      "url": "https://place.map.kakao.com/757153933",
+      "receipt": {
+        "keywords": [
+          "루트커피"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k27487579",
+      "name": "반짝반짝빛나는 본점",
+      "theme": "cafe",
+      "tip": true,
+      "category": "dessert",
+      "kind": "카페 · 디저트카페",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 12-1",
+      "lat": 35.894636,
+      "lng": 128.610478,
+      "comment": "타르트 맛집. 티라미수·레몬크림 타르트 추천.",
+      "url": "https://place.map.kakao.com/27487579",
+      "receipt": {
+        "keywords": [
+          "반짝반짝빛나는"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k16645425",
+      "name": "커피와빵",
+      "theme": "cafe",
+      "tip": true,
+      "category": "dessert",
+      "kind": "카페 · 디저트카페",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 23",
+      "lat": 35.893789,
+      "lng": 128.609694,
+      "comment": "가성비 빵 카페. 고구마번 추천 (시험기간 단골).",
+      "url": "https://place.map.kakao.com/16645425",
+      "receipt": {
+        "keywords": [
+          "커피와빵"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k510801750",
+      "name": "휘낭시에상점",
+      "theme": "cafe",
+      "tip": true,
+      "category": "dessert",
+      "kind": "카페 · 디저트카페",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 32",
+      "lat": 35.893288,
+      "lng": 128.60911,
+      "comment": "휘낭시에가 맛있다는 평 (선배는 아직 안 가봤대요).",
+      "url": "https://place.map.kakao.com/510801750",
+      "receipt": {
+        "keywords": [
+          "휘낭시에상점"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k21524474",
+      "name": "사군자민속촌",
+      "theme": "pub",
+      "tip": true,
+      "category": null,
+      "kind": "한식",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 3-35",
+      "lat": 35.891949,
+      "lng": 128.606743,
+      "comment": "낙지볶음(소면 듬뿍, 3~4명도 충분) + 녹두빈대떡·해물왕파전. 꿀막걸리도 유명.",
+      "url": "https://place.map.kakao.com/21524474",
+      "receipt": {
+        "keywords": [
+          "사군자민속촌"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k39872721",
+      "name": "취향",
+      "theme": "pub",
+      "tip": true,
+      "category": null,
+      "kind": "술집",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 7",
+      "lat": 35.892332,
+      "lng": 128.607524,
+      "comment": "분위기 최고! 깐풍기에 달콤한 하이볼 추천.",
+      "url": "https://place.map.kakao.com/39872721",
+      "receipt": {
+        "keywords": [
+          "취향"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k19306450",
+      "name": "정선생 경북대점",
+      "theme": "pub",
+      "tip": true,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "북문",
+      "address": "대구 북구 산격로6길 23",
+      "lat": 35.892632,
+      "lng": 128.60778,
+      "comment": "막걸리 맛집. 고구마크림막걸리(고크막)·딸기막걸리, 해물크림짬뽕탕이 유명.",
+      "url": "https://place.map.kakao.com/19306450",
+      "receipt": {
+        "keywords": [
+          "정선생"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k2044893272",
+      "name": "구르메타운",
+      "theme": "pub",
+      "tip": true,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 6-1",
+      "lat": 35.89219,
+      "lng": 128.607766,
+      "comment": "다 맛있지만 치즈 계란말이가 충격적인 맛.",
+      "url": "https://place.map.kakao.com/2044893272",
+      "receipt": {
+        "keywords": [
+          "구르메타운"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1031382822",
+      "name": "김쉐프의 골때리는맛집",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 25",
+      "lat": 35.893677,
+      "lng": 128.609644,
+      "comment": "카카오맵 '북문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1031382822",
+      "receipt": {
+        "keywords": [
+          "김쉐프의"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k23613129",
+      "name": "통통주먹구이",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식 · 육류,고기",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 17",
+      "lat": 35.893216,
+      "lng": 128.607552,
+      "comment": "카카오맵 '북문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/23613129",
+      "receipt": {
+        "keywords": [
+          "통통주먹구이"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k18823778",
+      "name": "진갈매기 경대점",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식 · 육류,고기",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 11",
+      "lat": 35.892762,
+      "lng": 128.607539,
+      "comment": "카카오맵 '북문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/18823778",
+      "receipt": {
+        "keywords": [
+          "진갈매기"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k11520580",
+      "name": "림터",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "양식 · 이탈리안",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 3",
+      "lat": 35.89212,
+      "lng": 128.607566,
+      "comment": "카카오맵 '북문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/11520580",
+      "receipt": {
+        "keywords": [
+          "림터"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1125934763",
+      "name": "주비 두루향기롭다",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "북문",
+      "address": "대구 북구 대학로15길 17-1",
+      "lat": 35.893716,
+      "lng": 128.608103,
+      "comment": "카카오맵 '북문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1125934763",
+      "receipt": {
+        "keywords": [
+          "주비"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1536276465",
+      "name": "소쿠리커피",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "북문",
+      "address": "대구 북구 대학로23길 17-1",
+      "lat": 35.894174,
+      "lng": 128.609997,
+      "comment": "카카오맵 '북문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1536276465",
+      "receipt": {
+        "keywords": [
+          "소쿠리커피"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1203011312",
+      "name": "커피장인 경대북문점",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "북문",
+      "address": "대구 북구 대동로10길 17-2",
+      "lat": 35.89505,
+      "lng": 128.611368,
+      "comment": "카카오맵 '북문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1203011312",
+      "receipt": {
+        "keywords": [
+          "커피장인"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1571369483",
+      "name": "구구포차",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "북문",
+      "address": "대구 북구 산격로6길 26",
+      "lat": 35.892439,
+      "lng": 128.60797,
+      "comment": "카카오맵 '북문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1571369483",
+      "receipt": {
+        "keywords": [
+          "구구포차"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k202758809",
+      "name": "청춘사업",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 일본식주점",
+      "area": "북문",
+      "address": "대구 북구 대학로15길 9",
+      "lat": 35.892846,
+      "lng": 128.608062,
+      "comment": "카카오맵 '북문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/202758809",
+      "receipt": {
+        "keywords": [
+          "청춘사업"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1387285471",
+      "name": "세미나",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "북문",
+      "address": "대구 북구 대학로13길 7",
+      "lat": 35.892323,
+      "lng": 128.607579,
+      "comment": "카카오맵 '북문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1387285471",
+      "receipt": {
+        "keywords": [
+          "세미나"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k870979969",
+      "name": "와비사비 경북대북문점",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집",
+      "area": "북문",
+      "address": "대구 북구 산격로6길 16-1",
+      "lat": 35.892447,
+      "lng": 128.606991,
+      "comment": "카카오맵 '북문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/870979969",
+      "receipt": {
+        "keywords": [
+          "와비사비"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1692693630",
+      "name": "스톡홀름샐러드 경대정문점",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "샐러드",
+      "area": "정문",
+      "address": "대구 북구 대현로19길 80",
+      "lat": 35.885337,
+      "lng": 128.613763,
+      "comment": "카카오맵 '정문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1692693630",
+      "receipt": {
+        "keywords": [
+          "스톡홀름샐러드"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k914567932",
+      "name": "더히포 경북대정문점",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "양식 · 이탈리안",
+      "area": "정문",
+      "address": "대구 북구 경대로7길 2",
+      "lat": 35.884752,
+      "lng": 128.613647,
+      "comment": "카카오맵 '정문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/914567932",
+      "receipt": {
+        "keywords": [
+          "더히포"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1685889940",
+      "name": "정문똥집",
+      "theme": "meal",
+      "tip": false,
+      "category": "chicken",
+      "kind": "한식 · 육류,고기",
+      "area": "정문",
+      "address": "대구 북구 경대로7길 4",
+      "lat": 35.884858,
+      "lng": 128.613341,
+      "comment": "카카오맵 '정문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1685889940",
+      "receipt": {
+        "keywords": [
+          "정문똥집"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k27044654",
+      "name": "김밥파는사람들 경대정문점",
+      "theme": "meal",
+      "tip": false,
+      "category": "kimbap",
+      "kind": "분식",
+      "area": "정문",
+      "address": "대구 동구 경대로 36",
+      "lat": 35.884494,
+      "lng": 128.613907,
+      "comment": "카카오맵 '정문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/27044654",
+      "receipt": {
+        "keywords": [
+          "김밥파는사람들"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k279956399",
+      "name": "해쉬커피 경북대정문점",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "정문",
+      "address": "대구 북구 경대로 37",
+      "lat": 35.884886,
+      "lng": 128.613904,
+      "comment": "카카오맵 '정문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/279956399",
+      "receipt": {
+        "keywords": [
+          "해쉬커피"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k26900348",
+      "name": "어바웃타임 파이데이아 경대정문지부",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "정문",
+      "address": "대구 북구 경대로5길 9-7",
+      "lat": 35.884511,
+      "lng": 128.612785,
+      "comment": "카카오맵 '정문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/26900348",
+      "receipt": {
+        "keywords": [
+          "어바웃타임"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1929400243",
+      "name": "모모스윗",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 13",
+      "lat": 35.885114,
+      "lng": 128.612316,
+      "comment": "카카오맵 '정문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1929400243",
+      "receipt": {
+        "keywords": [
+          "모모스윗"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k24450121",
+      "name": "W컬렉션카페 경북대점",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "정문",
+      "address": "대구 북구 경대로 31",
+      "lat": 35.884435,
+      "lng": 128.613443,
+      "comment": "카카오맵 '정문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/24450121",
+      "receipt": {
+        "keywords": [
+          "W컬렉션카페"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k815723808",
+      "name": "와이아이엔",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 와인바",
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 27-1",
+      "lat": 35.885478,
+      "lng": 128.610674,
+      "comment": "카카오맵 '정문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/815723808",
+      "receipt": {
+        "keywords": [
+          "와이아이엔"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k774802932",
+      "name": "천지삐까리",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 실내포장마차",
+      "area": "정문",
+      "address": "대구 북구 경대로5길 8",
+      "lat": 35.884836,
+      "lng": 128.612875,
+      "comment": "카카오맵 '정문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/774802932",
+      "receipt": {
+        "keywords": [
+          "천지삐까리"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k23934563",
+      "name": "꼬치포차 경대점",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 실내포장마차",
+      "area": "정문",
+      "address": "대구 북구 경대로5길 7",
+      "lat": 35.88461,
+      "lng": 128.612778,
+      "comment": "카카오맵 '정문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/23934563",
+      "receipt": {
+        "keywords": [
+          "꼬치포차"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1679443423",
+      "name": "경대이모",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "정문",
+      "address": "대구 북구 경대로5길 5",
+      "lat": 35.884578,
+      "lng": 128.612976,
+      "comment": "카카오맵 '정문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1679443423",
+      "receipt": {
+        "keywords": [
+          "경대이모"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k949198023",
+      "name": "브리또익스프레스 경북대본점",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "양식 · 멕시칸,브라질",
+      "area": "쪽문",
+      "address": "대구 북구 대현로19길 30-1",
+      "lat": 35.885169,
+      "lng": 128.610034,
+      "comment": "카카오맵 '쪽문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/949198023",
+      "receipt": {
+        "keywords": [
+          "브리또익스프레스"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k26486256",
+      "name": "다이마루",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "일식",
+      "area": "쪽문",
+      "address": "대구 북구 대현로19길 28",
+      "lat": 35.884924,
+      "lng": 128.610058,
+      "comment": "카카오맵 '쪽문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/26486256",
+      "receipt": {
+        "keywords": [
+          "다이마루"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k7855303",
+      "name": "마라도생굴구이 대현점",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식 · 해물,생선",
+      "area": "정문",
+      "address": "대구 북구 경대로5길 12-1",
+      "lat": 35.884822,
+      "lng": 128.612322,
+      "comment": "카카오맵 '쪽문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/7855303",
+      "receipt": {
+        "keywords": [
+          "마라도생굴구이"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k15660575",
+      "name": "칼디커피",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페 · 커피전문점",
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 35",
+      "lat": 35.88558,
+      "lng": 128.610047,
+      "comment": "카카오맵 '쪽문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/15660575",
+      "receipt": {
+        "keywords": [
+          "칼디커피"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k2030860635",
+      "name": "키아누",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페 · 커피전문점",
+      "area": "쪽문",
+      "address": "대구 북구 대현로19길 38",
+      "lat": 35.885868,
+      "lng": 128.610097,
+      "comment": "카카오맵 '쪽문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/2030860635",
+      "receipt": {
+        "keywords": [
+          "키아누"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k400175343",
+      "name": "카페16온스 경북대점",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "쪽문",
+      "address": "대구 북구 대현로19길 30",
+      "lat": 35.885063,
+      "lng": 128.610012,
+      "comment": "카카오맵 '쪽문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/400175343",
+      "receipt": {
+        "keywords": [
+          "카페16온스"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k68034778",
+      "name": "위치스43",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 19",
+      "lat": 35.88535,
+      "lng": 128.611587,
+      "comment": "카카오맵 '쪽문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/68034778",
+      "receipt": {
+        "keywords": [
+          "위치스43"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k328391208",
+      "name": "미운놈포차",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 실내포장마차",
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 32",
+      "lat": 35.885769,
+      "lng": 128.610381,
+      "comment": "카카오맵 '쪽문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/328391208",
+      "receipt": {
+        "keywords": [
+          "미운놈포차"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k21367802",
+      "name": "간식여행",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "쪽문",
+      "address": "대구 북구 대현로19길 32",
+      "lat": 35.885279,
+      "lng": 128.610037,
+      "comment": "카카오맵 '쪽문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/21367802",
+      "receipt": {
+        "keywords": [
+          "간식여행"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k125972196",
+      "name": "레트로위스키바",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 칵테일바",
+      "area": "쪽문",
+      "address": "대구 북구 경대로7길 41",
+      "lat": 35.885319,
+      "lng": 128.609614,
+      "comment": "카카오맵 '쪽문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/125972196",
+      "receipt": {
+        "keywords": [
+          "레트로위스키바"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1354172038",
+      "name": "닥떼들치킨호프 경북대점",
+      "theme": "pub",
+      "tip": false,
+      "category": "chicken",
+      "kind": "술집 · 호프,요리주점",
+      "area": "정문",
+      "address": "대구 북구 경대로7길 11",
+      "lat": 35.885045,
+      "lng": 128.612423,
+      "comment": "카카오맵 '쪽문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1354172038",
+      "receipt": {
+        "keywords": [
+          "닥떼들치킨호프"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1885165923",
+      "name": "소풍김밥",
+      "theme": "meal",
+      "tip": false,
+      "category": "kimbap",
+      "kind": "분식",
+      "area": "동문",
+      "address": "대구 북구 경대로 97",
+      "lat": 35.889325,
+      "lng": 128.617278,
+      "comment": "카카오맵 '동문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1885165923",
+      "receipt": {
+        "keywords": [
+          "소풍김밥"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1678107968",
+      "name": "경복짬뽕전문",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "중식 · 중국요리",
+      "area": "동문",
+      "address": "대구 북구 경대로19길 5",
+      "lat": 35.889188,
+      "lng": 128.616954,
+      "comment": "카카오맵 '동문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1678107968",
+      "receipt": {
+        "keywords": [
+          "경복짬뽕전문"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k24728875",
+      "name": "기황후",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "중식 · 중국요리",
+      "area": "동문",
+      "address": "대구 북구 경대로 101",
+      "lat": 35.889648,
+      "lng": 128.617673,
+      "comment": "카카오맵 '동문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/24728875",
+      "receipt": {
+        "keywords": [
+          "기황후"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1611293899",
+      "name": "디디씨 돌담커피 경대동문점",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페 · 커피전문점",
+      "area": "동문",
+      "address": "대구 북구 경대로 107-1",
+      "lat": 35.889983,
+      "lng": 128.618165,
+      "comment": "카카오맵 '동문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1611293899",
+      "receipt": {
+        "keywords": [
+          "디디씨"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k893172422",
+      "name": "목로카페",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "동문",
+      "address": "대구 북구 경대로17길 2",
+      "lat": 35.889167,
+      "lng": 128.616717,
+      "comment": "카카오맵 '동문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/893172422",
+      "receipt": {
+        "keywords": [
+          "목로카페"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k188225985",
+      "name": "헬로우어게인 복현점",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "동문",
+      "address": "대구 북구 경대로17길 10",
+      "lat": 35.889499,
+      "lng": 128.616403,
+      "comment": "카카오맵 '동문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/188225985",
+      "receipt": {
+        "keywords": [
+          "헬로우어게인"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1152494964",
+      "name": "콤마72",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페 · 디저트카페",
+      "area": "동문",
+      "address": "대구 북구 경대로서19길 36-22",
+      "lat": 35.891219,
+      "lng": 128.616659,
+      "comment": "카카오맵 '동문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1152494964",
+      "receipt": {
+        "keywords": [
+          "콤마72"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k16636701",
+      "name": "왕추찜닭 본점",
+      "theme": "meal",
+      "tip": false,
+      "category": "chicken",
+      "kind": "한식 · 육류,고기",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 55",
+      "lat": 35.888098,
+      "lng": 128.603152,
+      "comment": "카카오맵 '서문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/16636701",
+      "receipt": {
+        "keywords": [
+          "왕추찜닭"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1648461391",
+      "name": "고기한마당",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식 · 육류,고기",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 52",
+      "lat": 35.888448,
+      "lng": 128.603385,
+      "comment": "카카오맵 '서문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1648461391",
+      "receipt": {
+        "keywords": [
+          "고기한마당"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k16924563",
+      "name": "공간식당",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 59-5",
+      "lat": 35.887807,
+      "lng": 128.602827,
+      "comment": "카카오맵 '서문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/16924563",
+      "receipt": {
+        "keywords": [
+          "공간식당"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k16518646",
+      "name": "언덕아래집식당",
+      "theme": "meal",
+      "tip": false,
+      "category": null,
+      "kind": "한식 · 찌개,전골",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 49-6",
+      "lat": 35.888072,
+      "lng": 128.603683,
+      "comment": "카카오맵 '서문 맛집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/16518646",
+      "receipt": {
+        "keywords": [
+          "언덕아래집식당"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k540590303",
+      "name": "어펙션",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "서문",
+      "address": "대구 북구 대현로 7",
+      "lat": 35.887399,
+      "lng": 128.602463,
+      "comment": "카카오맵 '서문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/540590303",
+      "receipt": {
+        "keywords": [
+          "어펙션"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k20479795",
+      "name": "워킹커피",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 51",
+      "lat": 35.888237,
+      "lng": 128.603571,
+      "comment": "카카오맵 '서문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/20479795",
+      "receipt": {
+        "keywords": [
+          "워킹커피"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k430253550",
+      "name": "카페웨스턴게이트",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페",
+      "area": "서문",
+      "address": "대구 북구 대학로 20-9",
+      "lat": 35.88869,
+      "lng": 128.603784,
+      "comment": "카카오맵 '서문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/430253550",
+      "receipt": {
+        "keywords": [
+          "카페웨스턴게이트"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k18465612",
+      "name": "태평다원",
+      "theme": "cafe",
+      "tip": false,
+      "category": "dessert",
+      "kind": "카페 · 전통찻집",
+      "area": "서문",
+      "address": "대구 북구 대구체육관로 18",
+      "lat": 35.89118,
+      "lng": 128.602089,
+      "comment": "카카오맵 '서문 카페' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/18465612",
+      "receipt": {
+        "keywords": [
+          "태평다원"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k967554643",
+      "name": "즐겨찾기",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 실내포장마차",
+      "area": "서문",
+      "address": "대구 북구 산격로 2-2",
+      "lat": 35.890984,
+      "lng": 128.605365,
+      "comment": "카카오맵 '서문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/967554643",
+      "receipt": {
+        "keywords": [
+          "즐겨찾기"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k16403539",
+      "name": "삼삼주점",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "서문",
+      "address": "대구 북구 대현로3길 17-9",
+      "lat": 35.887718,
+      "lng": 128.603844,
+      "comment": "카카오맵 '서문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/16403539",
+      "receipt": {
+        "keywords": [
+          "삼삼주점"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k187764563",
+      "name": "오크통",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 39",
+      "lat": 35.887698,
+      "lng": 128.604109,
+      "comment": "카카오맵 '서문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/187764563",
+      "receipt": {
+        "keywords": [
+          "오크통"
+        ],
+        "points": 50
+      }
+    },
+    {
+      "id": "k1596927860",
+      "name": "찡 대구본점",
+      "theme": "pub",
+      "tip": false,
+      "category": null,
+      "kind": "술집 · 호프,요리주점",
+      "area": "서문",
+      "address": "대구 북구 대현로9길 51",
+      "lat": 35.888255,
+      "lng": 128.603585,
+      "comment": "카카오맵 '서문 술집' 검색 상위 가게예요. 메뉴·영업시간은 카카오맵에서 확인해 보세요.",
+      "url": "https://place.map.kakao.com/1596927860",
+      "receipt": {
+        "keywords": [
+          "찡"
+        ],
+        "points": 50
       }
     }
   ],
-  "_예시": {
-    "id": "r-001",
-    "name": "(가게 이름)",
-    "category": "chicken",
-    "area": "북문",
-    "address": "",
-    "lat": 0,
-    "lng": 0,
-    "comment": "호반우 한마디",
-    "receipt": {
-      "keywords": [
-        "가게 이름"
-      ],
-      "points": 50
+  "themes": [
+    {
+      "id": "meal",
+      "name": "밥집",
+      "emoji": "🍚"
+    },
+    {
+      "id": "cafe",
+      "name": "카페",
+      "emoji": "☕"
+    },
+    {
+      "id": "pub",
+      "name": "술집",
+      "emoji": "🍺"
     }
-  }
+  ],
+  "gates": [
+    {
+      "id": "north",
+      "name": "북문",
+      "lat": 35.892257,
+      "lng": 128.609407
+    },
+    {
+      "id": "main",
+      "name": "정문",
+      "lat": 35.885506,
+      "lng": 128.614497
+    },
+    {
+      "id": "side",
+      "name": "쪽문",
+      "lat": 35.885776,
+      "lng": 128.61025
+    },
+    {
+      "id": "east",
+      "name": "동문",
+      "lat": 35.888385,
+      "lng": 128.616442
+    },
+    {
+      "id": "west",
+      "name": "서문",
+      "lat": 35.888454,
+      "lng": 128.604019
+    }
+  ]
 }

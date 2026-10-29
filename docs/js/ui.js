@@ -247,13 +247,68 @@ function miniMapSvg(zones, nextZone) {
 }
 
 /* ---------- 캠퍼스 탐험 (홈 카드의 "미션 하러 가기"로 여는 상세 화면): 지도 · 장소 목록 ---------- */
-export function renderExplore(cleared = 0, total = 0, theme = null) {
+// mode: "zones"(미션 장소) | "food"(맛집), theme: 지금 시즌 테마(themes.js, 장소 화면 안내에 표시). 위쪽 전환 버튼은 data-mode, 맛집 화면의 필터·목록은 renderFood()가 채운다.
+export function renderExplore(cleared = 0, total = 0, mode = "zones", theme = null) {
+  const food = mode === "food";
   $("view-explore").innerHTML = `
-    ${subHeader("캠퍼스 탐험", `<span class="qm-chip">${cleared} / ${total} 장소</span>`)}
-    <p class="map-guide">${theme ? `지금은 <b>${esc(theme.emoji || "")} ${esc(theme.name)}</b> 테마예요. ` : ""}지도나 목록에서 장소를 골라 미션을 시작해 보세요.</p>
-    <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
-    <h3 class="sec">장소 목록</h3>
-    <div id="zone-list"></div>`;
+    ${subHeader("캠퍼스 탐험", food ? "" : `<span class="qm-chip">${cleared} / ${total} 장소</span>`)}
+    <div class="seg" role="tablist" style="margin:4px 0 8px">
+      <button data-mode="zones" role="tab" aria-selected="${!food}" class="${food ? "" : "on"}">📍 장소</button>
+      <button data-mode="food" role="tab" aria-selected="${food}" class="${food ? "on" : ""}">🍽️ 맛집</button>
+    </div>
+    <p class="map-guide">${food
+      ? "선배 꿀팁 맛집과 문 주변 가게를 모았어요. 핀이나 목록을 누르면 자세히 볼 수 있어요."
+      : `${theme ? `지금은 <b>${esc(theme.emoji || "")} ${esc(theme.name)}</b> 테마예요. ` : ""}지도나 목록에서 장소를 골라 미션을 시작해 보세요.`}</p>
+    <div id="campus-map" role="application" aria-label="${food ? "경북대 주변 맛집 지도" : "경북대학교 캠퍼스 지도"}"></div>
+    ${food ? `<div id="food-pane"></div>` : `<h3 class="sec">장소 목록</h3><div id="zone-list"></div>`}`;
+}
+
+/* ---------- 맛집 (캠퍼스 탐험 > 맛집) ---------- */
+// data: data/restaurants.json, list: 필터를 거친 가게들, state: { theme, tipOnly, selId }
+// 필터 버튼은 data-theme / data-tip, 가게는 data-rest(누르면 선택). 클릭 처리는 main.js에서 한다.
+export function renderFood(data, list, { theme = "all", tipOnly = false, selId = null } = {}) {
+  const el = $("food-pane");
+  if (!el) return;
+  const themes = data.themes || [];
+  const emojiOf = (r) => themes.find((t) => t.id === r.theme)?.emoji || "🍽️";
+  const sel = list.find((r) => r.id === selId) || null;
+  const gates = (data.gates || []).map((g) => g.name);
+  const groups = gates.map((g) => [g, list.filter((r) => r.area === g)]).filter(([, rs]) => rs.length);
+  const row = (r) => `
+    <button type="button" class="food-row ${r.id === selId ? "on" : ""}" data-rest="${esc(r.id)}">
+      <span class="food-emoji" aria-hidden="true">${emojiOf(r)}</span>
+      <span class="food-body">
+        <strong>${esc(r.name)}${r.tip ? ` <span class="food-tip">⭐ 선배 꿀팁</span>` : ""}</strong>
+        <span class="food-kind">${esc(r.kind || "")}</span>
+        ${r.tip ? `<span class="food-cmt">${esc(r.comment)}</span>` : ""}
+      </span>
+    </button>`;
+  el.innerHTML = `
+    <div class="food-filters" role="group" aria-label="맛집 종류">
+      <button type="button" data-theme="all" class="${theme === "all" ? "on" : ""}">전체</button>
+      ${themes.map((t) => `<button type="button" data-theme="${t.id}" class="${theme === t.id ? "on" : ""}">${t.emoji} ${esc(t.name)}</button>`).join("")}
+      <button type="button" data-tip class="tip ${tipOnly ? "on" : ""}" aria-pressed="${tipOnly}">⭐ 꿀팁만</button>
+    </div>
+    ${sel ? `
+    <div class="card food-detail" id="food-detail">
+      <div class="food-detail-top">
+        <span class="food-emoji lg" aria-hidden="true">${emojiOf(sel)}</span>
+        <div style="min-width:0">
+          <div class="sum-label">${esc(sel.area)} · ${esc(sel.kind || "")}</div>
+          <div class="sum-big" style="font-size:20px">${esc(sel.name)}</div>
+        </div>
+        <button type="button" class="cm-x" data-close aria-label="닫기">✕</button>
+      </div>
+      ${sel.tip ? `<div class="food-quote"><b>⭐ 선배 꿀팁</b>${esc(sel.comment)}</div>` : `<p class="food-note">${esc(sel.comment)}</p>`}
+      <div class="food-addr">${esc(sel.address)}</div>
+      <a class="btn" href="${esc(sel.url)}" target="_blank" rel="noopener">카카오맵에서 보기</a>
+    </div>` : ""}
+    <h3 class="sec">맛집 목록 <small class="food-count">${list.length}곳</small></h3>
+    ${groups.length ? groups.map(([g, rs]) => `
+      <h4 class="food-gate">🚪 ${esc(g)} <span>${rs.length}</span></h4>
+      <div class="list-card">${rs.map(row).join("")}</div>`).join("")
+      : `<div class="card" style="text-align:center"><p style="color:var(--mute);margin:0">조건에 맞는 가게가 없어요</p></div>`}
+    <p class="food-src">가게 위치·정보: 카카오맵 (2026년 10월 기준). ⭐ 표시가 없는 가게는 카카오맵 검색 상위 가게예요.</p>`;
 }
 
 /* ---------- 전체 랭킹 (커뮤니티 > 내 순위 카드에서 여는 상세 화면) ---------- */
