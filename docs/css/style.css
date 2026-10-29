@@ -154,6 +154,29 @@ label.field { display: block; margin-bottom: 16px; color: var(--sub); font-size:
          border-radius: 12px; filter: grayscale(1); opacity: .4; }
 .stamp.on { filter: none; opacity: 1; background: var(--primary-weak); animation: pop .4s; }
 .campus-title { margin-top: 12px; }
+
+/* 출석 도장 줄: 최근 3일은 큼직한 빨간 잉크 도장, 그 뒤 앞으로의 날은 점선 빈칸 */
+.att-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.att-streak { flex: none; padding: 5px 10px; border-radius: 999px; background: var(--amber-weak); color: var(--amber);
+              font-size: 12px; font-weight: 800; white-space: nowrap; }
+.att-strip { display: flex; align-items: flex-end; gap: 6px; margin-top: 16px; }
+.att-slot { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.att-slot.stamped { flex: 1.35; }   /* 도장 칸은 빈칸보다 넓게 */
+.att-stamp { width: 100%; max-width: 64px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+             justify-content: center; border-radius: 50%; color: var(--primary); transform: rotate(var(--tilt));
+             border: 3px solid currentColor; box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4.5px currentColor;
+             background: radial-gradient(circle at 35% 30%, var(--primary-weak), transparent 70%); opacity: .92; }
+.att-stamp b { font-family: "Jua", var(--font); font-size: clamp(14px, 4.4vw, 19px); font-weight: 400; line-height: 1; letter-spacing: .02em; }
+.att-stamp small { margin-top: 2px; font-size: 10px; font-weight: 800; opacity: .8; }
+.att-stamp.slam { animation: stampSlam .55s var(--ease-toss) both; }
+.att-empty { width: 100%; max-width: 42px; aspect-ratio: 1; border-radius: 50%; border: 2px dashed var(--line); background: var(--bg); }
+.att-empty.today { max-width: 48px; display: grid; place-items: center; border-color: var(--primary); color: var(--primary);
+                   font-size: 12px; font-weight: 800; background: var(--primary-weak); animation: breathe 1.6s ease-in-out infinite; }
+.att-day { font-size: 11px; color: var(--mute); font-weight: 600; white-space: nowrap; }
+.att-day.today { color: var(--primary); font-weight: 800; }
+@keyframes stampSlam { 0% { opacity: 0; transform: scale(2.2) rotate(calc(var(--tilt) - 20deg)); }
+                       60% { opacity: 1; transform: scale(.9) rotate(var(--tilt)); }
+                       100% { opacity: .92; transform: scale(1) rotate(var(--tilt)); } }
 .map-guide { margin: 0 4px 12px; color: var(--sub); font-size: 14px; }
 #campus-map { height: min(62vh, 560px); min-height: 320px; border-radius: 20px; overflow: hidden;
               border: 1px solid var(--line); }

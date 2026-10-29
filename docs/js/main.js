@@ -7,7 +7,6 @@ import { getRanking } from "./ranking.js";
 import { ensureProfile, getCachedProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
-import { listAnnouncements } from "./notifications.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
          setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
@@ -136,15 +135,18 @@ const QUIZ_BANK = [
 ];
 const todayQuiz = () => QUIZ_BANK[Math.floor(Date.now() / 86400000) % QUIZ_BANK.length];
 
-function renderDailySection() {
+function renderDailySection(opts = {}) {
   const checkin = store.getDailyCheckin();
   const quizState = store.getDailyQuizState();
-  ui.renderDaily(checkin, quizState);
+  ui.renderDaily(checkin, quizState, opts);
 
-  $("btn-daily-checkin")?.addEventListener("click", () => {
+  // 아래 버튼이나 줄 안의 "오늘" 빈칸, 어느 쪽을 눌러도 도장이 찍힌다
+  const checkIn = () => {
     const res = store.doDailyCheckin(10);
-    if (res.ok) { ui.reward(res.pts); renderDailySection(); }
-  });
+    if (res.ok) { ui.reward(res.pts); renderDailySection({ justStamped: true }); }
+  };
+  $("btn-daily-checkin")?.addEventListener("click", checkIn);
+  document.querySelector("#daily-section [data-checkin]")?.addEventListener("click", checkIn);
 
   $("btn-daily-quiz")?.addEventListener("click", () => {
     const q = todayQuiz();
@@ -278,9 +280,8 @@ async function goTab(tab, opts = {}) {
   clearCampusMap();
 
   if (tab === "home") {
-    const anns = await listAnnouncements(store.getState().profile?.dept);
     const hidden = await activeHiddenMission();
-    ui.renderDashboard(zones, anns, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
+    ui.renderDashboard(zones, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
     ui.showView("home");
     renderDailySection();
     refreshBellBadge();

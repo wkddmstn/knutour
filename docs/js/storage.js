@@ -117,7 +117,11 @@ export function clearZoneChat(zoneId) {
 export function getDailyCheckin() {
   const s = load();
   const c = s.daily?.checkin || { lastDate: null, streak: 0 };
-  return { ...c, done: c.lastDate === todayStr() };
+  const done = c.lastDate === todayStr();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  // live: 지금 이어지고 있는 연속 출석 일수. 어제도 오늘도 안 했으면 끊긴 것이라 0 (출석 도장 줄에 쓴다)
+  const live = done || c.lastDate === yesterday ? c.streak : 0;
+  return { ...c, done, live };
 }
 
 // 오늘 처음이면 출석 처리하고 XP 지급, 이미 했으면 ok:false

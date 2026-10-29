@@ -88,14 +88,14 @@ export function renderOnboard(depts, onSubmit) {
 
 /* ---------- 홈: 대시보드 ---------- */
 // hidden: 지금 활성화된 히든미션 정보({emoji,title,desc}) 또는 null. onHidden: "만나러 가기" 버튼 핸들러.
-export function renderDashboard(zones, announcements, onGoQuest, hidden = null, onHidden = null) {
+// 공지사항은 홈에 따로 두지 않고 상단 종(알림창)에서만 보여준다.
+export function renderDashboard(zones, onGoQuest, hidden = null, onHidden = null) {
   const st = getState();
   const lv = getLevel(st.score);
   // AR 미션이 생기면서 구역마다 미션 개수가 달라져서(1개 또는 2개), 미션 개수 합으로 세면 숫자가 헷갈린다.
   // 그래서 "진행 상황"은 미션 개수가 아니라 구역 단위(그 구역의 미션을 다 깼는지)로 센다 — 퀘스트 탭의 "캠퍼스 점령도"와 동일한 기준.
   const total = zones.length;
   const done = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
-  const preview = announcements.slice(0, 2);
   const nextZone = zones.find((z) => z.missions.some((m) => !isDone(m.id)));
 
   $("view-home").innerHTML = `
@@ -119,18 +119,7 @@ export function renderDashboard(zones, announcements, onGoQuest, hidden = null, 
       <p class="sum-foot" style="margin:6px 0 12px">${esc(hidden.desc)}</p>
       <button id="btn-hidden-mission" class="btn cta-glow">만나러 가기</button>
     </div>` : ""}
-    <div id="daily-section"></div>
-    <h3 class="sec">공지사항</h3>
-    <div class="list-card">
-      ${preview.length ? preview.map((a) => `
-        <div class="zone-card" style="cursor:default">
-          <div class="zc-body"><strong>${a.dept ? `<span style="color:var(--primary);font-weight:700">[${esc(a.dept)}]</span> ` : ""}${esc(a.title)}</strong><span>${esc(a.body || "")}</span></div>
-        </div>`).join("") : `
-        <div class="card" style="text-align:center;margin:0">
-          <img src="img/mascot/save-earth.png" alt="호반우" style="width:100px;margin:0 auto 10px">
-          <p style="color:var(--mute);margin:0">아직 공지가 없어요</p>
-        </div>`}
-    </div>`;
+    <div id="daily-section"></div>`;
   $("btn-go-quest").onclick = onGoQuest;
   if (hidden) $("btn-hidden-mission").onclick = onHidden;
 }
@@ -186,22 +175,57 @@ export function renderZoneList(zones, isDone, justCleared = new Set()) {
 }
 
 /* ---------- 데일리 출석체크 / 퀴즈 ---------- */
-export function renderDaily(checkin, quiz) {
+// 출석 도장 줄: 전체 개수를 다 보여주지 않고, 최근 연속 출석 3일만 큼직한 도장으로 찍어 두고
+// 그 뒤로 앞으로 채울 날들을 빈 칸으로 보여준다. (도장 3 + 빈칸 = 항상 6칸)
+const ATT_STAMPED = 3;
+const ATT_SLOTS = 6;
+const ATT_TILT = [-12, 7, -5, 10, -8];
+function attendanceStrip(checkin, justStamped) {
+  const stamped = Math.min(checkin.live, ATT_STAMPED);
+  const first = checkin.live - stamped + 1;   // 줄 맨 앞 도장이 연속 며칠째인지
+  const slots = [];
+  for (let i = 0; i < ATT_SLOTS; i++) {
+    const n = first + i;
+    if (i < stamped) {
+      const isToday = checkin.done && i === stamped - 1;
+      slots.push(`
+        <div class="att-slot stamped">
+          <span class="att-stamp ${isToday && justStamped ? "slam" : ""}" style="--tilt:${ATT_TILT[n % ATT_TILT.length]}deg">
+            <b>출석</b><small>${n}일</small>
+          </span>
+          <span class="att-day ${isToday ? "today" : ""}">${isToday ? "오늘" : `${n}일차`}</span>
+        </div>`);
+    } else {
+      const isToday = !checkin.done && i === stamped;
+      slots.push(`
+        <div class="att-slot">
+          ${isToday
+            ? `<button class="att-empty today" type="button" data-checkin aria-label="오늘 출석 도장 찍기">찍기</button>`
+            : `<span class="att-empty" aria-hidden="true"></span>`}
+          <span class="att-day ${isToday ? "today" : ""}">${isToday ? "오늘" : `${n}일차`}</span>
+        </div>`);
+    }
+  }
+  return `<div class="att-strip" role="img" aria-label="연속 출석 ${checkin.live}일">${slots.join("")}</div>`;
+}
+
+export function renderDaily(checkin, quiz, { justStamped = false } = {}) {
   const el = $("daily-section");
   if (!el) return;
   const quizStatus = !quiz.done ? "경북대 상식 퀴즈에 도전해 보세요!"
     : quiz.correct ? "✅ 오늘 정답을 맞혔어요" : "📝 오늘 퀴즈는 풀었어요";
   el.innerHTML = `
     <h3 class="sec">오늘의 데일리</h3>
-    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div>
-        <div class="sum-label">출석 체크</div>
-        <div class="sum-big" style="font-size:19px">${checkin.done ? "✅ 오늘 출석 완료" : "오늘도 출석해볼까요?"}</div>
-        <div class="sum-foot">🔥 연속 ${checkin.streak}일째</div>
+    <div class="card att-card">
+      <div class="att-head">
+        <div>
+          <div class="sum-label">출석 체크</div>
+          <div class="sum-big" style="font-size:19px">${checkin.done ? "오늘 도장 쾅! 내일 또 만나요" : "오늘의 도장을 찍어볼까요?"}</div>
+        </div>
+        ${checkin.live ? `<span class="att-streak">🔥 ${checkin.live}일 연속</span>` : ""}
       </div>
-      <button id="btn-daily-checkin" class="chip primary" style="white-space:nowrap" ${checkin.done ? "disabled" : ""}>
-        ${checkin.done ? "완료" : "+10 XP"}
-      </button>
+      ${attendanceStrip(checkin, justStamped)}
+      ${checkin.done ? "" : `<button id="btn-daily-checkin" class="btn" type="button" style="margin-top:14px">출석 도장 찍기 · +10 XP</button>`}
     </div>
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
