@@ -47,7 +47,16 @@ function injectStyle() {
   #dx-detail .dd-btns button{flex:1;width:auto;margin:0;padding:13px 8px;border:none;border-radius:14px;font-weight:800;font-size:14px;font-family:inherit;
     background:var(--line,#e5e8eb);color:inherit}
   #dx-detail .dd-btns button.primary{background:var(--primary,#d4121a);color:#fff}
-  #dx-detail h4{margin:16px 0 4px;font-size:14px}`;
+  #dx-detail h4{margin:16px 0 4px;font-size:14px}
+  .dx-more{width:auto;margin:0;padding:0;border:none;background:none;font-family:inherit;font-size:13px;font-weight:800;color:var(--primary,#d4121a);cursor:pointer}
+  .dx-recent{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 12px}
+  .dx-recent button{width:auto;margin:0;padding:0;border:none;border-radius:12px;overflow:hidden;aspect-ratio:1;background:var(--cream-weak,#f2f4f6);cursor:pointer}
+  .dx-recent img{width:100%;height:100%;object-fit:cover;display:block}
+  #dx-albumview{position:fixed;inset:0;z-index:2100;background:var(--bg,#fff);color:var(--ink,#191f28);display:flex;flex-direction:column}
+  #dx-albumview .dav-top{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 6px;max-width:480px;width:100%;margin:0 auto}
+  #dx-albumview .dav-top button{width:40px;height:40px;margin:0;padding:0;border:none;border-radius:12px;background:none;font-size:28px;line-height:1;color:inherit;cursor:pointer}
+  #dx-albumview .dav-top b{font-size:18px}
+  #dx-albumview .dav-body{flex:1;overflow:auto;padding:0 16px calc(20px + env(safe-area-inset-bottom));max-width:480px;width:100%;margin:0 auto}`;
   document.head.appendChild(s);
 }
 
@@ -77,10 +86,11 @@ export async function renderDexTab(container) {
       </section>
       <section class="dx-card dx-badges"></section>
       <section class="dx-card">
-        <div class="dx-head"><b>📸 호반우와 사진</b><span>${photos.length}장</span></div>
-        <p class="dx-sub">모은 호반우와 사진을 찍고 <b>📒 도감에 기록</b>하면 장소별·날짜별로 모여요. 커뮤니티에 공유도 할 수 있어요!</p>
+        <div class="dx-head"><b>📸 호반우와 사진</b>${photos.length ? `<button class="dx-more" data-a="album">앨범 ${photos.length}장 ›</button>` : ""}</div>
+        ${photos.length
+          ? `<div class="dx-recent">${photos.slice(0, 4).map((p) => `<button data-a="album"><img src="${p.thumb}" alt="" loading="lazy"></button>`).join("")}</div>`
+          : `<p class="dx-sub">호반우와 사진을 찍고 <b>도감에 기록</b>하면 여기에 모여요.</p>`}
         <button class="dx-cta" data-a="shot"><img src="img/hobanu/react-hi.png" alt="">호반우와 사진 찍기</button>
-        <div class="dx-album"></div>
       </section>
     </div>`;
   const redraw = () => renderDexTab(container);
@@ -88,8 +98,8 @@ export async function renderDexTab(container) {
   const bslot = container.querySelector(".dx-badges");
   const badgeFn = getHobanuPaneExtra();   // tour.js가 등록한 투어 뱃지 칸 (없으면 숨김)
   if (badgeFn) { try { badgeFn(bslot); } catch { bslot.remove(); } } else bslot.remove();
-  // 앨범
-  renderAlbum(container.querySelector(".dx-album"), { onChange: redraw });
+  // 앨범: 카드에는 최근 사진 4장만, 누르면 전체 앨범(장소별·날짜별) 화면
+  container.querySelectorAll('[data-a="album"]').forEach((b) => (b.onclick = () => openAlbum(redraw)));
   // 사진 찍기: 지금 위치가 어느 구역 근처면 그 장소로 기록
   container.querySelector('[data-a="shot"]').onclick = async () => {
     const z = await nearestZone().catch(() => null);
@@ -97,6 +107,16 @@ export async function renderDexTab(container) {
     redraw();
   };
   container.querySelectorAll(".dx-item").forEach((b) => (b.onclick = () => openDetail(b.dataset.id, !!b.dataset.rare, redraw)));
+}
+
+// 전체 앨범: 화면 전체를 덮는 창 (‹ 버튼으로 닫기)
+function openAlbum(onChange) {
+  const el = document.createElement("div");
+  el.id = "dx-albumview";
+  el.innerHTML = `<div class="dav-top"><button type="button" data-a="x" aria-label="닫기">‹</button><b>호반우와 사진</b></div><div class="dav-body"></div>`;
+  document.body.appendChild(el);
+  el.querySelector('[data-a="x"]').onclick = () => { el.remove(); onChange?.(); };
+  renderAlbum(el.querySelector(".dav-body"), { onChange });
 }
 
 // 호반우 상세: 큰 그림, 만난 날, 친밀도, 한마디, 이 호반우와 찍은 사진, AR로 만나기 / 같이 찍기

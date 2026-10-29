@@ -139,6 +139,7 @@ function injectStyle() {
   .al-day h4 small{color:var(--mute,#8b95a1);font-weight:600;margin-left:6px}
   .al-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
   .al-grid .al-th{width:100%;height:auto;aspect-ratio:1}
+  .al-left{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--line,#e5e8eb);font-size:12px;color:var(--mute,#8b95a1);line-height:1.5}
   .al-empty{text-align:center;color:var(--mute,#8b95a1);font-size:13px;padding:18px 0 8px}
   #al-view{position:fixed;inset:0;z-index:2300;background:rgba(0,0,0,.92);display:flex;flex-direction:column;color:#fff;font-family:inherit}
   #al-view .av-top{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
@@ -172,12 +173,15 @@ export async function renderAlbum(slot, opts = {}) {
     else if (mode === "place") {
       const groups = [...zones.map((z) => ({ z, list: photos.filter((p) => p.zoneId === z.id) })),
         { z: { id: null, name: "장소 미정", emoji: "❔" }, list: photos.filter((p) => !p.zoneId || !zoneOf(p.zoneId)) }];
-      body = groups.filter((g) => g.z.id || g.list.length).map(({ z, list }) => `
+      // 사진이 있는 장소만 보여주고, 빈 장소는 맨 아래 한 줄로 (목록이 길게 늘어지지 않게)
+      const empty = groups.filter((g) => g.z.id && !g.list.length).map((g) => g.z.name);
+      body = groups.filter((g) => g.list.length).map(({ z, list }) => `
         <div class="al-place ${list.length ? "" : "empty"}">
           <div class="ap-ic">${zoneIcon(z)}</div>
           <div class="ap-body"><b>${z.name}</b><small>${list.length ? `사진 ${list.length}장 · 마지막 ${DAY(list[0].at)}` : "아직 찍은 사진이 없어요"}</small>
             ${list.length ? `<div class="al-strip">${list.map(th).join("")}</div>` : ""}</div>
         </div>`).join("");
+      if (empty.length) body += `<p class="al-left">아직 사진이 없는 곳 · ${empty.join(", ")}</p>`;
     } else {
       const byDay = new Map();
       photos.forEach((p) => { const k = new Date(p.at).toDateString(); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(p); });
