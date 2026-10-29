@@ -14,6 +14,7 @@
 //   cm.destroy();
 //
 // 핀·이름·내 위치·말풍선은 SVG 위에 HTML로 얹는다 (확대해도 크기가 그대로라 읽기·누르기 좋음).
+import { icon, hasIcon } from "./icons.js";   // 핀 안 젤리 아이콘 (장소 id 또는 z.icon)
 
 let data = null;
 export async function loadCampusData() {
@@ -26,7 +27,13 @@ export async function loadCampusData() {
     return { kind, name, pts };
   });
   const campus = feats.find((f) => f.kind === "u");
-  data = { feats, campus, src: raw.src, labels: buildLabels(feats) };
+  // 지도에 그려진 전체 범위 (캠퍼스 밖 맛집 거리까지). 이 안에서만 끌어서 이동할 수 있다
+  let bounds = null;   // (점이 수만 개라 Math.min(...배열) 대신 한 번씩 훑는다)
+  for (const f of feats) for (const [la, ln] of f.pts) {
+    if (!bounds) bounds = { s: la, n: la, w: ln, e: ln };
+    else { bounds.s = Math.min(bounds.s, la); bounds.n = Math.max(bounds.n, la); bounds.w = Math.min(bounds.w, ln); bounds.e = Math.max(bounds.e, ln); }
+  }
+  data = { feats, campus, bounds, src: raw.src, labels: buildLabels(feats) };
   return data;
 }
 export const campusDataReady = () => !!data;
@@ -39,8 +46,8 @@ const py = (lat) => (LAT0 - lat) * MY;
 const unx = (x) => x / MX + LNG0;
 const uny = (y) => LAT0 - y / MY;
 
-const ROAD_W = { secondary: 14, secondary_link: 10, tertiary: 11, residential: 8, living_street: 7,
-                 service: 7, pedestrian: 8, cycleway: 4, path: 3, footway: 3 };
+const ROAD_W = { trunk: 18, primary: 16, primary_link: 10, secondary: 14, secondary_link: 10, tertiary: 11, tertiary_link: 8,
+                 residential: 8, unclassified: 7, living_street: 7, service: 7, pedestrian: 8, cycleway: 4, path: 3, footway: 3 };
 const pathOf = (pts, close) => pts.map(([la, ln], i) => `${i ? "L" : "M"}${px(ln).toFixed(1)} ${py(la).toFixed(1)}`).join("") + (close ? "Z" : "");
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -80,7 +87,8 @@ function buildBase() {
   const by = (k) => feats.filter((f) => f.kind === k);
   const roads = feats.filter((f) => f.kind.startsWith("h:"));
   // 큰길 → 작은길 순서로 그려야 교차점이 자연스럽다
-  const order = ["footway", "path", "cycleway", "service", "living_street", "pedestrian", "residential", "tertiary", "secondary_link", "secondary"];
+  const order = ["footway", "path", "cycleway", "service", "living_street", "pedestrian", "unclassified", "residential",
+                 "tertiary_link", "tertiary", "secondary_link", "secondary", "primary_link", "primary", "trunk"];
   roads.sort((a, b) => order.indexOf(a.kind.slice(2)) - order.indexOf(b.kind.slice(2)));
   baseSvg = `
     <rect class="cm-bg" x="-5000" y="-5000" width="10000" height="10000"/>
@@ -169,7 +177,7 @@ export class CampusMap {
     const want = W / H;
     if (w / h < want) { const nw = h * want; x0 -= (nw - w) / 2; w = nw; }
     else { const nh = w / want; y0 -= (nh - h) / 2; h = nh; }
-    this.minScale = Math.min(W / w, this.campusScale(W, H)) * 0.85;   // 이보다 더 축소하지 않음
+    this.minScale = Math.min(W / w, this.campusScale(W, H)) * 0.6;   // 이보다 더 축소하지 않음 (캠퍼스 주변까지 보이게 조금 더 축소 가능)
     this.setVB(x0, y0, w, h);
   }
   // 캠퍼스 전체가 꼭 맞게 보이는 배율
@@ -208,10 +216,10 @@ export class CampusMap {
   }
   // 캠퍼스 밖으로 너무 멀리 끌려가지 않게
   clampPan() {
-    const c = data.campus;
-    if (!c) return;
-    const xs = c.pts.map(([, ln]) => px(ln)), ys = c.pts.map(([la]) => py(la));
-    const [x0, x1, y0, y1] = [Math.min(...xs) - 150, Math.max(...xs) + 150, Math.min(...ys) - 150, Math.max(...ys) + 150];
+    const b = data.bounds;
+    if (!b) return;
+    // 지도 데이터가 있는 범위(캠퍼스 주변 맛집 거리 포함) 안에서만 가운데가 움직이게
+    const [x0, x1, y0, y1] = [px(b.w), px(b.e), py(b.n), py(b.s)];
     let { x, y, w, h } = this.vb;
     const cx = Math.min(Math.max(x + w / 2, x0), x1), cy = Math.min(Math.max(y + h / 2, y0), y1);
     if (cx !== x + w / 2 || cy !== y + h / 2) this.setVB(cx - w / 2, cy - h / 2, w, h);
@@ -347,7 +355,7 @@ export class CampusMap {
       node.type = "button";
       node.className = `cm-pin ${st}`;
       node.setAttribute("aria-label", `${z.name}${st === "cleared" ? " (클리어)" : ""}`);
-      node.innerHTML = `<span class="cm-pin-head"><span class="cm-pin-emoji">${esc(z.emoji || "📍")}</span></span>
+      node.innerHTML = `<span class="cm-pin-head"><span class="cm-pin-emoji">${hasIcon(z.icon || z.id) ? icon(z.icon || z.id, { bg: false }) : esc(z.emoji || "📍")}</span></span>
         ${st === "cleared" ? '<span class="cm-pin-check">✓</span>' : ""}
         ${st === "locked" ? '<span class="cm-pin-check cm-pin-lock">🔒</span>' : ""}
         <span class="cm-pin-name">${esc(z.name)}</span>`;

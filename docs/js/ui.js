@@ -1,3 +1,5 @@
+import { icon, zoneIcon, hasIcon } from "./icons.js";   // 동글동글 젤리 아이콘
+import { heroHtml } from "./hero.js";   // 홈 대표 카드의 움직이는 산책 그림
 import { getState, isDone, getLevel, getLevelTable, getLevelLog } from "./storage.js";
 import { getCachedProfile } from "./supa.js";
 import { pickBest, toTag } from "./community.js";
@@ -128,9 +130,6 @@ export function renderOnboard(depts, onSubmit) {
 export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = null, themeInfo = {}) {
   const { theme = null, period = "", specials = [], onSpecial = null } = themeInfo;
   const st = getState();
-  const lv = getLevel(st.score);
-  const total = zones.length;
-  const cleared = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
   const nextZone = zones.find((z) => z.missions.some((m) => !isDone(m.id)));
 
   $("view-home").innerHTML = `
@@ -153,15 +152,7 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
     </div>`).join("")}
     <div class="card card-hero quest-map-card">
       ${theme ? `<div class="theme-badge"><span>${esc(theme.emoji || "")} ${esc(theme.name)}</span>${period ? `<small>${esc(period)}</small>` : ""}</div>` : ""}
-      <div class="qm-head">
-        <span class="qm-title">캠퍼스 탐험 지도</span>
-        <span class="qm-chip">${cleared} / ${total} 장소</span>
-      </div>
-      ${miniMapSvg(zones, nextZone)}
-      <div class="qm-next">${nextZone
-        ? `다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}`
-        : "모든 장소를 탐험했어요! 🎉"}</div>
-      <div class="sum-foot" style="margin-top:4px">Lv.${lv.level} ${lv.title} · ${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}</div>
+      ${heroHtml(theme, nextZone)}
       <button id="btn-go-quest" class="btn cta-glow">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
     <div id="daily-section"></div>
@@ -178,72 +169,6 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
   document.querySelectorAll("#view-home [data-special]").forEach((b) => {
     b.onclick = () => onSpecial?.(specials.find((sp) => sp.id === b.dataset.special));
   });
-}
-
-// 홈 대표 카드 안의 미니 지도. 실제 지도 대신 장소를 네모 칸으로 보여준다.
-// 칸 위치는 zones.json의 위도·경도로 자동 계산 → 장소가 추가돼도 손댈 필요가 없다.
-//   클리어한 곳: 빨간 칸 + ✓ / 다음 목적지: 빨간 테두리 칸 + 장소 이모지 (통통 튐) / 아직: 물음표 칸
-const MM = { W: 300, H: 176, T: 36, PAD: 14 };
-function layoutTiles(zones) {
-  const lats = zones.map((z) => z.lat), lngs = zones.map((z) => z.lng);
-  const [minLat, maxLat, minLng, maxLng] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
-  const spanX = MM.W - MM.PAD * 2 - MM.T, spanY = MM.H - MM.PAD * 2 - MM.T;
-  const pts = zones.map((z) => ({
-    x: MM.PAD + (maxLng > minLng ? (z.lng - minLng) / (maxLng - minLng) : 0.5) * spanX,
-    y: MM.PAD + (maxLat > minLat ? (maxLat - z.lat) / (maxLat - minLat) : 0.5) * spanY,   // 북쪽이 위
-  }));
-  // 가까이 붙은 칸끼리 겹치지 않게 조금씩 밀어낸다
-  const GAP = MM.T + 12;
-  for (let it = 0; it < 60; it++) {
-    let moved = false;
-    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
-      const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
-      if (Math.abs(dx) >= GAP || Math.abs(dy) >= GAP) continue;
-      moved = true;
-      // 덜 겹친 축 방향으로 밀어내기
-      if (GAP - Math.abs(dx) < GAP - Math.abs(dy)) { const p = (GAP - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1); pts[i].x -= p; pts[j].x += p; }
-      else { const p = (GAP - Math.abs(dy)) / 2 * (dy >= 0 ? 1 : -1); pts[i].y -= p; pts[j].y += p; }
-    }
-    pts.forEach((p) => {   // 판 밖으로 나가지 않게
-      p.x = Math.min(MM.W - MM.PAD - MM.T, Math.max(MM.PAD, p.x));
-      p.y = Math.min(MM.H - MM.PAD - MM.T, Math.max(MM.PAD, p.y));
-    });
-    if (!moved) break;
-  }
-  return pts;
-}
-function miniMapSvg(zones, nextZone) {
-  if (!zones.length) return "";
-  const pts = layoutTiles(zones);
-  const done = zones.map((z) => z.missions.every((m) => isDone(m.id)));
-  const c = (i) => [pts[i].x + MM.T / 2, pts[i].y + MM.T / 2];
-  // 길: 각 칸을 가장 가까운 칸 두 개와 잇는다. 양쪽 다 깬 길은 실선으로 "밝혀진다"
-  const edges = new Set();
-  pts.forEach((_, i) => {
-    pts.map((_, j) => j).filter((j) => j !== i)
-      .sort((a, b) => Math.hypot(...c(a).map((v, k) => v - c(i)[k])) - Math.hypot(...c(b).map((v, k) => v - c(i)[k])))
-      .slice(0, 2).forEach((j) => edges.add([Math.min(i, j), Math.max(i, j)].join("-")));
-  });
-  const roads = [...edges].map((e) => {
-    const [i, j] = e.split("-").map(Number);
-    const [x1, y1] = c(i), [x2, y2] = c(j);
-    return `<line class="mm-road ${done[i] && done[j] ? "lit" : ""}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-  }).join("");
-  const tiles = zones.map((z, i) => {
-    const { x, y } = pts[i];
-    const name = esc(z.name);
-    if (done[i]) return `<g class="mm-tile done"><title>${name} · 클리어</title>
-      <rect x="${x}" y="${y}" width="${MM.T}" height="${MM.T}" rx="9"/>
-      <text x="${x + MM.T / 2}" y="${y + MM.T / 2 + 1}">✓</text></g>`;
-    if (nextZone && z.id === nextZone.id) return `<g class="mm-tile next"><title>${name} · 다음 목적지</title>
-      <g class="mm-bob"><rect x="${x}" y="${y}" width="${MM.T}" height="${MM.T}" rx="9"/>
-      <text x="${x + MM.T / 2}" y="${y + MM.T / 2 + 1}">${esc(z.emoji)}</text></g></g>`;
-    return `<g class="mm-tile"><title>${name}</title>
-      <rect x="${x}" y="${y}" width="${MM.T}" height="${MM.T}" rx="9"/>
-      <text x="${x + MM.T / 2}" y="${y + MM.T / 2 + 1}">?</text></g>`;
-  }).join("");
-  return `<svg class="mini-map" viewBox="0 0 ${MM.W} ${MM.H}" role="img" aria-label="캠퍼스 탐험 지도: ${zones.length}곳 중 ${done.filter(Boolean).length}곳 클리어">
-    <rect class="mm-bg" width="${MM.W}" height="${MM.H}" rx="16"/>${roads}${tiles}</svg>`;
 }
 
 /* ---------- 캠퍼스 탐험 (홈 카드의 "미션 하러 가기"로 여는 상세 화면): 지도 · 장소 목록 ---------- */
@@ -270,7 +195,7 @@ export function renderFood(data, list, { theme = "all", tipOnly = false, selId =
   const el = $("food-pane");
   if (!el) return;
   const themes = data.themes || [];
-  const emojiOf = (r) => themes.find((t) => t.id === r.theme)?.emoji || "🍽️";
+  const emojiOf = (r) => hasIcon(r.theme) ? icon(r.theme) : (themes.find((t) => t.id === r.theme)?.emoji || "🍽️");
   const sel = list.find((r) => r.id === selId) || null;
   const gates = (data.gates || []).map((g) => g.name);
   const groups = gates.map((g) => [g, list.filter((r) => r.area === g)]).filter(([, rs]) => rs.length);
@@ -286,7 +211,7 @@ export function renderFood(data, list, { theme = "all", tipOnly = false, selId =
   el.innerHTML = `
     <div class="food-filters" role="group" aria-label="맛집 종류">
       <button type="button" data-theme="all" class="${theme === "all" ? "on" : ""}">전체</button>
-      ${themes.map((t) => `<button type="button" data-theme="${t.id}" class="${theme === t.id ? "on" : ""}">${t.emoji} ${esc(t.name)}</button>`).join("")}
+      ${themes.map((t) => `<button type="button" data-theme="${t.id}" class="${theme === t.id ? "on" : ""}">${hasIcon(t.id) ? icon(t.id, { size: 20, cls: "jelly-inline" }) : t.emoji} ${esc(t.name)}</button>`).join("")}
       <button type="button" data-tip class="tip ${tipOnly ? "on" : ""}" aria-pressed="${tipOnly}">⭐ 꿀팁만</button>
     </div>
     ${sel ? `
@@ -343,7 +268,7 @@ export function renderZoneList(zones, isDone, justCleared = new Set(), locked = 
 
   el.innerHTML = rows.map(({ zone: z, done, doneCnt }) => `
     <button type="button" class="zone-row ${done ? "cleared" : ""} ${justCleared.has(z.id) ? "just-cleared" : ""}" data-zone="${z.id}">
-      <span class="zr-emoji">${esc(z.emoji)}</span>
+      <span class="zr-emoji">${zoneIcon(z)}</span>
       <span class="zr-body">
         <strong>${esc(z.name)}</strong>
         <span>${doneCnt}/${z.missions.length} 미션</span>
@@ -353,7 +278,7 @@ export function renderZoneList(zones, isDone, justCleared = new Set(), locked = 
     <h3 class="sec locked-sec">다른 테마 장소</h3>
     ${locked.map((z) => `
     <button type="button" class="zone-row locked" data-zone="${z.id}">
-      <span class="zr-emoji">${esc(z.emoji)}</span>
+      <span class="zr-emoji">${zoneIcon(z)}</span>
       <span class="zr-body">
         <strong>${esc(z.name)}</strong>
         <span>${z.openTheme ? `${esc(z.openTheme.emoji || "")} ${esc(z.openTheme.name)}에 열려요` : "다른 테마에서 열려요"}</span>
@@ -401,7 +326,7 @@ export function renderDaily(checkin, quiz, { justStamped = false } = {}) {
   const el = $("daily-section");
   if (!el) return;
   const quizStatus = !quiz.done ? "경북대 상식 퀴즈에 도전해 보세요!"
-    : quiz.correct ? "✅ 오늘 정답을 맞혔어요" : "📝 오늘 퀴즈는 풀었어요";
+    : quiz.correct ? `${icon("check", { size: 26, cls: "jelly-inline" })} 오늘 정답을 맞혔어요` : `${icon("memo", { size: 26, cls: "jelly-inline" })} 오늘 퀴즈는 풀었어요`;
   el.innerHTML = `
     <h3 class="sec">오늘의 데일리</h3>
     <div class="card att-card">

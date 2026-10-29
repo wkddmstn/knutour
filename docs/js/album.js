@@ -1,6 +1,7 @@
 // js/album.js — 호반우 사진 앨범 (담당: 장주연)
 // 사진 찍기 화면에서 "📒 도감에 기록"한 사진을 이 기기(브라우저)에 저장하고, 장소별·날짜별로 보여 준다.
 // 사진은 용량이 커서 localStorage 대신 IndexedDB에 저장한다. 커뮤니티 공유는 팀 커뮤니티 기능(community.js)을 그대로 쓴다.
+import { zoneIcon } from "./icons.js";   // 장소 젤리 아이콘
 import { postCommunity } from "./community.js";
 import * as ui from "./ui.js";
 import { getState } from "./storage.js";
@@ -173,7 +174,7 @@ export async function renderAlbum(slot, opts = {}) {
         { z: { id: null, name: "장소 미정", emoji: "❔" }, list: photos.filter((p) => !p.zoneId || !zoneOf(p.zoneId)) }];
       body = groups.filter((g) => g.z.id || g.list.length).map(({ z, list }) => `
         <div class="al-place ${list.length ? "" : "empty"}">
-          <div class="ap-ic">${z.emoji || "📍"}</div>
+          <div class="ap-ic">${zoneIcon(z)}</div>
           <div class="ap-body"><b>${z.name}</b><small>${list.length ? `사진 ${list.length}장 · 마지막 ${DAY(list[0].at)}` : "아직 찍은 사진이 없어요"}</small>
             ${list.length ? `<div class="al-strip">${list.map(th).join("")}</div>` : ""}</div>
         </div>`).join("");

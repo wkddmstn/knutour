@@ -730,23 +730,7 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 .quest-map-card .btn { margin-top: 16px; }
 /* 홈 대표 카드는 오른쪽 위에 호반우 마스코트가 걸쳐 있어서 칩을 제목 옆(왼쪽)에 붙인다 */
 .quest-map-card .qm-head { justify-content: flex-start; padding-right: 64px; }
-.mini-map .mm-tile.next rect { fill: var(--primary-weak); }
 
-/* 홈 대표 카드의 미니 지도 (장소 = 네모 칸) */
-.mini-map { display: block; width: 100%; height: auto; }
-.mini-map .mm-bg { fill: var(--cream-weak); }
-.mini-map .mm-road { stroke: var(--cream); stroke-width: 2; stroke-dasharray: 4 4; stroke-linecap: round; opacity: .7; }
-.mini-map .mm-road.lit { stroke: var(--primary); stroke-dasharray: none; stroke-width: 3; opacity: .55; }
-.mini-map .mm-tile rect { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
-.mini-map .mm-tile text { text-anchor: middle; dominant-baseline: central; font-size: 15px; font-weight: 700; fill: var(--mute); }
-.mini-map .mm-tile.done rect { fill: var(--primary); stroke: var(--primary); }
-.mini-map .mm-tile.done text { fill: #fff; font-size: 17px; }
-.mini-map .mm-tile.next rect { stroke: var(--primary); stroke-width: 2.5; }
-.mini-map .mm-tile.next text { font-size: 18px; }
-@media (prefers-reduced-motion: no-preference) {
-  .mini-map .mm-bob { animation: mmBob 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-}
-@keyframes mmBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
 /* 메뉴 카드: 아이콘 + 제목/한 줄 설명 + 화살표 */
 .menu-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 18px; margin-bottom: 12px;
@@ -992,3 +976,82 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
   background: rgba(255,255,255,.92); padding: 1px 6px; border-radius: 6px; color: #333; }
 .tg-btns .chip { padding: 10px 14px; font-size: 14px; }
 .tg-btns .chip.ghost { border: 1px solid var(--line); background: #fff; color: var(--sub); }
+
+/* ============ 홈 대표 카드: 동글동글 캠퍼스 산책 (hero.js) ============ */
+/* 테마마다 색만 바꾼다. --hx-*는 그림 속 하늘·언덕·건물·나무 색 */
+.hx-stage { position: relative; height: 230px; margin-top: 4px; border-radius: 24px; overflow: hidden;
+  background: linear-gradient(var(--hx-sky1), var(--hx-sky2) 62%); }
+.hx-march { --hx-sky1: #eaf6ff; --hx-sky2: #f4fbf6; --hx-hill: #e3f5e9; --hx-hill2: #d6efdf; --hx-far1: #cdebd9; --hx-far2: #bfe5cf;
+  --hx-far3: #d8e8ff; --hx-far4: #d1eedd; --hx-win: #fff; --hx-wall: #fff; --hx-roof: #8fd9b0; --hx-roof2: #cfe6ff; --hx-accent: #ff5a5f;
+  --hx-win2: #d8e8ff; --hx-win3: #d6f2e2; --hx-door: #9cc2ff; --hx-tree1: #9fdcb7; --hx-tree2: #c3ecd3; --hx-tree3: #b4e3c6; --hx-tree4: #d4f1df;
+  --hx-trunk: #d9b89a; --hx-pool: #cfe6ff; --hx-jet: #a8d4ff; --hx-sun: #ffe3a3; }
+.hx-cherry { --hx-sky1: #fff1f3; --hx-sky2: #fff8f6; --hx-hill: #ffeef0; --hx-hill2: #ffe3e8; --hx-far1: #ffd9df; --hx-far2: #ffccd5;
+  --hx-far3: #e8eeff; --hx-far4: #e4f4ea; --hx-win: #fff; --hx-wall: #fff; --hx-roof: #ff8a93; --hx-roof2: #ffd1d9; --hx-accent: #ff5a5f;
+  --hx-win2: #ffd1d9; --hx-win3: #e3ecff; --hx-door: #ffb3bc; --hx-tree1: #ffc2d1; --hx-tree2: #ffd6e0; --hx-tree3: #c9ecd9; --hx-tree4: #dff3e8;
+  --hx-trunk: #e8b9a0; --hx-pool: #cfe6ff; --hx-jet: #a8d4ff; --hx-sun: #ffd6a5; }
+.hx-midterm { --hx-sky1: #ece8ff; --hx-sky2: #f7f3ff; --hx-hill: #efeaff; --hx-hill2: #e4ddff; --hx-far1: #dcd4ff; --hx-far2: #d2c8ff;
+  --hx-far3: #d9e4ff; --hx-far4: #e0d9ff; --hx-win: #fff3c4; --hx-wall: #fff; --hx-roof: #a99bff; --hx-roof2: #dcd4ff; --hx-accent: #ff5a5f;
+  --hx-win2: #ffe9a8; --hx-win3: #ffe9a8; --hx-door: #b9aeff; --hx-tree1: #c4e8d2; --hx-tree2: #d9f1e2; --hx-tree3: #c4e8d2; --hx-tree4: #d9f1e2;
+  --hx-trunk: #d9b89a; --hx-pool: #d9e4ff; --hx-jet: #b9cbff; --hx-sun: #fff1b8; }
+.hx-layer { position: absolute; left: 0; bottom: 0; height: 100%; width: 1200px; display: flex; }
+.hx-layer svg { flex: none; width: 600px; height: 100%; }
+.hx-far { opacity: .6; animation: hxScroll 60s linear infinite; }
+.hx-near { animation: hxScroll 26s linear infinite; }
+@keyframes hxScroll { to { transform: translateX(-600px); } }
+.hx-sun { position: absolute; right: 30px; top: 22px; width: 34px; height: 34px; border-radius: 50%; background: var(--hx-sun);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--hx-sun) 40%, transparent); animation: hxPulse 3s ease-in-out infinite; }
+.hx-midterm .hx-sun { width: 26px; height: 26px; box-shadow: inset -8px -3px 0 0 #fff8dc; background: transparent; }   /* 초승달 */
+@keyframes hxPulse { 50% { transform: scale(1.08); } }
+.hx-cloud { position: absolute; height: 22px; background: #fff; border-radius: 20px; opacity: .95; animation: hxDrift linear infinite; }
+.hx-cloud::before, .hx-cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+.hx-cloud::before { width: 26px; height: 26px; left: 10px; top: -12px; }
+.hx-cloud::after { width: 20px; height: 20px; left: 30px; top: -8px; }
+@keyframes hxDrift { from { transform: translateX(440px); } to { transform: translateX(-120px); } }
+.hx-walker { position: absolute; left: 50%; bottom: 28px; width: 92px; margin-left: -46px; z-index: 3; animation: hxBob .5s ease-in-out infinite; }
+.hx-walker img { width: 100%; display: block; }
+.hx-walker .hx-f2 { position: absolute; inset: 0; opacity: 0; animation: hxFrame .5s steps(1) infinite; }
+@keyframes hxFrame { 50% { opacity: 1; } }
+@keyframes hxBob { 50% { transform: translateY(-5px) rotate(-1.5deg); } }
+.hx-shadow { position: absolute; left: 50%; bottom: 24px; width: 64px; height: 12px; margin-left: -32px; border-radius: 50%;
+  background: rgba(25, 31, 40, .10); z-index: 2; animation: hxSh .5s ease-in-out infinite; }
+@keyframes hxSh { 50% { transform: scale(.85); } }
+.hx-bubble { position: absolute; left: calc(50% + 26px); bottom: 126px; z-index: 5; background: #fff; border-radius: 16px 16px 16px 4px;
+  padding: 7px 11px; font-size: 13px; font-weight: 800; line-height: 1.35; color: var(--primary); max-width: calc(50% - 32px);
+  word-break: keep-all; box-shadow: 0 4px 12px rgba(25, 31, 40, .10); animation: hxFloat 2.6s ease-in-out infinite; }
+@keyframes hxFloat { 50% { transform: translateY(-4px); } }
+.hx-heart { position: absolute; z-index: 4; color: #ff8fa3; font-size: 14px; opacity: 0; animation: hxUp 3s ease-out infinite; }
+@keyframes hxUp { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-60px) scale(1.1); } }
+.hx-p { position: absolute; top: -20px; z-index: 4; animation: hxFall linear infinite; pointer-events: none; }
+.hx-p svg { display: block; width: 100%; }
+@keyframes hxFall { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-30px, 125px) rotate(160deg); } 100% { transform: translate(-90px, 270px) rotate(320deg); } }
+.hx-leaf { aspect-ratio: 1; background: #8fd9b0; border-radius: 0 100% 0 100%; }
+.hx-conf { aspect-ratio: 1.6; height: auto; border-radius: 3px; opacity: .85; }
+.hx-star { color: #ffd27a; font-size: 12px; text-align: center; }
+.hx-book { opacity: .95; }
+.hx-twinkle { position: absolute; color: #fff; font-size: 12px; animation: hxTw 2s ease-in-out infinite; }
+@keyframes hxTw { 50% { opacity: .2; transform: scale(.5); } }
+.hx-sprouts i { position: absolute; bottom: 20px; width: 14px; height: 16px; transform-origin: 50% 100%; animation: hxSprout 2.4s ease-in-out infinite; }
+.hx-sprouts i::before, .hx-sprouts i::after { content: ""; position: absolute; bottom: 4px; width: 9px; height: 9px; background: #6cc893; }
+.hx-sprouts i::before { left: -2px; border-radius: 0 100% 0 100%; }
+.hx-sprouts i::after { right: -2px; border-radius: 100% 0 100% 0; }
+@keyframes hxSprout { 0%, 100% { transform: scale(.8) rotate(-4deg); } 50% { transform: scale(1.05) rotate(4deg); } }
+.hx-title { margin-top: 14px; font-family: "Jua", var(--font); font-size: 21px; line-height: 1.3; color: var(--ink); }
+.hx-sub { margin-top: 4px; font-size: 13px; color: var(--sub); }
+@media (prefers-color-scheme: dark) {
+  .hx-stage { filter: brightness(.82) saturate(.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hx-stage *, .hx-stage *::before, .hx-stage *::after { animation: none !important; }
+  .hx-p, .hx-heart { display: none; }
+}
+
+/* ============ 젤리 아이콘 (icons.js) ============ */
+.jelly { display: block; width: 100%; height: 100%; }
+.jelly-inline { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.28em; margin-right: 2px; }
+.zr-emoji:has(.jelly), .food-emoji:has(.jelly), .al-place .ap-ic:has(.jelly) { background: none; padding: 0; }
+.zr-emoji .jelly { width: 40px; height: 40px; }
+.cm-pin-emoji .jelly { width: 22px; height: 22px; }
+.food-emoji .jelly { width: 34px; height: 34px; }
+.food-emoji.lg .jelly { width: 46px; height: 46px; }
+.al-place .ap-ic .jelly { width: 44px; height: 44px; }
+.jelly-emoji { font-size: 20px; line-height: 1; }

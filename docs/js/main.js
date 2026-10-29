@@ -101,7 +101,7 @@ function stopZoneGeofence() {
 /* ================= 구역별 배경 테마 ================= */
 // zones.json을 따로 건드릴 필요 없이, 구역 순서대로 색을 돌려서 그 구역만의 분위기를 준다.
 // 작은 패턴 대신, 부드럽게 번진 색 덩어리(블롭) 2개를 화면 구석에 은은하게 깔아서 장소 느낌을 표현한다.
-const ZONE_ACCENTS = ["#d4121a", "#0a9d63", "#2f6fed", "#a86400", "#8d5fd3", "#d1538a", "#1aa6a6"];
+const ZONE_ACCENTS = ["#d4121a", "#0a9d63", "#2f6fed", "#e8590c", "#8d5fd3", "#d1538a", "#1aa6a6"];
 // 블롭이 매번 같은 자리에 있지 않도록 구역마다 위치를 돌려가며 쓴다
 const BLOB_LAYOUTS = [
   ["6% -8%", "94% 22%"],
@@ -590,7 +590,7 @@ async function renderFoodSection() {
   const emojiOf = (r) => data.themes?.find((t) => t.id === r.theme)?.emoji || "🍽️";
   // 캠퍼스 밖은 길이 거의 안 그려져 있어서, 북문·정문 같은 문 위치(🚪)도 함께 꽂아 방향을 잡기 쉽게 한다
   const gatePins = (data.gates || []).map((g) => ({ ...g, id: "gate-" + g.id, emoji: "🚪", gate: true }));
-  campusMap?.setZones([...gatePins, ...list.map((r) => ({ ...r, emoji: emojiOf(r) }))], {
+  campusMap?.setZones([...gatePins, ...list.map((r) => ({ ...r, emoji: emojiOf(r), icon: r.theme }))], {
     status: (r) => r.gate ? "gate" : ["food", r.tip ? "tip" : "", r.id === food.selId ? "sel" : ""].join(" "),
     onSelect: (r) => { if (!r.gate) selectFood(r.id, false); },
     bubble: false,
