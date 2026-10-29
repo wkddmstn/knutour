@@ -846,3 +846,30 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 #campus-map.campus-map { height: auto; min-height: 0; aspect-ratio: 1 / 1.05; }
 /* 캠퍼스 전체가 보이는 탐험 지도에선 핀이 서로 덜 겹치게 조금 작게 */
 #campus-map .cm-pin { scale: .82; transform-origin: 50% 100%; }
+/* 지도 확대·이동 + 이름표 */
+.campus-map { touch-action: none; cursor: grab; }
+.campus-map.dragging { cursor: grabbing; }
+.campus-map.dragging .cm-pin { pointer-events: none; }
+.cm-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.cm-label { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 11px; font-weight: 700;
+            color: var(--sub); letter-spacing: -0.02em; line-height: 1.2;
+            text-shadow: 0 0 3px var(--map-campus), 0 0 3px var(--map-campus), 0 0 2px var(--map-campus); }
+.cm-label.g { color: #3f8a5a; }
+.cm-label.w { color: #2f7aa8; }
+.cm-pin-name { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; display: none;
+               white-space: nowrap; font-size: 12px; font-weight: 800; color: var(--primary-dark); line-height: 1.2;
+               text-shadow: 0 0 3px var(--map-campus), 0 0 3px var(--map-campus), 0 0 2px var(--map-campus); }
+.campus-map.show-zone-names .cm-pin-name { display: block; }
+.cm-ctrl { position: absolute; right: 10px; bottom: 22px; z-index: 3; display: flex; flex-direction: column; gap: 6px; }
+.cm-ctrl button { width: 36px; height: 36px; border-radius: 12px; background: var(--card); display: grid; place-items: center;
+                  box-shadow: 0 3px 10px rgba(36, 28, 22, .18); border: 1px solid var(--line); }
+.cm-ctrl button:active { transform: scale(.94); }
+.cm-ctrl svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+/* 장소 화면의 작은 지도(150px)에선 버튼을 작게 가로로 */
+#map .cm-ctrl { flex-direction: row; bottom: 8px; right: 8px; gap: 4px; }
+#map .cm-ctrl button { width: 30px; height: 30px; border-radius: 10px; }
+#map .cm-attr { left: 8px; right: auto; }
+@media (prefers-color-scheme: dark) {
+  .cm-label.g { color: #7fc79a; }
+  .cm-label.w { color: #7db8dc; }
+}
