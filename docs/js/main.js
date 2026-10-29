@@ -5,8 +5,9 @@ import * as ui from "./ui.js";
 import { runMission, icon } from "./missions.js";
 import { getRanking } from "./ranking.js";
 import { ensureProfile, getCachedProfile } from "./supa.js";
-import { subscribeFriendRequests } from "./friend.js";
-import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
+import { subscribeFriendRequests, getFriendRequest } from "./friend.js";
+import { activeKey, pairKey } from "./together.js";   // 함께 돌기 실시간 미션
+import { openNotifPanel, closeNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
          setCommentLike, pickBest, GUIDE_QUESTION, toTag } from "./community.js";
@@ -217,7 +218,18 @@ function setupNotifications() {
   if (unsubscribeFriend) unsubscribeFriend();
   unsubscribeFriend = subscribeFriendRequests({
     onIncoming: () => { ui.toast("새 알림이 도착했어요"); refreshBellBadge(); },
-    onConfirmed: (payload) => {
+    onConfirmed: async (payload) => {
+      const live = findMission(payload.mission_id);
+      if (live?.live) {   // 함께 돌기: 완료가 아니라 "같이 시작"
+        if (activeKey() === pairKey(live.id, payload.requester_id, payload.partner_id)) {
+          ui.toast("친구가 수락했어요! 둘 다 위치 인증하면 시작해요");
+          return;
+        }
+        const req = await getFriendRequest(payload.id);
+        ui.toast("친구가 함께 돌기를 수락했어요! 대운동장으로 이동해요");
+        joinTogether(live, { partnerId: payload.partner_id, partnerName: req?.partnerNickname || "친구", role: "requester" });
+        return;
+      }
       ui.toast("친구가 수락했어요! 미션이 완료됐어요");
       const pts = store.completeMission(payload.mission_id, 100) ? 100 : 0;
       if (pts) ui.reward(pts);
@@ -226,6 +238,48 @@ function setupNotifications() {
   });
   if (bellPollTimer) clearInterval(bellPollTimer);
   bellPollTimer = setInterval(refreshBellBadge, 60000);   // 60초마다 새 공지 있는지 확인
+}
+
+/* ================= 함께 돌기 (실시간) 연결 ================= */
+const findMission = (id) => allZones.flatMap((z) => z.missions).find((x) => x.id === id) || null;
+let pendingJoin = null;   // { missionId, partnerId, partnerName, role } — 구역 화면이 열리고 위치 인증 뒤에 바로 세션 시작
+
+// 알림에서 "수락하기"를 누르면(notif-ui.js) 내 앱도 그 장소로 이동해서 함께 시작
+window.addEventListener("together:accepted", async (e) => {
+  const req = await getFriendRequest(e.detail.requestId);
+  const m = req && findMission(req.mission_id);
+  if (!m?.live) return;   // 예전 방식 함께하기는 수락만으로 끝
+  closeNotifPanel();
+  joinTogether(m, { partnerId: req.requester_id, partnerName: req.partnerNickname, role: "partner" });
+});
+
+function joinTogether(m, join) {
+  if (store.isDone(m.id)) { ui.toast("이미 끝낸 미션이에요"); return; }
+  const zone = zones.find((z) => z.missions.some((x) => x.id === m.id));
+  if (!zone) { ui.toast("이 미션은 지금 테마에 열려 있지 않아요"); return; }
+  pendingJoin = { missionId: m.id, ...join };
+  openZone(zone);
+}
+
+// 미션에 넘겨주는 도구들 (함께 돌기가 지도·데모 모드를 쓴다)
+function missionCtx(extra = {}) {
+  return {
+    demo: DEMO_MODE,
+    map: () => map,
+    openMap: () => {
+      $("zone-top")?.classList.remove("collapsed");
+      if ($("btn-map")) $("btn-map").textContent = "지도 접기";
+    },
+    ...extra,
+  };
+}
+
+// 함께 돌기 중에는 일반 구역 이탈 배너 대신 세션이 직접 경고(30초 카운트다운)를 띄운다
+async function runMissionIn(zone, m, extra) {
+  const live = m.type === "together" && m.live;
+  if (live) stopZoneGeofence();
+  await runMission(m, zone, missionCtx(extra));
+  if (live) startZoneGeofence(zone);
 }
 
 function showOnboard() {
@@ -658,6 +712,13 @@ async function runZone(zone, resuming = false) {
   }
   // 인증 이후에도 계속 위치를 지켜보다가, 구역(반경) 밖으로 나가면 배너로 알리고 미션 진행을 막는다
   startZoneGeofence(zone);
+  // 친구가 함께 돌기를 수락했거나(내가 요청) 내가 수락해서 들어온 경우 → 메뉴 없이 바로 세션으로
+  const join = pendingJoin && zone.missions.find((x) => x.id === pendingJoin.missionId);
+  if (join) {
+    const j = pendingJoin;
+    pendingJoin = null;
+    await runMissionIn(zone, join, { join: j });
+  }
   await missionMenu(zone);
 }
 
@@ -820,7 +881,7 @@ async function missionMenu(zone) {
       ui.toast(`${zone.name}에서 멀어졌어요. 구역 안으로 들어와서 다시 시도해 주세요.`);
       continue;
     }
-    await runMission(zone.missions.find((m) => m.id === pick), zone);
+    await runMissionIn(zone, zone.missions.find((m) => m.id === pick));
   }
 }
 

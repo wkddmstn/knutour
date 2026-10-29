@@ -12,7 +12,7 @@ export async function sendFriendRequest(missionId, partnerCode) {
     partner_id: partner.id,
   });
   if (error) return { ok: false, reason: "error", error };
-  return { ok: true, partnerNickname: partner.nickname };
+  return { ok: true, partnerNickname: partner.nickname, partnerId: partner.id };
 }
 
 export async function confirmFriendRequest(requestId) {
@@ -22,6 +22,17 @@ export async function confirmFriendRequest(requestId) {
     .eq("id", requestId)
     .eq("status", "pending");
   return !error;
+}
+
+// 요청 한 건 + 상대방 닉네임 (함께 돌기: 수락한 쪽이 누구랑 하는지 알아야 해서)
+export async function getFriendRequest(requestId) {
+  const { data, error } = await client.from("friend_requests")
+    .select("id, mission_id, requester_id, partner_id, status").eq("id", requestId).maybeSingle();
+  if (error || !data) return null;
+  const me = getCachedProfile();
+  const otherId = data.requester_id === me?.id ? data.partner_id : data.requester_id;
+  const { data: p } = await client.from("profiles").select("nickname").eq("id", otherId).maybeSingle();
+  return { ...data, partnerNickname: p?.nickname || "친구" };
 }
 
 export async function hasConfirmedTogether(missionId) {

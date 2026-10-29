@@ -84,7 +84,11 @@ export async function openNotifPanel() {
       btn.textContent = "수락하는 중...";
       const ok = await confirmFriendRequest(btn.dataset.requestId);
       btn.textContent = ok ? "수락 완료" : "오류, 다시 시도";
-      if (ok) btn.closest(".notif-item").classList.add("notif-handled");
+      if (ok) {
+        btn.closest(".notif-item").classList.add("notif-handled");
+        // 함께 돌기 같은 실시간 미션이면 main.js가 그 장소로 이동시킨다
+        window.dispatchEvent(new CustomEvent("together:accepted", { detail: { requestId: btn.dataset.requestId } }));
+      }
       else btn.disabled = false;
     };
   });

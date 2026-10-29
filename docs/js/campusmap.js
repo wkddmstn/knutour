@@ -9,7 +9,7 @@
 //   await loadCampusData();                         // 앱 시작할 때 한 번
 //   const cm = new CampusMap(div);                  // div 크기에 맞춰 그림
 //   cm.setZones(zones, { status, onSelect });       // 장소 핀
-//   cm.setMe({ lat, lng });  cm.setRoute([{lat,lng}, ...]);  cm.setArea(zone);
+//   cm.setMe({ lat, lng });  cm.setRoute([{lat,lng}, ...]);  cm.setArea(zone);  cm.setMarks([{lat,lng,cls,html}])
 //   cm.fit([{lat,lng}, ...], 여백m) / cm.fitCampus()
 //   cm.destroy();
 //
@@ -303,6 +303,7 @@ export class CampusMap {
     };
     this.pins.forEach((p) => put(p.node, p.lat, p.lng));
     if (this.me) put(this.me.node, this.me.lat, this.me.lng);
+    (this.marks || []).forEach((m) => put(m.node, m.lat, m.lng));
     if (this.bubble) put(this.bubble.node, this.bubble.lat, this.bubble.lng);
     this.el.classList.toggle("show-zone-names", this.scale >= this.at.zone);
     if (!this._labelRaf) this._labelRaf = requestAnimationFrame(() => { this._labelRaf = 0; this.drawLabels(); });
@@ -406,6 +407,20 @@ export class CampusMap {
     if (!points?.length) return;
     this.over.insertAdjacentHTML("beforeend",
       `<path class="cm-route" d="${pathOf(points.map((p) => [p.lat, p.lng]), false)}"/>`);
+  }
+
+  // ----- 추가 표시 (함께 돌기 체크포인트·친구 위치 등) -----
+  // marks: [{ lat, lng, cls, html }] — 부를 때마다 통째로 바꾼다. 빈 배열이면 모두 지움.
+  setMarks(marks = []) {
+    (this.marks || []).forEach((m) => m.node.remove());
+    this.marks = marks.map((m) => {
+      const node = document.createElement("div");
+      node.className = "cm-mark " + (m.cls || "");
+      node.innerHTML = m.html || "";
+      this.layer.appendChild(node);
+      return { ...m, node };
+    });
+    this.place();
   }
 
   // ----- 내 위치 -----

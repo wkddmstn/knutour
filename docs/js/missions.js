@@ -2,6 +2,7 @@ import * as chat from "./chat.js";
 import { completeMission } from "./storage.js";
 import { reward, esc, showComposer } from "./ui.js";
 import { sendFriendRequest, hasConfirmedTogether } from "./friend.js";
+import * as together2 from "./together.js";   // 함께 돌기 실시간 미션 (대운동장)
 import { joinQueue, leaveQueue, waitForMatch } from "./match.js";
 import { isDone, getPhotoHashes, savePhotoHash } from "./storage.js";
 import { startAR, openPhotoStudio, photoItemsFor, MASCOTS } from "./ar.js";   // AR 호반우 (장주연)
@@ -17,8 +18,10 @@ const FIRST_TRY_BONUS = 20;
 const DUPLICATE_HASH_THRESHOLD = 10;   // 64비트 중 이만큼 이내로 다르면 "같은 사진 재사용"으로 본다
 
 // 미션 1개를 대화로 진행한다. 끝나면 점수를 기록하고 보상 효과를 보여준다.
-export async function runMission(m, zone) {
+// ctx(함께 돌기용): { demo, map(), openMap(), join: { partnerId, partnerName, role } }  — join이 있으면 코드 입력 없이 바로 세션으로
+export async function runMission(m, zone, ctx = {}) {
   // "함께하기" 미션은 상대방이 수락해야 완료되므로, 완료 처리를 여기서 바로 하지 않고 별도로 흐른다
+  if (m.type === "together" && m.live) { await togetherLive(m, zone, ctx); return; }
   if (m.type === "together") { await together(m); return; }
   if (m.type === "ar") { await arMission(m, zone); return; }   // AR 미션 (장주연)
 
@@ -99,6 +102,70 @@ async function togetherWithFriend(m) {
       : res.reason === "self" ? "본인 코드는 입력하면 안 돼! 친구 코드를 입력해줘."
       : "어, 오류가 났어. 다시 시도해줄래?";
     await chat.bot(msg);
+  }
+}
+
+/* ---------- 함께 돌기 (실시간, together.js) ---------- */
+// 친구 코드 → 친구 수락 → 둘 다 위치 인증 → 둘 다 트랙 한 바퀴 → 성공.
+// 진행 중 한 명이라도 구역 밖에 30초 넘게 있으면 실패(처음부터 다시).
+async function togetherLive(m, zone, ctx) {
+  if (isDone(m.id)) {
+    await chat.bot(`<b>${m.title}</b><br>이건 이미 끝낸 미션이야!`);
+    return;
+  }
+  const me = getCachedProfile();
+  let join = ctx.join || null;
+  const pending = together2.getPending();
+  if (!join && pending && pending.missionId === m.id) {
+    await chat.bot(`<b>${esc(pending.partnerName)}</b>랑 하던 함께 돌기가 있어. 이어서 할까?`);
+    const pick = await chat.choices([
+      { label: "이어서 하기", value: "resume" },
+      { label: "다른 친구랑 새로 하기", value: "new", ghost: true },
+    ]);
+    if (pick === "resume") join = pending;
+    else together2.clearPending();
+  }
+
+  await chat.bot(`<b>${m.title}</b><br>${m.desc || ""}`);
+  if (!join) {
+    await chat.bot("같이 돌 친구 코드 알려줄래? '내 정보' 탭에서 확인할 수 있어.");
+    while (!join) {
+      const code = await chat.ask((card, done) => {
+        card.innerHTML = `
+          <input class="text-in" placeholder="예: K7X9P2" maxlength="6" style="text-transform:uppercase">
+          <button class="chip primary">요청 보내기</button>`;
+        const input = card.querySelector("input");
+        const go = () => input.value.trim() && done(input.value.trim());
+        card.querySelector(".chip").onclick = go;
+        input.onkeydown = (e) => { if (e.key === "Enter") go(); };
+      });
+      chat.user(esc(code));
+      const res = await sendFriendRequest(m.id, code).catch(() => ({ ok: false, reason: "error" }));
+      if (res.ok) {
+        join = { partnerId: res.partnerId, partnerName: res.partnerNickname, role: "requester" };
+        await chat.bot(`<b>${esc(res.partnerNickname)}</b>한테 요청 보냈어!<br>친구가 알림에서 <b>수락</b>하면 둘 다 위치 인증하고 바로 시작해.`);
+        break;
+      }
+      await chat.bot(res.reason === "not_found" ? "그 코드를 가진 사람을 못 찾겠어. 코드 다시 확인해줄래?"
+        : res.reason === "self" ? "본인 코드는 입력하면 안 돼! 친구 코드를 입력해줘."
+        : "어, 오류가 났어. 다시 시도해줄래?");
+    }
+  } else if (join.role === "partner") {
+    await chat.bot(`<b>${esc(join.partnerName)}</b>의 함께 돌기 요청을 수락했어! 운동장 안에서 위치 인증하면 시작해.`);
+  }
+  together2.savePending({ missionId: m.id, zoneId: zone.id, ...join });
+
+  const result = await together2.runSession({
+    key: together2.pairKey(m.id, me.id, join.partnerId),
+    mission: m, zone, partnerName: join.partnerName, role: join.role,
+    demo: !!ctx.demo, map: ctx.map, onMapOpen: ctx.openMap, ask: chat.ask, onClear: chat.onClear,
+  });
+  together2.clearPending();
+  if (result === "done") {
+    if (completeMission(m.id, m.points)) reward(m.points);
+    await chat.bot(`<b>${esc(join.partnerName)}</b>랑 대운동장 한 바퀴 완주! 🎉 <b>+${m.points} XP</b>`);
+  } else {
+    await chat.bot("함께 돌기는 여기까지! 다음에 다시 도전해 보자.");
   }
 }
 
