@@ -18,10 +18,20 @@ function timeAgo(iso) {
 export async function refreshBellBadge() {
   const [a, b] = await Promise.all([unreadCount(), unreadAnnouncementCount()]);
   const total = a + b;
+  // 종은 홈 화면에만 있으니, 다른 탭에서도 새 알림을 알 수 있게 하단 "홈" 탭에 빨간 점을 찍는다
+  document.querySelector('#tabbar [data-tab="home"]')?.classList.toggle("has-unread", total > 0);
   const badge = $("bell-badge");
   if (!badge) return;
   badge.textContent = total > 9 ? "9+" : String(total);
   badge.classList.toggle("hidden", total === 0);
+}
+
+// 패널 바깥(어두운 부분)을 누르거나 Esc를 누르면 닫는다
+function onOutside(e) {
+  if (!e.target.closest("#notif-panel, #bell-btn")) closeNotifPanel();
+}
+function onEsc(e) {
+  if (e.key === "Escape") closeNotifPanel();
 }
 
 export async function openNotifPanel() {
@@ -29,6 +39,8 @@ export async function openNotifPanel() {
   if (!panel) { console.warn("notif-panel missing"); return; }
   panel.classList.remove("hidden");
   panel.innerHTML = `<div class="notif-head">알림</div><div class="notif-empty">불러오는 중...</div>`;
+  document.addEventListener("pointerdown", onOutside);
+  document.addEventListener("keydown", onEsc);
 
   const [notifs, anns] = await Promise.all([listNotifications(), listAnnouncements()]);
   const items = [
@@ -72,6 +84,8 @@ export async function openNotifPanel() {
 
 export function closeNotifPanel() {
   $("notif-panel")?.classList.add("hidden");
+  document.removeEventListener("pointerdown", onOutside);
+  document.removeEventListener("keydown", onEsc);
 }
 
 function renderItem(it) {
