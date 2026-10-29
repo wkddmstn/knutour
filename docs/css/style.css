@@ -597,6 +597,8 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 .notif-empty { padding: 32px 18px; text-align: center; color: var(--mute); font-size: 14px; }
 .notif-list { display: flex; flex-direction: column; }
 .notif-item { display: flex; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.notif-item.notif-link { cursor: pointer; transition: background .15s; }
+.notif-item.notif-link:hover { background: var(--bg); }
 .notif-item[data-kind="personal"]:not([data-read]) { background: var(--primary-weak); }
 .notif-item.notif-handled { opacity: .5; }
 .notif-icon { font-size: 18px; flex: none; }

@@ -181,6 +181,7 @@ async function init() {
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
   $("btn-back")?.addEventListener("click", () => goTab("explore"));
+  window.addEventListener("notif:goto", (e) => goTab(e.detail));   // 알림 패널에서 "내 게시글" 알림을 눌렀을 때
   $("btn-map")?.addEventListener("click", toggleMap);
 
   if (store.hasProfile()) {
