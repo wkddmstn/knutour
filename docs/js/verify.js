@@ -11,7 +11,7 @@
 import { getRule } from "./photo-rules.js";
 
 // ⬇️ Google Cloud > API 및 서비스 > 사용자 인증 정보에서 만든 API 키를 넣으세요
-const VISION_API_KEY = "CHANGE_ME_VISION_API_KEY";
+const VISION_API_KEY = "AIzaSyAb8Q4rv31_aiVWVWQ2tCd8eNKYNbflhVo";
 
 const MAX_SIDE = 1280;   // 긴 변을 이 크기로 줄여서 보낸다 (전송이 빨라지고, 인식 정확도에는 거의 영향 없음)
 
