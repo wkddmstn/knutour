@@ -316,6 +316,18 @@ body[data-view="zone"] {
 #tabbar button.on { color: var(--primary); }
 body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: none; }
 
+/* 커뮤니티 글쓰기 버튼: 탭바 바로 위 오른쪽에 떠 있는 동그란 버튼. 커뮤니티 화면에서만 보인다. */
+.fab { position: fixed; z-index: 1050; display: none; place-items: center; width: 58px; height: 58px; border-radius: 50%;
+       right: max(16px, calc(50% - 240px + 16px)); bottom: calc(80px + env(safe-area-inset-bottom));
+       background: var(--primary); color: #fff; box-shadow: var(--shadow-btn), 0 2px 6px rgba(0, 0, 0, .12);
+       transition: transform .16s var(--ease-toss), background .16s var(--ease-toss); }
+.fab svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.fab:hover { transform: translateY(-2px); }
+.fab:active { transform: scale(.92); background: var(--primary-dark); }
+body[data-view="community"] .fab { display: grid; animation: fabIn .35s var(--ease-toss); }
+body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카드가 버튼에 가려지지 않게 */
+@keyframes fabIn { from { opacity: 0; transform: scale(.6); } }
+
 /* ============ 알림 · 하단 시트 ============ */
 .toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 3000; padding: 12px 20px;
          background: rgba(36, 28, 22, .92); color: #fff; border-radius: 14px; font-size: 14px; font-weight: 600;
