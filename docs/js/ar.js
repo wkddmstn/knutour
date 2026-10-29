@@ -233,6 +233,7 @@ function injectStyle() {
   .ps-rv-bar{position:absolute;left:0;right:0;bottom:0;padding:24px 16px max(20px,env(safe-area-inset-bottom));
     background:linear-gradient(transparent,rgba(0,0,0,.75));display:flex;flex-direction:column;align-items:center;gap:10px}
   .ps-rv-row{display:flex;gap:10px;justify-content:center}
+  .ps-rv-row + .ps-rv-row{margin-top:8px}
   .ps-rv-btn{width:auto;display:flex;align-items:center;gap:6px;border:none;border-radius:999px;padding:12px 18px;font-size:15px;font-weight:700;
     color:#fff;white-space:nowrap}
   .ps-rv-btn.primary{background:#fff;color:#191f28}
@@ -722,7 +723,7 @@ const RATIOS = [
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 
-export function openPhotoStudio({ items, start, submit = false, place = "" } = {}) {
+export function openPhotoStudio({ items, start, submit = false, place = "", zoneId = null } = {}) {
   injectStyle();
   items = items || collectedItems();
 
@@ -775,6 +776,10 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
             ${submit ? `<button class="ps-rv-btn primary" id="ps-submit">✅ 이 사진으로 제출</button>` : ""}
             <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-save">⬇ 저장</button>
             <button class="ps-rv-btn ps-glass ar-hidden" id="ps-share">📤 공유</button>
+          </div>
+          <div class="ps-rv-row">
+            <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-record">📒 도감에 기록</button>
+            ${submit ? "" : `<button class="ps-rv-btn ps-glass" id="ps-community">💬 커뮤니티에 공유</button>`}
           </div>
           <p class="ps-rv-hint" id="ps-hint"></p>
         </div>
@@ -1092,6 +1097,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
       f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
       navigator.vibrate?.(50);
       lastShot = c.toDataURL("image/jpeg", 0.92);
+      recorded = null;   // 새로 찍었으니 아직 도감에 기록 안 됨
       $("ps-thumb").style.backgroundImage = `url(${lastShot})`;
       $("ps-thumb").classList.remove("empty");
       setTimeout(openReview, 250);
@@ -1127,7 +1133,26 @@ export function openPhotoStudio({ items, start, submit = false, place = "" } = {
       a.remove();
       toast("⬇ 저장했어요!");
     };
-    if (submit) $("ps-submit").onclick = () => close({ dataUrl: lastShot, mascot: current.id });
+    // 📒 도감에 기록 (사진 앨범, album.js). 미션 제출할 때도 자동으로 기록한다
+    let recorded = null;
+    async function record(silent) {
+      if (recorded) return recorded;
+      try {
+        const m = await import("./album.js");
+        recorded = await m.recordPhoto({ dataUrl: lastShot, zoneId, place, mascotId: current.id, mascotName: current.name });
+        if (!silent) toast("📒 도감에 기록했어요! (도감 > 호반우와 사진)");
+        $("ps-record").textContent = "✅ 기록됨";
+      } catch (e) { console.warn(e); if (!silent) toast("기록하지 못했어요"); }
+      return recorded;
+    }
+    $("ps-record").onclick = () => record(false);
+    if ($("ps-community")) $("ps-community").onclick = async () => {   // 기록하고 → 카메라 닫고 → 커뮤니티 글쓰기 창
+      await record(true);
+      const shot = lastShot;
+      close();
+      try { (await import("./album.js")).shareToCommunity(shot, zoneId); } catch (e) { console.warn(e); }
+    };
+    if (submit) $("ps-submit").onclick = async () => { await record(true); close({ dataUrl: lastShot, mascot: current.id }); };
     $("ps-share").onclick = async () => {
       try {
         await navigator.share({ files: [dataUrlToFile(lastShot, fileName())], title: "호반우와 함께 📸" });
@@ -1195,11 +1220,16 @@ export function openDex() {
 // 호반우 탭 아래에 다른 기능(투어 뱃지 등)을 붙일 수 있게 하는 자리. tour.js가 등록한다
 let paneExtra = null;
 export function setHobanuPaneExtra(fn) { paneExtra = fn; }
+export const getHobanuPaneExtra = () => paneExtra;
 
 // 탐색 화면의 "호반우" 탭: 사진 찍기 버튼 + 도감을 container 안에 그린다
+// 새 "도감" 화면(dex-tab.js: 도감·투어 뱃지·사진 앨범)을 그린다. 불러오지 못하면 예전 화면으로
 export function renderHobanuPane(container) {
   if (!container) return;
   injectStyle();
+  import("./dex-tab.js").then((m) => m.renderDexTab(container)).catch((e) => { console.warn("[도감]", e); oldHobanuPane(container); });
+}
+function oldHobanuPane(container) {
   const draw = () => {
     const b = dexBody();
     container.innerHTML = `
