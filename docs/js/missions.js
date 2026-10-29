@@ -1,10 +1,12 @@
 import * as chat from "./chat.js";
 import { completeMission } from "./storage.js";
-import { reward, esc } from "./ui.js";
+import { reward, esc, showComposer } from "./ui.js";
 import { sendFriendRequest, hasConfirmedTogether } from "./friend.js";
 import { joinQueue, leaveQueue, waitForMatch } from "./match.js";
 import { isDone } from "./storage.js";
 import { startAR, openPhotoStudio, photoItemsFor, MASCOTS } from "./ar.js";   // AR 호반우 (장주연)
+import { getCachedProfile } from "./supa.js";
+import { postCommunity } from "./community.js";
 
 const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝", ar: "✨" };
 export const icon = (type) => ICON[type] || "⭐";
@@ -146,37 +148,68 @@ async function togetherRandom(m) {
 async function photo(m, zone) {
   const withHob = !!(zone && MASCOTS[zone.id]);   // 이 장소에 호반우가 있으면 "호반우와 함께 찍기" 제공 (장주연)
   while (true) {
-  const file = await chat.ask((card, done) => {
-    card.innerHTML = `
-      ${withHob ? `<button class="chip primary hob-cam" style="margin-bottom:8px">🐾 호반우와 함께 찍기</button>` : ""}
-      <label class="btn-file">사진 찍기 · 선택하기
-        <input type="file" accept="image/*" capture="environment" hidden>
-      </label>
-      <img class="preview hidden" alt="미리보기">
-      <button class="chip primary hidden">이 사진으로 제출</button>`;
-    const input = card.querySelector("input");
-    const img = card.querySelector("img");
-    const send = card.querySelector(".chip");
-    let picked = null;
-    input.onchange = () => {
-      picked = input.files[0];
-      if (!picked) return;
-      img.src = URL.createObjectURL(picked);
-      img.classList.remove("hidden");
-      send.classList.remove("hidden");
-    };
-    send.onclick = () => picked && done(picked);
-    card.querySelector(".hob-cam")?.addEventListener("click", () => done("__hob"));
-  });
-  if (file === "__hob") {
-    const shot = await openPhotoStudio({ items: photoItemsFor(zone.id), start: zone.id, submit: true, place: zone.name });
-    if (!shot) continue;   // 사진을 안 고르고 닫았으면 다시 선택 화면으로
-    chat.user(`<img class="shot" src="${shot.dataUrl}" alt="제출한 사진">`);
+    const file = await chat.ask((card, done) => {
+      card.innerHTML = `
+        ${withHob ? `<button class="chip primary hob-cam" style="margin-bottom:8px">🐾 호반우와 함께 찍기</button>` : ""}
+        <label class="btn-file">사진 찍기 · 선택하기
+          <input type="file" accept="image/*" capture="environment" hidden>
+        </label>
+        <img class="preview hidden" alt="미리보기">
+        <button class="chip primary hidden">이 사진으로 제출</button>`;
+      const input = card.querySelector("input");
+      const img = card.querySelector("img");
+      const send = card.querySelector(".chip");
+      let picked = null;
+      input.onchange = () => {
+        picked = input.files[0];
+        if (!picked) return;
+        img.src = URL.createObjectURL(picked);
+        img.classList.remove("hidden");
+        send.classList.remove("hidden");
+      };
+      send.onclick = () => picked && done(picked);
+      card.querySelector(".hob-cam")?.addEventListener("click", () => done("__hob"));
+    });
+
+    let shot;   // 커뮤니티에 올릴 때 쓸 사진 (File 객체 또는 dataURL 문자열)
+    if (file === "__hob") {
+      const studio = await openPhotoStudio({ items: photoItemsFor(zone.id), start: zone.id, submit: true, place: zone.name });
+      if (!studio) continue;   // 사진을 안 고르고 닫았으면 다시 선택 화면으로
+      shot = studio.dataUrl;
+      chat.user(`<img class="shot" src="${studio.dataUrl}" alt="제출한 사진">`);
+    } else {
+      shot = file;
+      chat.user(`<img class="shot" src="${URL.createObjectURL(file)}" alt="제출한 사진">`);
+    }
+
+    await offerCommunityUpload(zone, shot);
     return;
   }
-  chat.user(`<img class="shot" src="${URL.createObjectURL(file)}" alt="제출한 사진">`);
-  return;
-  }
+}
+
+// 사진 미션을 마친 뒤, 방금 찍은 사진을 커뮤니티 게시판에도 바로 올릴 수 있는 선택지를 준다.
+// "업로드" 버튼을 누르면 커뮤니티 글쓰기 창이 뜨고, 올리거나 닫으면 자동으로 미션 대화로 돌아온다.
+async function offerCommunityUpload(zone, shot) {
+  if (!shot) return;
+  const pick = await chat.choices([
+    { label: "📤 커뮤니티에도 올리기", value: "up" },
+    { label: "다음으로", value: "skip", ghost: true },
+  ]);
+  if (pick !== "up") return;
+
+  await new Promise((resolve) => {
+    showComposer({
+      zoneId: zone?.id || null,
+      zoneName: zone?.name || "",
+      lockZone: true,
+      photo: shot,
+      onSubmit: async (message) => {
+        const nickname = getCachedProfile()?.nickname || "익명";
+        return await postCommunity(zone?.id || null, nickname, message, shot);
+      },
+      onClose: resolve,
+    });
+  });
 }
 
 /* ---------- 음성 ---------- */

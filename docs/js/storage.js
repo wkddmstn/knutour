@@ -15,6 +15,7 @@ const empty = () => ({
   chatLog: {},     // { zoneId: htmlString }  구역별 대화 기록 스냅샷 (새로고침해도 유지)
   daily: { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null, correct: false } },  // 데일리 출석체크 / 퀴즈
   levelLog: [],    // [{ level, at }]  레벨업할 때마다 기록 (내 정보 탭의 "레벨 기록"에 사용)
+  hiddenClaims: {}, // { hiddenMissionId: "YYYY-MM-DD" }  히든미션을 오늘 이미 했는지
 });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -182,4 +183,18 @@ export function getLevelTable() {
 // 내가 실제로 각 레벨을 언제 찍었는지 기록 (레벨업 시점에 저장됨)
 export function getLevelLog() {
   return load().levelLog || [];
+}
+
+/* ---------- 히든미션 (홈 화면에 가끔 나타나는 보너스 미션) ---------- */
+// 지금은 데모라 "하루에 한 번"만 체크한다. 나중에 특정 시간대 조건을 추가하고 싶으면
+// isHiddenMissionAvailable 안에 현재 시각 체크를 더 넣으면 된다 (예: 12~13시에만 true).
+export function isHiddenMissionAvailable(id) {
+  const s = load();
+  return (s.hiddenClaims || {})[id] !== todayStr();
+}
+export function claimHiddenMission(id) {
+  const s = load();
+  s.hiddenClaims = s.hiddenClaims || {};
+  s.hiddenClaims[id] = todayStr();
+  save(s);
 }

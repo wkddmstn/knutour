@@ -86,7 +86,8 @@ export function renderOnboard(depts, onSubmit) {
 }
 
 /* ---------- 홈: 대시보드 ---------- */
-export function renderDashboard(zones, announcements, onGoQuest) {
+// hidden: 지금 활성화된 히든미션 정보({emoji,title,desc}) 또는 null. onHidden: "만나러 가기" 버튼 핸들러.
+export function renderDashboard(zones, announcements, onGoQuest, hidden = null, onHidden = null) {
   const st = getState();
   const lv = getLevel(st.score);
   // AR 미션이 생기면서 구역마다 미션 개수가 달라져서(1개 또는 2개), 미션 개수 합으로 세면 숫자가 헷갈린다.
@@ -110,6 +111,13 @@ export function renderDashboard(zones, announcements, onGoQuest) {
       ${nextZone ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>` : ""}
       <button id="btn-go-quest" class="btn cta-glow" style="margin-top:18px">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
+    ${hidden ? `
+    <div class="card hidden-mission-card">
+      <div class="sum-label">✨ 히든미션</div>
+      <div class="sum-big" style="font-size:18px">${esc(hidden.emoji)} ${esc(hidden.title)}</div>
+      <p class="sum-foot" style="margin:6px 0 12px">${esc(hidden.desc)}</p>
+      <button id="btn-hidden-mission" class="btn cta-glow">만나러 가기</button>
+    </div>` : ""}
     <div id="daily-section"></div>
     <h3 class="sec">공지사항</h3>
     <div class="list-card">
@@ -123,6 +131,7 @@ export function renderDashboard(zones, announcements, onGoQuest) {
         </div>`}
     </div>`;
   $("btn-go-quest").onclick = onGoQuest;
+  if (hidden) $("btn-hidden-mission").onclick = onHidden;
 }
 /* ---------- 퀘스트: 지도 · 구역 목록 · 랭킹 ---------- */
 // 탭을 열면 바로 지도+구역 목록이 보인다. "오늘 할 일(메인 미션/데일리)"은 홈 탭이 전담하고,
@@ -132,7 +141,6 @@ export function renderQuestShell(cleared = 0, total = 0) {
     <div class="seg quest-seg">
       <button data-m="map" class="on">지도</button>
       <button data-m="rank">랭킹</button>
-      <button data-m="hobanu">호반우</button>
     </div>
     <div id="quest-map-pane">
       <h1 class="sec campus-title">캠퍼스 지도</h1>
@@ -148,8 +156,7 @@ export function renderQuestShell(cleared = 0, total = 0) {
       <h3 class="sec">구역 목록</h3>
       <div id="zone-list"></div>
     </div>
-    <div id="quest-rank-pane" class="hidden"></div>
-    <div id="quest-hobanu-pane" class="hidden"></div>`;
+    <div id="quest-rank-pane" class="hidden"></div>`;
 }
 
 // 구역 목록: 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과
@@ -277,7 +284,9 @@ export function renderRankInto(container, rows, mode, onMode) {
 }
 
 /* ---------- 커뮤니티 ---------- */
-export function renderCommunity(announcements) {
+// posts: community_posts 테이블 최신순 목록, filter: "all" | "mine"
+export function renderCommunity(announcements, zones, posts, filter) {
+  const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   $("view-community").innerHTML = `
     <h1 class="sec" style="margin-top:4px">커뮤니티</h1>
     <p class="map-guide">공지사항과 학교 소식을 확인해 보세요.</p>
@@ -290,7 +299,89 @@ export function renderCommunity(announcements) {
           <img src="img/mascot/polarbear-friends.png" alt="호반우와 친구들" style="width:140px;margin:0 auto 10px">
           <p style="color:var(--mute);margin:0">아직 공지가 없어요</p>
         </div>`}
+    </div>
+
+    <h3 class="sec">💬 게시판</h3>
+    <p class="map-guide">캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요.</p>
+    <div class="seg-sub" style="margin:10px 0">
+      <button data-f="all" class="${filter === "all" ? "on" : ""}">전체</button>
+      <button data-f="mine" class="${filter === "mine" ? "on" : ""}">내 글</button>
+    </div>
+    <button id="btn-compose" class="btn" style="margin-bottom:14px">✏️ 글쓰기 · 사진 올리기</button>
+    <div class="list-card">
+      ${posts.length ? posts.map((p) => `
+        <div class="gb-entry">
+          ${p.photo_url ? `<img class="gb-photo" src="${esc(p.photo_url)}" alt="">` : ""}
+          <div class="gb-body">
+            <b>${esc(p.nickname)}${p.zone_id ? ` · <span style="color:var(--primary)">📍 ${esc(zoneName(p.zone_id))}</span>` : ""}</b>
+            <span>${esc(p.message)}</span>
+          </div>
+        </div>`).join("") : `
+        <div class="card" style="text-align:center;margin:0">
+          <p style="color:var(--mute);margin:0">${filter === "mine" ? "아직 올린 글이 없어요" : "아직 글이 없어요. 첫 글을 남겨보세요!"}</p>
+        </div>`}
     </div>`;
+}
+
+/* ---------- 커뮤니티 글쓰기 (일반 글쓰기 + 미션 사진 업로드 공용) ---------- */
+// zones: [{id,name}] 배열을 주면 장소 선택 드롭다운이 뜬다. lockZone이 true면 zoneName 하나만 고정 표시(선택 불가).
+// photo를 미리 주면(File 객체 또는 "data:"로 시작하는 dataURL) 사진 선택 없이 바로 미리보기만 보여준다.
+// onSubmit(message, photo, zoneId) => Promise<boolean>. onClose()는 모달이 닫힐 때(성공/취소 상관없이) 한 번 호출된다.
+export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZone = false, photo = null, onSubmit, onClose }) {
+  const m = $("modal");
+  m.classList.remove("hidden");
+  m.classList.add("modal-center");
+
+  const photoSrc = (p) => (typeof p === "string" ? p : URL.createObjectURL(p));
+
+  m.innerHTML = `
+    <div class="modal-card pop-in" style="text-align:left">
+      <h2 style="font-size:18px;text-align:center">${photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기"}</h2>
+      ${!lockZone && zones ? `
+        <select id="cw-zone" class="text-in" style="margin-bottom:8px">
+          <option value="">📍 장소 선택 안 함</option>
+          ${zones.map((z) => `<option value="${esc(z.id)}" ${z.id === zoneId ? "selected" : ""}>${esc(z.name)}</option>`).join("")}
+        </select>` : (zoneName ? `<div class="sum-foot" style="margin-bottom:8px">📍 ${esc(zoneName)}</div>` : "")}
+      ${photo
+        ? `<img class="gb-photo-lg" src="${photoSrc(photo)}" alt="">`
+        : `<label class="btn-file small">📷 사진 추가 (선택)<input id="cw-photo" type="file" accept="image/*" hidden></label>
+           <span id="cw-photo-name" class="sum-foot" style="margin:4px 0 0;display:block"></span>`}
+      <textarea id="cw-msg" class="text-in" placeholder="무슨 얘기를 남길까요?" maxlength="200" rows="3" style="margin-top:10px"></textarea>
+      <button id="cw-submit" class="btn" style="margin-top:10px">게시하기</button>
+      <button id="cw-close" class="btn alt" style="margin-top:8px">닫기</button>
+    </div>`;
+
+  let pickedPhoto = photo;
+  $("cw-photo")?.addEventListener("change", (e) => {
+    pickedPhoto = e.target.files[0] || null;
+    $("cw-photo-name").textContent = pickedPhoto ? pickedPhoto.name : "";
+  });
+
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = "";
+    onClose?.();
+  };
+  $("cw-close").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
+
+  $("cw-submit").onclick = async () => {
+    const msg = $("cw-msg").value.trim();
+    if (!msg && !pickedPhoto) { toast("글이나 사진 중 하나는 있어야 해요."); return; }
+    const zid = lockZone ? zoneId : ($("cw-zone")?.value || null);
+    const btn = $("cw-submit");
+    btn.disabled = true;
+    btn.textContent = "올리는 중...";
+    const ok = await onSubmit(msg, pickedPhoto, zid);
+    if (ok) { close(); toast("게시글을 올렸어요!"); }
+    else {
+      btn.disabled = false;
+      btn.textContent = "게시하기";
+      toast("게시에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
 }
 
 /* ---------- 내 정보 ---------- */
@@ -439,61 +530,6 @@ export function setGeofenceWarning(show, zoneName = "") {
   }
   geoBanner.textContent = `📍 ${zoneName ? zoneName + "에서 " : ""}멀어졌어요. 구역 안으로 들어와 주세요.`;
   geoBanner.classList.toggle("show", !!show);
-}
-
-/* ---------- 구역별 방명록 ---------- */
-// entries: 최신순 글 목록, onSubmit(message, photoFile) => Promise<boolean>(성공 여부)
-export function showGuestbook(zoneName, entries, onSubmit) {
-  const m = $("modal");
-  m.classList.remove("hidden");
-  m.classList.add("modal-center");
-
-  const listHtml = entries.length
-    ? entries.map((e) => `
-        <div class="gb-entry">
-          ${e.photo_url ? `<img class="gb-photo" src="${esc(e.photo_url)}" alt="">` : ""}
-          <div class="gb-body"><b>${esc(e.nickname)}</b><span>${esc(e.message)}</span></div>
-        </div>`).join("")
-    : `<p class="sum-foot" style="text-align:center">아직 글이 없어요. 첫 글을 남겨보세요!</p>`;
-
-  m.innerHTML = `
-    <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:18px;text-align:center">📖 ${esc(zoneName)} 방명록</h2>
-      <div class="gb-list">${listHtml}</div>
-      <div class="gb-form">
-        <textarea id="gb-input" class="text-in" placeholder="이 장소에 한마디 남겨보세요" maxlength="200" rows="2"></textarea>
-        <div class="gb-form-row">
-          <label class="btn-file small">📷 사진 추가<input id="gb-photo" type="file" accept="image/*" hidden></label>
-          <span id="gb-photo-name" class="sum-foot" style="margin:0"></span>
-        </div>
-        <button id="gb-submit" class="btn" style="margin-top:8px">남기기</button>
-      </div>
-      <button id="gb-close" class="btn alt" style="margin-top:10px">닫기</button>
-    </div>`;
-
-  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
-  $("gb-close").onclick = close;
-  m.onclick = (e) => { if (e.target === m) close(); };
-
-  let pickedPhoto = null;
-  $("gb-photo").onchange = (e) => {
-    pickedPhoto = e.target.files[0] || null;
-    $("gb-photo-name").textContent = pickedPhoto ? pickedPhoto.name : "";
-  };
-  $("gb-submit").onclick = async () => {
-    const msg = $("gb-input").value.trim();
-    if (!msg) return;
-    const btn = $("gb-submit");
-    btn.disabled = true;
-    btn.textContent = "올리는 중...";
-    const ok = await onSubmit(msg, pickedPhoto);
-    if (!ok) {
-      btn.disabled = false;
-      btn.textContent = "남기기";
-      toast("글 등록에 실패했어요. 잠시 후 다시 시도해 주세요.");
-    }
-    // 성공하면 onSubmit 쪽에서 showGuestbook을 새로고침된 목록으로 다시 호출해 준다
-  };
 }
 
 export function updateDebug(pos, r) {
