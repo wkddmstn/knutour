@@ -341,8 +341,8 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .fab svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .fab:hover { transform: translateY(-2px); }
 .fab:active { transform: scale(.92); background: var(--primary-dark); }
-body[data-view="community"] .fab { display: grid; animation: fabIn .35s var(--ease-toss); }
-body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카드가 버튼에 가려지지 않게 */
+body[data-view="board"] .fab { display: grid; animation: fabIn .35s var(--ease-toss); }
+body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가 버튼에 가려지지 않게 */
 @keyframes fabIn { from { opacity: 0; transform: scale(.6); } }
 
 /* ============ 알림 · 하단 시트 ============ */
@@ -453,21 +453,13 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 /* 질문 게시판: Q. 표시, 베스트 답변 미리보기, 가이드 예시 */
 .q-mark { margin-right: 6px; color: var(--primary); font-weight: 800; }
 .q-post .post-text { font-weight: 600; }
-.act-hint { align-self: center; margin-left: auto; padding-right: 8px; font-size: 12px; color: var(--mute); }
-.best-ans { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 2px; padding: 12px 14px;
-            text-align: left; background: var(--amber-weak); border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent);
-            border-radius: 14px; transition: transform .12s var(--ease-toss); }
+/* 질문: 베스트 답변은 회색 한 줄 미리보기 (누르면 답변 전체) */
+.best-ans { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 2px; padding: 10px 12px;
+            text-align: left; background: var(--cream-weak); border-radius: 12px; transition: transform .12s var(--ease-toss); }
 .best-ans:active { transform: scale(.98); }
-.best-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.best-top b { font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.best-badge { flex: none; display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--amber);
-              color: #fff; font-size: 11px; font-weight: 800; letter-spacing: -.01em; }
-.best-like { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; flex: none;
-             color: var(--primary); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.best-like svg { width: 14px; height: 14px; fill: currentColor; }
-.best-text { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: break-word;
-             display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.best-more { font-size: 12px; font-weight: 600; color: var(--amber); }
+.best-badge { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--primary-weak);
+              color: var(--primary); font-size: 11px; font-weight: 800; }
+.best-text { min-width: 0; font-size: 13.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .post.guide { border-style: dashed; border-color: color-mix(in srgb, var(--primary) 35%, var(--line)); }
 .guide-ribbon { padding: 8px 14px; background: var(--primary-weak); color: var(--primary-dark); font-size: 12px; font-weight: 700; }
@@ -1057,3 +1049,18 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 .jelly-emoji { font-size: 20px; line-height: 1; }/* 내 정보 카드: 경험치 막대 아래 총 XP · 다음 레벨까지 */
 .me-xp-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13px; color: var(--sub); }
 .me-xp-line b { font-size: 15px; color: var(--primary); }
+/* ============ 커뮤니티 첫 화면: 게시판 카드 (최근 글 미리보기) ============ */
+.board-card { display: block; width: 100%; text-align: left; margin-bottom: 12px; padding: 16px 18px; transition: transform .12s var(--ease-toss); }
+.board-card:active { transform: scale(.985); }
+.bc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.bc-head b { font-size: 17px; }
+.bc-more { font-size: 13px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.bc-sub { display: block; margin-top: 2px; font-size: 13px; color: var(--mute); }
+.bc-empty { display: block; margin-top: 12px; font-size: 13px; color: var(--sub); }
+.bp-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.bp-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.bp-thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--cream-weak); }
+.bp-body { min-width: 0; flex: 1; }
+.bp-text { display: block; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bp-text .q-mark { margin-right: 4px; }
+.bp-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

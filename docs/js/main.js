@@ -10,7 +10,7 @@ import { activeKey, pairKey } from "./together.js";   // 함께 돌기 실시간
 import { openNotifPanel, closeNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
-         setCommentLike, pickBest, GUIDE_QUESTION, toTag } from "./community.js";
+         setCommentLike, pickBest, toTag } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";   // 캠퍼스 일러스트 지도
 import * as themes from "./themes.js";   // 테마(시즌)별 미션
@@ -294,9 +294,10 @@ function showOnboard() {
 
 /* ================= 탭 이동 ================= */
 // 탭 4개: home(홈) · dex(도감) · community(커뮤니티) · me(내 정보)
-// 상세 화면 2개: explore(홈 > 캠퍼스 탐험 지도 > 미션 하러 가기) · rank(커뮤니티 > 내 순위 > 전체 랭킹)
+// 상세 화면 3개: explore(홈 > 캠퍼스 탐험 지도 > 미션 하러 가기) · rank(커뮤니티 > 내 순위 > 전체 랭킹)
+//               board(커뮤니티 > 자유게시판 / 질문 카드)
 // 상세 화면의 "‹" 버튼은 자기가 나온 탭으로 돌아간다.
-const BACK_TO = { explore: "home", rank: "community" };
+const BACK_TO = { explore: "home", rank: "community", board: "community" };
 async function goTab(tab, opts = {}) {
   if (tab === "quest") tab = "explore";   // 예전 이름으로 불러도 동작하게
   leaveZone();
@@ -328,25 +329,29 @@ async function goTab(tab, opts = {}) {
     ui.showView("dex");
     refreshBellBadge();
   } else if (tab === "community") {
-    await renderCommunityTab();
+    await renderCommunityHome();
     ui.showView("community");
     refreshBellBadge();
+  } else if (tab === "board") {
+    // opts: { board: "post" | "question", filter: "all" | "mine", tag } — 안 주면 지금 상태 그대로
+    if (opts.board) communityBoard = opts.board;
+    if (opts.board || opts.filter) { communityFilter = opts.filter || "all"; communityTag = opts.tag || null; }
+    await renderCommunityTab();
+    ui.showView("board");
   } else if (tab === "rank") {
     ui.renderRankView();
     ui.showView("rank");
     showRank(opts.mode || (themes.currentTheme() ? "theme" : "total"));
   } else if (tab === "me") {
     ui.renderMe(allZones, onReset, () => {
-      communityBoard = "post";
-      communityFilter = "mine";
-      communityTag = null;
-      goTab("community");
+      goTab("board", { board: "post", filter: "mine" });
     });
     refreshBellBadge();
     ui.showView("me");
   }
   // 상세 화면의 뒤로 버튼 연결
-  if (BACK_TO[tab]) $("view-" + tab)?.querySelector("[data-back]")?.addEventListener("click", () => goTab(BACK_TO[tab]));
+  // (게시판 화면은 글 목록을 다시 그릴 때마다 renderCommunityTab()이 직접 연결한다)
+  if (BACK_TO[tab] && tab !== "board") $("view-" + tab)?.querySelector("[data-back]")?.addEventListener("click", () => goTab(BACK_TO[tab]));
 }
 
 /* ================= 특별 미션 (홈 화면, 그날 하루만) ================= */
@@ -401,6 +406,24 @@ async function startHiddenMission(h) {
 }
 
 /* ================= 커뮤니티 탭 ================= */
+// 첫 화면: 내 순위 + 게시판 카드 2개(최근 글 3개씩 미리보기). 카드를 누르면 게시판 상세 화면으로.
+async function renderCommunityHome() {
+  const [posts, questions] = await Promise.all([
+    listPosts({ kind: "post", limit: 3 }),
+    listPosts({ kind: "question", limit: 3 }),
+  ]);
+  ui.renderCommunityHome(allZones, posts, questions);
+  $("view-community").querySelectorAll("[data-open-board]").forEach((b) => {
+    b.onclick = () => goTab("board", { board: b.dataset.openBoard });
+  });
+  $("btn-rank-all")?.addEventListener("click", () => goTab("rank"));
+  // 내 순위 카드: 랭킹은 서버에서 받아오니 카드를 먼저 그려 두고 숫자는 받아오는 대로 채운다
+  Promise.all([getRanking("total"), getRanking("dept")])
+    .then(([t, d]) => ui.fillRankHero(t, d))
+    .catch(() => ui.fillRankHero([], []));
+}
+
+// 게시판 상세 화면 (자유게시판 / 질문)
 async function renderCommunityTab() {
   const isQuestion = communityBoard === "question";
   // 태그가 장소 이름이면 그 장소(zone_id)로 올린 글도 함께 찾는다
@@ -410,28 +433,13 @@ async function renderCommunityTab() {
     onlyMine: communityFilter === "mine",
     tag: communityTag ? { tag: communityTag, zoneId: tagZone?.id || null } : null,
   });
-  // 질문 게시판 "전체"에는 맨 위에 예시 질문(가이드)을 고정해서 어떻게 쓰는지 보여준다
-  if (isQuestion && communityFilter === "all" && !communityTag) posts.unshift(structuredClone(GUIDE_QUESTION));
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
   ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag }, myId);
-  document.querySelectorAll("#view-community [data-board]").forEach((b) => {
-    b.onclick = () => {
-      if (communityBoard === b.dataset.board) return;
-      communityBoard = b.dataset.board;
-      communityFilter = "all";
-      communityTag = null;
-      renderCommunityTab();
-    };
-  });
-  document.querySelectorAll("#view-community .filter-chip").forEach((b) => {
+  $("view-board").querySelector("[data-back]")?.addEventListener("click", () => goTab("community"));
+  document.querySelectorAll("#view-board .filter-chip").forEach((b) => {
     b.onclick = () => { communityFilter = "all"; communityTag = null; renderCommunityTab(); };
   });
-  $("btn-rank-all")?.addEventListener("click", () => goTab("rank"));
-  // 내 순위 카드: 랭킹은 서버에서 받아오니 카드를 먼저 그려 두고 숫자는 받아오는 대로 채운다
-  Promise.all([getRanking("total"), getRanking("dept")])
-    .then(([t, d]) => ui.fillRankHero(t, d))
-    .catch(() => ui.fillRankHero([], []));
 
   // 좋아요는 누르자마자 화면에 반영하고(낙관적 업데이트), 서버 저장에 실패하면 되돌린다
   const pending = new Set();
@@ -475,14 +483,14 @@ async function renderCommunityTab() {
 
   // 사진은 두 번 빠르게 탭하면 좋아요(이미 눌렀으면 하트 효과만). 모바일·PC 모두 click 두 번으로 판단한다.
   let lastTap = { id: null, t: 0 };
-  $("view-community").onclick = async (e) => {
+  $("view-board").onclick = async (e) => {
     // #해시태그를 누르면 그 태그(장소)의 방문 기록만 모아 본다
     const tagEl = e.target.closest("[data-tag]");
     if (tagEl) {
       communityTag = tagEl.dataset.tag;
       communityFilter = "all";
       await renderCommunityTab();
-      document.querySelector("#view-community .filter-chip")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.querySelector("#view-board .filter-chip")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     const el = e.target.closest("[data-act]");

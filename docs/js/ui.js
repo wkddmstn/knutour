@@ -12,9 +12,9 @@ export const esc = (s) =>
 
 /* ---------- 화면 전환 ---------- */
 // 탭 화면 4개(home·dex·community·me) + 카드 버튼으로 여는 상세 화면(explore·rank) + 구역(zone)
-const VIEWS = ["onboard", "home", "dex", "community", "me", "explore", "rank", "zone"];
+const VIEWS = ["onboard", "home", "dex", "community", "me", "explore", "rank", "board", "zone"];
 // 상세 화면에 있을 때 탭바에서 어느 탭을 켜 둘지 (어느 탭에서 들어왔는지 보이게)
-const PARENT_TAB = { explore: "home", rank: "community" };
+const PARENT_TAB = { explore: "home", rank: "community", board: "community" };
 export function showView(name) {
   VIEWS.forEach((v) => $("view-" + v)?.classList.toggle("hidden", v !== name));
   document.body.dataset.view = name;
@@ -452,21 +452,15 @@ function postFootHtml(p) {
       ${p.like_count ? `<b class="like-line">좋아요 ${p.like_count}개</b>` : ""}
       <button class="comment-line" type="button" data-act="comment">${p.comment_count ? `댓글 ${p.comment_count}개 모두 보기` : "첫 댓글을 남겨보세요"}</button>`;
   }
+  // 질문: 베스트 답변 한 줄 미리보기 (누르면 답변 전체)
   if (p.best) {
-    const others = p.comment_count - 1;
     return `
       <button class="best-ans" type="button" data-act="comment">
-        <span class="best-top">
-          <span class="best-badge">👑 베스트 답변</span>
-          <b>${esc(p.best.nickname)}</b>
-          <span class="best-like">${ICON_HEART}${p.best.like_count}</span>
-        </span>
-        <span class="best-text">${esc(p.best.message)}</span>
-        <span class="best-more">${others > 0 ? `다른 답변 ${others}개 더 보기` : "답변 보기"}</span>
+        <span class="best-badge">베스트</span><span class="best-text">${esc(p.best.message)}</span>
       </button>`;
   }
   return `<button class="comment-line" type="button" data-act="comment">${
-    p.comment_count ? `답변 ${p.comment_count}개 보기 · 도움이 된 답변에 ♥를 눌러주세요` : "아직 답변이 없어요 · 첫 답변을 남겨보세요"}</button>`;
+    p.comment_count ? `답변 ${p.comment_count}개 보기` : "첫 답변을 남겨보세요"}</button>`;
 }
 
 // 본문 속 #해시태그를 눌러서 모아 볼 수 있는 버튼으로 바꾼다. esc() 뒤에 돌리므로 "&#39;" 같은 엔티티는
@@ -498,22 +492,33 @@ function postCardHtml(p, zoneName, myId) {
         <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
                 aria-pressed="${p.liked}" aria-label="${q ? "나도 궁금해요" : "좋아요"}">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
         <button class="act act-comment" type="button" data-act="comment" aria-label="${q ? "답변" : "댓글"}">${ICON_COMMENT}<span class="act-n">${p.comment_count || ""}</span></button>
-        ${q && p.like_count ? `<span class="act-hint">${p.like_count}명이 궁금해해요</span>` : ""}
       </div>
       <div class="post-foot">${postFootHtml(p)}</div>
     </article>`;
 }
 
-// board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
-// myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
-// 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
-// 맨 위는 "내 순위" 대표 카드(누르면 전체 랭킹 상세 화면), 그 아래 게시판.
-// "내 글만 보기"는 탭 안의 탭으로 두지 않고 내 정보 > 내가 쓴 글에서 들어오게 했다 (들어오면 위에 칩이 뜸).
-// tag: 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자 (위에 "#일청담 · N개" 칩이 뜨고 ✕로 해제)
-export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null } = {}, myId = null) {
+// 커뮤니티 탭 첫 화면: 내 순위 카드 + 게시판 카드 2개(최근 글 몇 개 미리보기). 카드를 누르면 게시판 상세 화면(board)으로.
+// posts / questions: 각 게시판 최근 글 (listPosts 결과, 최신순)
+export function renderCommunityHome(zones, posts, questions) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
-  const q = board === "question";
-  const count = posts.filter((p) => !p.guide).length;
+  const preview = (p) => {
+    const q = p.kind === "question";
+    const text = String(p.message || (p.photo_url ? "사진을 올렸어요" : "")).replace(/\s+/g, " ");
+    return `<li class="bp-row">
+      ${!q && p.photo_url ? `<img class="bp-thumb" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ""}
+      <span class="bp-body">
+        <span class="bp-text">${q ? `<b class="q-mark">Q.</b>` : ""}${esc(text)}</span>
+        <span class="bp-meta">${esc(p.nickname)} · ${timeAgo(p.created_at)}${p.zone_id ? ` · ${esc(toTag(zoneName(p.zone_id)))}` : ""}${
+          q ? ` · 답변 ${p.comment_count || 0}` : p.comment_count ? ` · 댓글 ${p.comment_count}` : ""}</span>
+      </span>
+    </li>`;
+  };
+  const boardCard = (board, title, sub, list, empty) => `
+    <button type="button" class="card board-card" data-open-board="${board}">
+      <span class="bc-head"><b>${title}</b><span class="bc-more">전체 보기 ›</span></span>
+      <span class="bc-sub">${sub}</span>
+      ${list.length ? `<ul class="bp-list">${list.map(preview).join("")}</ul>` : `<span class="bc-empty">${empty}</span>`}
+    </button>`;
   $("view-community").innerHTML = `
     <div class="card card-hero rank-hero" id="rank-hero">
       <div class="qm-head"><span class="qm-title">🏆 내 순위</span></div>
@@ -524,17 +529,28 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
       <button id="btn-rank-all" class="btn alt-ghost">전체 랭킹 보기</button>
     </div>
     <h3 class="sec">게시판</h3>
-    <div class="seg" role="tablist" style="margin:0 0 6px">
-      <button data-board="post" role="tab" aria-selected="${!q}" class="${q ? "" : "on"}">자유게시판</button>
-      <button data-board="question" role="tab" aria-selected="${q}" class="${q ? "on" : ""}">❓ 질문</button>
-    </div>
+    ${boardCard("post", "자유게시판", "캠퍼스 이야기와 호반우 인증샷", posts, "아직 글이 없어요. 첫 글을 남겨보세요!")}
+    ${boardCard("question", "질문", "캠퍼스·미션에 대해 궁금한 것", questions, "아직 질문이 없어요. 처음으로 물어보세요!")}`;
+}
+
+// 게시판 상세 화면 (커뮤니티 > 자유게시판 / 질문)
+// board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
+// myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
+// 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
+// tag: 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자 (위에 "#일청담 · N개" 칩이 뜨고 ✕로 해제)
+export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null } = {}, myId = null) {
+  const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
+  const q = board === "question";
+  const count = posts.length;
+  $("view-board").innerHTML = `
+    ${subHeader(q ? "질문" : "자유게시판")}
     ${tag
       ? `<button type="button" class="filter-chip tag-chip" data-f="all"><b>#${esc(tag)}</b> 방문 기록 ${count}개 <span aria-hidden="true">✕</span><span class="sr-only">해시태그 모아 보기 끄기</span></button>`
       : filter === "mine"
       ? `<button type="button" class="filter-chip" data-f="all">${q ? "내 질문" : "내가 쓴 글"}만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">전체 보기</span></button>`
       : `<p class="map-guide">${q
-        ? "캠퍼스·미션에 대해 궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변으로 올라가요."
-        : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 나눠보세요. #장소 태그를 누르면 그곳의 방문 기록만 모아 볼 수 있어요."}</p>`}
+        ? "궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변이 돼요."
+        : "#장소 태그를 누르면 그곳의 방문 기록만 모아 볼 수 있어요."}</p>`}
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
@@ -561,7 +577,7 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
 
 // 좋아요/댓글 수가 바뀌었을 때 화면 전체를 다시 그리지 않고 그 글 카드만 고친다 (스크롤 위치 유지)
 export function updatePostCard(p, { pop = false } = {}) {
-  const card = document.querySelector(`#view-community [data-post="${CSS.escape(p.id)}"]`);
+  const card = document.querySelector(`#view-board [data-post="${CSS.escape(p.id)}"]`);
   if (!card) return;
   const like = card.querySelector(".act-like");
   like.classList.toggle("on", p.liked);
@@ -569,19 +585,12 @@ export function updatePostCard(p, { pop = false } = {}) {
   like.querySelector(".act-n").textContent = p.like_count || "";
   if (pop) { like.classList.remove("pop"); void like.offsetWidth; like.classList.add("pop"); }
   card.querySelector(".act-comment .act-n").textContent = p.comment_count || "";
-  const hint = card.querySelector(".act-hint");
-  if (p.kind === "question") {
-    if (p.like_count) {
-      const h = hint || card.querySelector(".post-actions").appendChild(Object.assign(document.createElement("span"), { className: "act-hint" }));
-      h.textContent = `${p.like_count}명이 궁금해해요`;
-    } else hint?.remove();
-  }
   card.querySelector(".post-foot").innerHTML = postFootHtml(p);
 }
 
 // 사진 더블탭 시 가운데 큰 하트가 톡 튀어나왔다 사라지는 효과
 export function heartBurst(postId) {
-  const b = document.querySelector(`#view-community [data-post="${CSS.escape(postId)}"] .heart-burst`);
+  const b = document.querySelector(`#view-board [data-post="${CSS.escape(postId)}"] .heart-burst`);
   if (!b) return;
   b.classList.remove("go"); void b.offsetWidth; b.classList.add("go");
 }
