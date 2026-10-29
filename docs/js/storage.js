@@ -2,10 +2,10 @@ import { client, getCachedProfile } from "./supa.js";
 
 const KEY = "knu-quest-v2";
 
-// 로컬 테스트 버전 전용: 탭마다 "다른 사람"으로 테스트하기 위해 sessionStorage를 씁니다.
-// (localStorage였다면 두 탭이 같은 브라우저 저장공간을 공유해서 같은 사람으로 보였을 거예요.)
-// 실제 배포(knu-tour 폴더, 백엔드 없는 1인용 버전)에서는 이 줄을 다시 localStorage로 되돌리세요.
-const STORE = sessionStorage;
+// 실제 배포본: 브라우저/탭을 닫았다 열어도 유저 정보가 남아있도록 localStorage를 씁니다.
+// (여러 탭에서 각각 "다른 사람"으로 테스트하고 싶을 때만 아래를 sessionStorage로 바꾸세요 —
+//  그러면 탭마다 따로 저장되지만, 탭을 닫으면 그 탭의 정보는 사라져요.)
+const STORE = localStorage;
 
 const empty = () => ({
   profile: null,   // { nickname, dept }
