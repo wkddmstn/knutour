@@ -374,12 +374,18 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
     const btn = $("cw-submit");
     btn.disabled = true;
     btn.textContent = "올리는 중...";
-    const ok = await onSubmit(msg, pickedPhoto, zid);
+    // onSubmit은 과거 호환을 위해 boolean을 돌려줘도 되고, { ok, reason } 객체를 돌려줘도 된다.
+    const result = await onSubmit(msg, pickedPhoto, zid);
+    const ok = typeof result === "boolean" ? result : !!result?.ok;
+    const reason = typeof result === "object" ? result?.reason : null;
     if (ok) { close(); toast("게시글을 올렸어요!"); }
     else {
       btn.disabled = false;
       btn.textContent = "게시하기";
-      toast("게시에 실패했어요. 잠시 후 다시 시도해 주세요.");
+      toast(
+        reason === "banned_word" ? "부적절한 표현이 포함되어 있어요. 다시 써 주세요."
+        : "게시에 실패했어요. 잠시 후 다시 시도해 주세요."
+      );
     }
   };
 }

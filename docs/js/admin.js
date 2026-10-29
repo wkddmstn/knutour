@@ -26,6 +26,7 @@ async function tryEnter(pw) {
   $("admin-app").classList.remove("hidden");
   $("stat-users").textContent = data;
   loadAnnouncements();
+  loadCommunityPosts();
   return true;
 }
 
@@ -79,3 +80,35 @@ $("ann-submit").onclick = async () => {
   $("ann-body").value = "";
   loadAnnouncements();
 };
+
+/* ---------- 커뮤니티 게시판 관리 ---------- */
+async function loadCommunityPosts() {
+  const { data, error } = await client.rpc("admin_list_community_posts", { p_password: password });
+  const list = $("post-list");
+  if (error || !data?.length) {
+    list.innerHTML = `<p style="color:var(--mute);font-size:13px">등록된 게시글이 없어요.</p>`;
+    return;
+  }
+  list.innerHTML = data.map((p) => `
+    <div class="post-item">
+      ${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : ""}
+      <div class="post-body">
+        <b>${esc(p.nickname)}${p.zone_id ? ` · ${esc(p.zone_id)}` : ""}</b>
+        <p>${esc(p.message)}</p>
+        <div class="meta">
+          <time>${new Date(p.created_at).toLocaleString("ko-KR")}</time>
+          <button data-del-post="${p.id}">삭제</button>
+        </div>
+      </div>
+    </div>`).join("");
+  list.querySelectorAll("[data-del-post]").forEach((btn) => {
+    btn.onclick = () => deleteCommunityPost(btn.dataset.delPost);
+  });
+}
+
+async function deleteCommunityPost(id) {
+  if (!confirm("이 게시글을 삭제할까요? (사진이 있었다면 저장공간에는 남지만 더 이상 보이지 않아요)")) return;
+  const { error } = await client.rpc("admin_delete_community_post", { p_password: password, p_id: id });
+  if (error) { alert("삭제 실패: " + error.message); return; }
+  loadCommunityPosts();
+}
