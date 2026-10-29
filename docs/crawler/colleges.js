@@ -21,7 +21,7 @@
     "linkSelector": "TODO"
   },
   {
-    "dept": "경영대학",
+    "dept": "경상대학",
     "url": "TODO",
     "listSelector": "TODO",
     "titleSelector": "TODO",
