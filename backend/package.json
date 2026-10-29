@@ -1,0 +1,7 @@
+{
+  "name": "knutour-verify-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "캠퍼스 퀘스트 사진 미션 인증용 백엔드 (Google Cloud Vision API 호출, Vercel Serverless Function)"
+}
