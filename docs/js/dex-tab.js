@@ -116,7 +116,7 @@ function openAlbum(onChange) {
   el.innerHTML = `<div class="dav-top"><button type="button" data-a="x" aria-label="닫기">‹</button><b>호반우와 사진</b></div><div class="dav-body"></div>`;
   document.body.appendChild(el);
   el.querySelector('[data-a="x"]').onclick = () => { el.remove(); onChange?.(); };
-  renderAlbum(el.querySelector(".dav-body"), { onChange });
+  renderAlbum(el.querySelector(".dav-body"), { onChange, noSeg: true, mode: "place" });   // 전체 앨범은 장소별만
 }
 
 // 호반우 상세: 큰 그림, 만난 날, 친밀도, 한마디, 이 호반우와 찍은 사진, AR로 만나기 / 같이 찍기

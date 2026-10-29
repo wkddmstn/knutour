@@ -513,10 +513,10 @@ export function renderCommunityHome(zones, posts, questions) {
       </span>
     </li>`;
   };
-  const boardCard = (board, title, sub, list, empty) => `
-    <button type="button" class="card board-card" data-open-board="${board}">
+  // 게시판 카드 하나 안에 자유게시판 · 질문 두 칸. 칸을 누르면 그 게시판으로 들어간다
+  const boardSec = (board, title, list, empty) => `
+    <button type="button" class="board-sec" data-open-board="${board}">
       <span class="bc-head"><b>${title}</b><span class="bc-more">전체 보기 ›</span></span>
-      <span class="bc-sub">${sub}</span>
       ${list.length ? `<ul class="bp-list">${list.map(preview).join("")}</ul>` : `<span class="bc-empty">${empty}</span>`}
     </button>`;
   $("view-community").innerHTML = `
@@ -528,9 +528,11 @@ export function renderCommunityHome(zones, posts, questions) {
       </div>
       <button id="btn-rank-all" class="btn alt-ghost">전체 랭킹 보기</button>
     </div>
-    <h3 class="sec">게시판</h3>
-    ${boardCard("post", "자유게시판", "캠퍼스 이야기와 호반우 인증샷", posts, "아직 글이 없어요. 첫 글을 남겨보세요!")}
-    ${boardCard("question", "질문", "캠퍼스·미션에 대해 궁금한 것", questions, "아직 질문이 없어요. 처음으로 물어보세요!")}`;
+    <div class="card board-hub">
+      <div class="qm-head"><span class="qm-title">💬 게시판</span></div>
+      ${boardSec("post", "자유게시판", posts, "아직 글이 없어요. 첫 글을 남겨보세요!")}
+      ${boardSec("question", "질문", questions, "아직 질문이 없어요. 처음으로 물어보세요!")}
+    </div>`;
 }
 
 // 게시판 상세 화면 (커뮤니티 > 자유게시판 / 질문)
