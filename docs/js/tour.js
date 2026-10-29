@@ -20,9 +20,9 @@ const GATES = {
 };
 
 const COURSES = [
-  { id: "godsaeng", name: "갓생 살기 코스", emoji: "📚", badge: "갓생 새내기", img: "img/mascot/study.png", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
+  { id: "godsaeng", name: "갓생 코스", emoji: "📚", badge: "갓생 새내기", img: "img/mascot/exam.png", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
     stops: ["loveroad", "ilcheongdam", "library", "bokji", "centralpark"] },
-  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", img: "img/hobanu/loveroad.png", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
+  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", img: "img/mascot/no-plastic.png", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
     stops: ["loveroad", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
   { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", img: "img/mascot/badge-campus.png", desc: "캠퍼스 한 바퀴 완주",
     stops: ["loveroad", "centralpark", "bokji", "library", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
