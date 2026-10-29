@@ -9,7 +9,8 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
-import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment } from "./community.js";
+import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
+         setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
@@ -41,6 +42,7 @@ let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
+let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
 let communityFilter = "all";   // "all" | "mine"
 
 /* ================= 구역 이탈 감지(지오펜스) ================= */
@@ -311,10 +313,21 @@ async function startHiddenMission(h) {
 
 /* ================= 커뮤니티 탭 ================= */
 async function renderCommunityTab() {
-  const posts = await listPosts({ onlyMine: communityFilter === "mine" });
+  const isQuestion = communityBoard === "question";
+  const posts = await listPosts({ kind: communityBoard, onlyMine: communityFilter === "mine" });
+  // 질문 게시판 "전체"에는 맨 위에 예시 질문(가이드)을 고정해서 어떻게 쓰는지 보여준다
+  if (isQuestion && communityFilter === "all") posts.unshift(structuredClone(GUIDE_QUESTION));
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
-  ui.renderCommunity(zones, posts, communityFilter, myId);
+  ui.renderCommunity(zones, posts, { board: communityBoard, filter: communityFilter }, myId);
+  document.querySelectorAll("#view-community [data-board]").forEach((b) => {
+    b.onclick = () => {
+      if (communityBoard === b.dataset.board) return;
+      communityBoard = b.dataset.board;
+      communityFilter = "all";
+      renderCommunityTab();
+    };
+  });
   document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
     b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
   });
@@ -322,6 +335,7 @@ async function renderCommunityTab() {
   // 좋아요는 누르자마자 화면에 반영하고(낙관적 업데이트), 서버 저장에 실패하면 되돌린다
   const pending = new Set();
   const toggleLike = async (p, like = !p.liked) => {
+    if (p.guide) { ui.toast("예시 글이라 좋아요를 누를 수 없어요."); return; }
     if (pending.has(p.id) || like === p.liked) return;
     pending.add(p.id);
     p.liked = like;
@@ -338,13 +352,23 @@ async function renderCommunityTab() {
 
   const openComments = (p) => {
     const nickname = store.getState().profile?.nickname || "익명";
+    const q = p.kind === "question";
     ui.showComments({
       myId,
       myName: nickname,
-      load: () => listComments(p.id),
+      question: q,
+      context: q ? p.message : "",
+      readOnly: !!p.guide,
+      load: () => (p.guide ? Promise.resolve(structuredClone(p.comments)) : listComments(p.id)),
       add: (text) => addComment(p.id, nickname, text),
       remove: (id) => deleteComment(id),
-      onCount: (n) => { p.comment_count = n; ui.updatePostCard(p); },
+      likeComment: (id, like) => setCommentLike(id, like),
+      // 답변 수·베스트 답변이 바뀌면 목록 카드에도 바로 반영 (시트를 닫았을 때 최신 상태로 보이게)
+      onChange: (comments) => {
+        p.comment_count = comments.length;
+        if (q) p.best = pickBest(comments);
+        ui.updatePostCard(p);
+      },
     });
   };
 
@@ -380,9 +404,10 @@ async function renderCommunityTab() {
       zoneId: null,
       lockZone: false,
       photo: null,
+      ...(isQuestion ? { title: "❓ 질문하기", placeholder: "예) 공식당 점심은 몇 시에 제일 붐비나요?" } : {}),
       onSubmit: async (message, photo, zoneId) => {
         const nickname = store.getState().profile?.nickname || "익명";
-        return await postCommunity(zoneId || null, nickname, message, photo);
+        return await postCommunity(zoneId || null, nickname, message, photo, communityBoard);
       },
       onClose: () => renderCommunityTab(),
     });
