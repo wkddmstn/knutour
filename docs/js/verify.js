@@ -5,10 +5,13 @@
 // ⚠️ 이 키는 앱 코드에 그대로 보이므로, Google Cloud 콘솔에서 반드시 아래처럼 제한해 두세요.
 //   1) API 제한: Cloud Vision API만
 //   2) 애플리케이션 제한: 웹사이트(HTTP 리퍼러) → https://wkddmstn.github.io/*
-//   3) Cloud Vision API 할당량: 하루 요청 수를 작게 (예: 100) → 넘으면 호출이 거절돼 요금이 나가지 않음
+//   3) Cloud Vision API 할당량: Requests per minute(per user 없는 것)를 작게 (예: 10)
+// 월 사용 횟수 제한: Google을 부르기 전에 Supabase의 use_vision()에 "이번 달 한 번 더 써도 되는지" 묻는다.
+//   한도(기본 900장, supabase/vision_usage.sql)에 닿으면 Google을 부르지 않고 사진을 그냥 통과시킨다 → 무료 범위 유지.
 // 판정 규칙은 photo-rules.js에 있다.
 
 import { getRule } from "./photo-rules.js";
+import { client } from "./supa.js";
 
 // ⬇️ Google Cloud > API 및 서비스 > 사용자 인증 정보에서 만든 API 키를 넣으세요
 const VISION_API_KEY = "AIzaSyAb8Q4rv31_aiVWVWQ2tCd8eNKYNbflhVo";
@@ -38,6 +41,23 @@ async function toBase64(photo) {
     return typeof photo === "string" ? photo.slice(photo.indexOf(",") + 1) : null;   // 줄이기에 실패하면 원본(dataURL)이라도
   } finally {
     if (typeof photo !== "string") URL.revokeObjectURL(url);
+  }
+}
+
+// 이번 달 사용 한도 안인지 Supabase에 물어보고, 안이면 1회 사용으로 센다.
+// 물어보는 것 자체가 실패하면(SQL을 아직 안 넣었거나 네트워크 문제) 돈이 나가지 않게 Google을 부르지 않는다.
+async function reserveMonthlyUse() {
+  try {
+    const { data, error } = await client.rpc("use_vision");
+    if (error) {
+      console.warn("[사진 인증] 월 사용량 확인 실패 — supabase/vision_usage.sql을 실행했는지 확인해 주세요", error.message);
+      return false;
+    }
+    if (data !== true) console.info("[사진 인증] 이번 달 사진 인증 한도에 도달해서 검사 없이 통과시켜요");
+    return data === true;
+  } catch (e) {
+    console.warn("[사진 인증] 월 사용량 확인 실패", e);
+    return false;
   }
 }
 
@@ -97,8 +117,10 @@ export async function verifyMissionPhoto(missionTitle, missionDesc, photo, missi
     const rule = getRule(missionId);
     if (!rule) return { ok: true, reason: "" };               // 규칙 없는 새 미션 → 부를 필요 없이 통과
 
-    const base64 = await toBase64(photo);
+    // 사진 줄이기와 월 사용량 확인을 동시에 (기다리는 시간을 늘리지 않게)
+    const [base64, allowed] = await Promise.all([toBase64(photo), reserveMonthlyUse()]);
     if (!base64) return { ok: true, reason: "" };
+    if (!allowed) return { ok: true, reason: "", review: true };   // 이번 달 한도 도달 → 검사 없이 통과
 
     const a = await annotate(base64, rule.textHints.length > 0);
     if (!a) return { ok: true, reason: "", review: true };   // 분석 실패 → 막지 않음
