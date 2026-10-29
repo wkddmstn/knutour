@@ -13,7 +13,8 @@ import { listPosts, postCommunity, reportPost, setLike, listComments, addComment
          setCommentLike, pickBest, toTag } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";   // 캠퍼스 일러스트 지도
-import * as themes from "./themes.js";   // 테마(시즌)별 미션
+import * as themes from "./themes.js";
+import { applyThemeBg } from "./theme-bg.js";   // 테마별 화면 배경 그림   // 테마(시즌)별 미션
 
 // 호반우 캠퍼스 투어 (장주연): tour.js를 "있으면 쓰는" 방식으로 불러온다.
 // tour.js에 문제가 생겨도 import가 실패할 뿐 기존 앱은 그대로 동작한다.
@@ -181,6 +182,7 @@ async function init() {
     } catch (e) {
       console.warn("[테마] 불러오지 못해서 모든 장소를 엽니다", e);
     }
+    applyThemeBg(themes.currentTheme());   // 테마를 못 정했으면 기본(3월 첫 주) 배경
     // 지도 모양 데이터 (탐험·장소 화면 지도에서 씀). 못 불러와도 지도만 빠지고 앱은 계속 동작한다
     await loadCampusData().catch((e) => console.warn("[지도] 캠퍼스 지도 데이터를 불러오지 못했어요", e));
     // 이미 깨놓은 구역들을 기준점으로 잡아둬서, 첫 화면에서 "방금 깼다" 효과가 잘못 뜨지 않게 한다

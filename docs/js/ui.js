@@ -150,7 +150,8 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
       <p class="sum-foot" style="margin:6px 0 12px">${esc(sp.desc || "")}</p>
       <button class="btn cta-glow" data-special="${esc(sp.id)}">사진 올리고 +${sp.points} XP</button>
     </div>`).join("")}
-    <div class="card card-hero quest-map-card">
+    <div class="card card-hero quest-map-card hero-${["cherry", "midterm"].includes(theme?.id) ? theme.id : "march"}">
+      ${theme?.id === "cherry" ? `<img class="hero-petal" src="img/hobanu/petal.png" alt="">` : ""}
       ${theme ? `<div class="theme-badge"><span>${esc(theme.emoji || "")} ${esc(theme.name)}</span>${period ? `<small>${esc(period)}</small>` : ""}</div>` : ""}
       ${heroHtml(theme, nextZone)}
       <button id="btn-go-quest" class="btn cta-glow">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>

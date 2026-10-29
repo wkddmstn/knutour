@@ -1078,3 +1078,101 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 .bp-text { display: block; font-size: 14px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bp-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bp-thumb { flex: none; width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: var(--cream-weak); }
+
+/* ============ 테마별 화면 배경 (theme-bg.js) ============ */
+/* 맨 뒤에 깔리는 그림. 카드 사이 빈 공간에서는 잘 보이고, 카드는 거의 불투명(살짝 비침 + 흐림)이라 글에 집중된다.
+   폰: 그림을 모서리·가장자리에 작게 / 노트북(760px 이상): 가운데 앱 양옆 넓은 공간에 크게 */
+#theme-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+#app { z-index: 1; }
+body[data-view="zone"] #theme-bg, body[data-view="onboard"] #theme-bg { display: none; }
+body[data-theme-bg]:not([data-view="zone"]):not([data-view="onboard"]) { background: transparent; }
+body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-row, .menu-card, .dx-card) {
+  background-color: color-mix(in srgb, var(--card) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+#theme-bg .wide { display: none; }
+.tb-fall { position: absolute; top: -40px; animation: tbFall linear infinite; opacity: .9; }
+@keyframes tbFall { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-40px, 52vh) rotate(170deg); }
+  100% { transform: translate(-110px, 108vh) rotate(340deg); } }
+.tb-conf { border-radius: 3px; opacity: .75; }
+
+/* 3월 첫 주: 활기찬 새 학기 */
+.tb-march { background: linear-gradient(180deg, #e3f2ff 0%, #fffbea 55%, #effaf2 100%); }
+.tb-sun { position: absolute; top: 74px; right: 5%; width: 84px; height: 84px; border-radius: 50%; background: #ffe7a3;
+  box-shadow: 0 0 0 18px rgba(255, 231, 163, .35), 0 0 0 40px rgba(255, 231, 163, .15); animation: tbPulse 4s ease-in-out infinite; }
+@keyframes tbPulse { 50% { transform: scale(1.06); } }
+.tb-bunting { position: absolute; top: 0; left: -2%; width: 104%; height: 54px; transform-origin: 50% 0; animation: tbSway 5s ease-in-out infinite; opacity: .85; }
+@keyframes tbSway { 50% { transform: translateY(3px) rotate(.4deg); } }
+.tb-balloon { position: absolute; width: 34px; animation: tbFloat 7s ease-in-out infinite; opacity: .85; }
+.tb-balloon svg { display: block; width: 100%; }
+.tb-balloon-a { left: 2%; bottom: 22%; }
+.tb-balloon-b { right: 3%; bottom: 40%; animation-delay: -3s; }
+.tb-balloon-c { left: 11%; bottom: 46%; animation-delay: -1.5s; }
+.tb-balloon-d { right: 12%; bottom: 16%; animation-delay: -5s; }
+@keyframes tbFloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-22px) rotate(3deg); } }
+.tb-hills { position: absolute; left: 0; bottom: 0; width: 100%; height: 110px; }
+
+/* 벚꽃 기간: 벚꽃나무 + 꽃잎 */
+.tb-cherry { background: linear-gradient(180deg, #fff1f4 0%, #fffafa 60%, #fff0f3 100%); }
+.tb-tree { position: absolute; }
+.tb-tree-a { right: -110px; top: -30px; width: 280px; opacity: .45; }
+.tb-tree-b { display: none; }
+.tb-cherry .tb-fall { width: 14px; }
+.hero-petal { position: absolute; top: -11px; left: 34%; width: 28px; z-index: 2; transform: rotate(-28deg);
+  filter: drop-shadow(0 2px 2px rgba(212, 18, 26, .15)); pointer-events: none; }
+
+/* 중간고사: 달밤의 도서관 */
+.tb-midterm { background: linear-gradient(180deg, #e4defc 0%, #f3efff 50%, #faf8ff 100%); }
+.tb-moon { position: absolute; top: 64px; right: 9%; width: 54px; height: 54px; border-radius: 50%;
+  box-shadow: inset -14px -6px 0 0 #fff3c4; transform: rotate(-20deg); filter: drop-shadow(0 0 14px rgba(255, 238, 170, .8)); }
+.tb-star { position: absolute; color: #b4a4ff; font-size: 12px; animation: tbTw 3s ease-in-out infinite; }
+@keyframes tbTw { 50% { opacity: .2; transform: scale(.6); } }
+.tb-plane { position: absolute; left: 0; width: 34px; opacity: .8; animation: tbFly 28s linear infinite; }
+.tb-plane svg { display: block; width: 100%; }
+.tb-plane-a { top: 30%; }
+.tb-plane-b { top: 58%; animation-duration: 36s; animation-delay: -14s; }
+@keyframes tbFly { 0% { transform: translate(-60px, 0) rotate(-6deg); } 50% { transform: translate(50vw, -30px) rotate(4deg); }
+  100% { transform: translate(calc(100vw + 60px), 10px) rotate(-4deg); } }
+.tb-library { position: absolute; left: 50%; bottom: 0; width: 100%; max-width: 700px; transform: translateX(-50%); opacity: .55; }
+.tb-library .tb-win { fill: #ffe08a; animation: tbWin 6s ease-in-out infinite; }
+.tb-desk { position: absolute; bottom: 0; right: calc(50% - 240px - 330px); width: 260px; opacity: .85; }
+.tb-steam { animation: tbSteam 3s ease-in-out infinite; opacity: .7; }
+@keyframes tbSteam { 0%, 100% { opacity: .15; transform: translateY(4px); } 50% { opacity: .8; transform: translateY(-4px); } }
+@keyframes tbWin { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+
+/* 홈 대표 카드도 테마 색으로 */
+.quest-map-card { position: relative; }
+body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(255, 255, 255, .93) 0%, rgba(255, 246, 214, .93) 140%); }
+body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(255, 255, 255, .93) 0%, rgba(255, 222, 231, .93) 140%); }
+body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(255, 255, 255, .93) 0%, rgba(232, 224, 255, .93) 140%); }
+
+/* 노트북처럼 넓은 화면: 앱 양옆 빈 공간에 그림을 크게 */
+@media (min-width: 760px) {
+  #theme-bg .wide { display: block; }
+  .tb-bunting { height: 86px; }
+  .tb-sun { top: 110px; right: 8%; width: 140px; height: 140px; }
+  .tb-balloon { width: 60px; }
+  .tb-balloon-a { left: 8%; bottom: 26%; }
+  .tb-balloon-b { right: 9%; bottom: 44%; }
+  .tb-balloon-c { left: 18%; bottom: 52%; }
+  .tb-balloon-d { right: 19%; bottom: 20%; }
+  .tb-hills { height: 200px; }
+  .tb-tree-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .9; }
+  .tb-tree-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .75; transform: scaleX(-1); }
+  .tb-cherry .tb-fall { width: 20px; }
+  .tb-moon { top: 90px; right: 12%; width: 90px; height: 90px; box-shadow: inset -22px -10px 0 0 #fff3c4; }
+  .tb-star { font-size: 16px; }
+  .tb-plane { width: 52px; }
+  .tb-library { left: auto; right: calc(50% + 240px + 30px); max-width: none; width: min(560px, calc(50vw - 270px)); transform: none; opacity: .85; }
+}
+@media (min-width: 760px) and (max-width: 1100px) {
+  .tb-tree-a { left: -140px; width: 420px; }
+  .tb-tree-b { right: -120px; width: 320px; }
+  .tb-desk { right: 8px; width: 180px; }
+}
+@media (prefers-color-scheme: dark) {
+  #theme-bg { filter: brightness(.32) saturate(.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #theme-bg *, #theme-bg *::before { animation: none !important; }
+  #theme-bg .tb-fall, #theme-bg .tb-plane { display: none; }
+}
