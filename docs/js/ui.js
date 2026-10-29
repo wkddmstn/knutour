@@ -9,13 +9,35 @@ export const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* ---------- 화면 전환 ---------- */
-const VIEWS = ["onboard", "home", "quest", "community", "me", "zone"];
+// 탭 화면 4개(home·dex·community·me) + 카드 버튼으로 여는 상세 화면(explore·rank) + 구역(zone)
+const VIEWS = ["onboard", "home", "dex", "community", "me", "explore", "rank", "zone"];
+// 상세 화면에 있을 때 탭바에서 어느 탭을 켜 둘지 (어느 탭에서 들어왔는지 보이게)
+const PARENT_TAB = { explore: "home", rank: "community" };
 export function showView(name) {
-  VIEWS.forEach((v) => $("view-" + v).classList.toggle("hidden", v !== name));
+  VIEWS.forEach((v) => $("view-" + v)?.classList.toggle("hidden", v !== name));
   document.body.dataset.view = name;
+  const tab = PARENT_TAB[name] || name;
   document.querySelectorAll("#tabbar button").forEach((b) =>
-    b.classList.toggle("on", b.dataset.tab === name));
+    b.classList.toggle("on", b.dataset.tab === tab));
   window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+// 상세 화면 맨 위의 "‹ 제목" 줄. 뒤로 버튼은 data-back으로 찾아서 main.js가 연결한다
+const ICON_BACK = `<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>`;
+function subHeader(title, right = "") {
+  return `<div class="subbar">
+    <button type="button" class="icon-btn" data-back aria-label="뒤로 가기">${ICON_BACK}</button>
+    <h1>${esc(title)}</h1>${right}
+  </div>`;
+}
+
+// 작은 메뉴 카드: 제목 + 한 줄 설명 + 오른쪽 화살표. 탭 안의 "나머지 카드"들은 전부 이 모양으로 맞춘다
+function menuCard(id, title, sub = "", { icon = "" } = {}) {
+  return `<button type="button" class="menu-card" id="${id}">
+    ${icon ? `<span class="mc-icon">${icon}</span>` : ""}
+    <span class="mc-body"><b>${title}</b>${sub ? `<span>${sub}</span>` : ""}</span>
+    <span class="mc-arrow" aria-hidden="true">›</span>
+  </button>`;
 }
 
 /* ---------- 레벨 업 알림 ---------- */
@@ -97,14 +119,15 @@ export function renderOnboard(depts, onSubmit) {
 
 /* ---------- 홈: 대시보드 ---------- */
 // hidden: 지금 활성화된 히든미션 정보({emoji,title,desc}) 또는 null. onHidden: "만나러 가기" 버튼 핸들러.
-// 공지사항은 홈에 따로 두지 않고 상단 종(알림창)에서만 보여준다.
-export function renderDashboard(zones, onGoQuest, hidden = null, onHidden = null) {
+// 공지사항은 홈에 따로 두지 않고 종(알림창)에서만 보여준다.
+/* ---------- 홈: 캠퍼스 탐험 지도(대표 카드) · 데일리 · 투어 · 히든미션 ---------- */
+// 홈은 "오늘 뭐 하지?"에 답하는 화면. 지도·장소 목록 같은 디테일은 "미션 하러 가기"를 눌러야 열린다.
+// 진행 상황은 미션 개수가 아니라 장소 단위(그 장소의 미션을 다 깼는지)로 센다 (장소마다 미션 수가 달라서).
+export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = null) {
   const st = getState();
   const lv = getLevel(st.score);
-  // AR 미션이 생기면서 구역마다 미션 개수가 달라져서(1개 또는 2개), 미션 개수 합으로 세면 숫자가 헷갈린다.
-  // 그래서 "진행 상황"은 미션 개수가 아니라 구역 단위(그 구역의 미션을 다 깼는지)로 센다 — 퀘스트 탭의 "캠퍼스 점령도"와 동일한 기준.
   const total = zones.length;
-  const done = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
+  const cleared = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
   const nextZone = zones.find((z) => z.missions.some((m) => !isDone(m.id)));
 
   $("view-home").innerHTML = `
@@ -118,54 +141,125 @@ export function renderDashboard(zones, onGoQuest, hidden = null, onHidden = null
       <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
       <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
     </div>
-    <div class="card card-hero">
-      <div class="sum-label">진행 상황</div>
-      <div class="sum-big">${done}<small> / ${total} 구역</small></div>
-      <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
-      <div class="sum-foot">Lv.${lv.level} ${lv.title} · ${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}</div>
-      ${nextZone ? `<div class="sum-foot" style="margin-top:10px;font-weight:700;color:var(--primary)">다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}</div>` : ""}
-      <button id="btn-go-quest" class="btn cta-glow" style="margin-top:18px">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
+    <div class="card card-hero quest-map-card">
+      <div class="qm-head">
+        <span class="qm-title">캠퍼스 탐험 지도</span>
+        <span class="qm-chip">${cleared} / ${total} 장소</span>
+      </div>
+      ${miniMapSvg(zones, nextZone)}
+      <div class="qm-next">${nextZone
+        ? `다음 목적지 · ${esc(nextZone.emoji)} ${esc(nextZone.name)}`
+        : "모든 장소를 탐험했어요! 🎉"}</div>
+      <div class="sum-foot" style="margin-top:4px">Lv.${lv.level} ${lv.title} · ${lv.maxed ? "최고 레벨 달성!" : `다음 레벨까지 ${lv.next} XP`}</div>
+      <button id="btn-go-quest" class="btn cta-glow">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
+    <div id="daily-section"></div>
+    <div id="home-tour-slot"></div>
     ${hidden ? `
     <div class="card hidden-mission-card">
       <div class="sum-label">✨ 히든미션</div>
       <div class="sum-big" style="font-size:18px">${esc(hidden.emoji)} ${esc(hidden.title)}</div>
       <p class="sum-foot" style="margin:6px 0 12px">${esc(hidden.desc)}</p>
       <button id="btn-hidden-mission" class="btn cta-glow">만나러 가기</button>
-    </div>` : ""}
-    <div id="daily-section"></div>`;
-  $("btn-go-quest").onclick = onGoQuest;
+    </div>` : ""}`;
+  $("btn-go-quest").onclick = onGoExplore;
   if (hidden) $("btn-hidden-mission").onclick = onHidden;
 }
-/* ---------- 퀘스트: 지도 · 구역 목록 · 랭킹 ---------- */
-// 탭을 열면 바로 지도+구역 목록이 보인다. "오늘 할 일(메인 미션/데일리)"은 홈 탭이 전담하고,
-// 여기는 순수하게 캠퍼스를 탐험하는 화면으로만 쓴다.
-export function renderQuestShell(cleared = 0, total = 0) {
-  $("view-quest").innerHTML = `
-    <div class="seg quest-seg">
-      <button data-m="map" class="on">지도</button>
-      <button data-m="rank">랭킹</button>
-      <button data-m="hobanu">호반우</button>   <!-- 호반우 도감·사진·투어 뱃지 (장주연) -->
-    </div>
-    <div id="quest-map-pane">
-      <h1 class="sec campus-title">캠퍼스 지도</h1>
-      <p class="map-guide">지도에서 장소를 선택해 미션을 시작해 보세요.</p>
-      <div class="card" style="padding:14px 18px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span class="sum-label">캠퍼스 점령도</span>
-          <span style="font-weight:700;color:var(--primary)">${cleared} / ${total}</span>
-        </div>
-        <div class="progress"><i style="width:${total ? (cleared / total) * 100 : 0}%"></i></div>
-      </div>
-      <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
-      <h3 class="sec">구역 목록</h3>
-      <div id="zone-list"></div>
-    </div>
-    <div id="quest-rank-pane" class="hidden"></div>
-    <div id="quest-hobanu-pane" class="hidden"></div>`;
+
+// 홈 대표 카드 안의 미니 지도. 실제 지도 대신 장소를 네모 칸으로 보여준다.
+// 칸 위치는 zones.json의 위도·경도로 자동 계산 → 장소가 추가돼도 손댈 필요가 없다.
+//   클리어한 곳: 빨간 칸 + ✓ / 다음 목적지: 빨간 테두리 칸 + 장소 이모지 (통통 튐) / 아직: 물음표 칸
+const MM = { W: 300, H: 176, T: 36, PAD: 14 };
+function layoutTiles(zones) {
+  const lats = zones.map((z) => z.lat), lngs = zones.map((z) => z.lng);
+  const [minLat, maxLat, minLng, maxLng] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
+  const spanX = MM.W - MM.PAD * 2 - MM.T, spanY = MM.H - MM.PAD * 2 - MM.T;
+  const pts = zones.map((z) => ({
+    x: MM.PAD + (maxLng > minLng ? (z.lng - minLng) / (maxLng - minLng) : 0.5) * spanX,
+    y: MM.PAD + (maxLat > minLat ? (maxLat - z.lat) / (maxLat - minLat) : 0.5) * spanY,   // 북쪽이 위
+  }));
+  // 가까이 붙은 칸끼리 겹치지 않게 조금씩 밀어낸다
+  const GAP = MM.T + 12;
+  for (let it = 0; it < 60; it++) {
+    let moved = false;
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+      if (Math.abs(dx) >= GAP || Math.abs(dy) >= GAP) continue;
+      moved = true;
+      // 덜 겹친 축 방향으로 밀어내기
+      if (GAP - Math.abs(dx) < GAP - Math.abs(dy)) { const p = (GAP - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1); pts[i].x -= p; pts[j].x += p; }
+      else { const p = (GAP - Math.abs(dy)) / 2 * (dy >= 0 ? 1 : -1); pts[i].y -= p; pts[j].y += p; }
+    }
+    pts.forEach((p) => {   // 판 밖으로 나가지 않게
+      p.x = Math.min(MM.W - MM.PAD - MM.T, Math.max(MM.PAD, p.x));
+      p.y = Math.min(MM.H - MM.PAD - MM.T, Math.max(MM.PAD, p.y));
+    });
+    if (!moved) break;
+  }
+  return pts;
+}
+function miniMapSvg(zones, nextZone) {
+  if (!zones.length) return "";
+  const pts = layoutTiles(zones);
+  const done = zones.map((z) => z.missions.every((m) => isDone(m.id)));
+  const c = (i) => [pts[i].x + MM.T / 2, pts[i].y + MM.T / 2];
+  // 길: 각 칸을 가장 가까운 칸 두 개와 잇는다. 양쪽 다 깬 길은 실선으로 "밝혀진다"
+  const edges = new Set();
+  pts.forEach((_, i) => {
+    pts.map((_, j) => j).filter((j) => j !== i)
+      .sort((a, b) => Math.hypot(...c(a).map((v, k) => v - c(i)[k])) - Math.hypot(...c(b).map((v, k) => v - c(i)[k])))
+      .slice(0, 2).forEach((j) => edges.add([Math.min(i, j), Math.max(i, j)].join("-")));
+  });
+  const roads = [...edges].map((e) => {
+    const [i, j] = e.split("-").map(Number);
+    const [x1, y1] = c(i), [x2, y2] = c(j);
+    return `<line class="mm-road ${done[i] && done[j] ? "lit" : ""}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }).join("");
+  const tiles = zones.map((z, i) => {
+    const { x, y } = pts[i];
+    const name = esc(z.name);
+    if (done[i]) return `<g class="mm-tile done"><title>${name} · 클리어</title>
+      <rect x="${x}" y="${y}" width="${MM.T}" height="${MM.T}" rx="9"/>
+      <text x="${x + MM.T / 2}" y="${y + MM.T / 2 + 1}">✓</text></g>`;
+    if (nextZone && z.id === nextZone.id) return `<g class="mm-tile next"><title>${name} · 다음 목적지</title>
+      <g class="mm-bob"><rect x="${x}" y="${y}" width="${MM.T}" height="${MM.T}" rx="9"/>
+      <text x="${x + MM.T / 2}" y="${y + MM.T / 2 + 1}">${esc(z.emoji)}</text></g></g>`;
+    return `<g class="mm-tile"><title>${name}</title>
+      <rect x="${x}" y="${y}" width="${MM.T}" height="${MM.T}" rx="9"/>
+      <text x="${x + MM.T / 2}" y="${y + MM.T / 2 + 1}">?</text></g>`;
+  }).join("");
+  return `<svg class="mini-map" viewBox="0 0 ${MM.W} ${MM.H}" role="img" aria-label="캠퍼스 탐험 지도: ${zones.length}곳 중 ${done.filter(Boolean).length}곳 클리어">
+    <rect class="mm-bg" width="${MM.W}" height="${MM.H}" rx="16"/>${roads}${tiles}</svg>`;
 }
 
-// 구역 목록: 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과
+/* ---------- 캠퍼스 탐험 (홈 카드의 "미션 하러 가기"로 여는 상세 화면): 지도 · 장소 목록 ---------- */
+export function renderExplore(cleared = 0, total = 0) {
+  $("view-explore").innerHTML = `
+    ${subHeader("캠퍼스 탐험", `<span class="qm-chip">${cleared} / ${total} 장소</span>`)}
+    <p class="map-guide">지도나 목록에서 장소를 골라 미션을 시작해 보세요.</p>
+    <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
+    <h3 class="sec">장소 목록</h3>
+    <div id="zone-list"></div>`;
+}
+
+/* ---------- 전체 랭킹 (커뮤니티 > 내 순위 카드에서 여는 상세 화면) ---------- */
+export function renderRankView() {
+  $("view-rank").innerHTML = `${subHeader("전체 랭킹")}<div id="rank-pane"></div>`;
+  return $("rank-pane");
+}
+
+// 커뮤니티 맨 위 "내 순위" 카드에 숫자 채우기 (랭킹은 서버에서 늦게 올 수 있어서 카드부터 그리고 나중에 채운다)
+export function fillRankHero(totalRows, deptRows) {
+  const set = (id, text) => { if ($(id)) $(id).textContent = text; };
+  const me = totalRows.findIndex((r) => r.me);
+  const myDept = deptRows.findIndex((r) => r.me);
+  set("rh-total", me >= 0 ? `${me + 1}위` : "-");
+  set("rh-total-sub", me >= 0 ? `${totalRows.length}명 중 · ${totalRows[me].score} XP` : "순위를 불러오지 못했어요");
+  set("rh-dept", myDept >= 0 ? `${myDept + 1}위` : "-");
+  set("rh-dept-sub", myDept >= 0 ? `${deptRows[myDept].name} · ${deptRows.length}개 중` : " ");
+}
+
+// 장소 목록: 남은 장소는 위, 다 깬 장소는 아래로. 방금 막 다 깬 장소(justCleared)는 "통과" 도장 효과
 export function renderZoneList(zones, isDone, justCleared = new Set()) {
   const el = $("zone-list");
   if (!el) return;
@@ -309,14 +403,14 @@ export function renderRankInto(container, rows, mode, onMode) {
   container.innerHTML = `
     <div class="seg-sub" style="margin-top:12px">
       <button data-m="total" class="${mode === "total" ? "on" : ""}">개인</button>
-      <button data-m="dept" class="${mode === "dept" ? "on" : ""}">소속</button>
+      <button data-m="dept" class="${mode === "dept" ? "on" : ""}">단과대</button>
     </div>
     <div class="card my-rank">
       <div>
-        <div class="sum-label">내 ${mode === "dept" ? "소속 " : ""}순위</div>
+        <div class="sum-label">내 ${mode === "dept" ? "단과대 " : ""}순위</div>
         <div class="my-big">${meIdx + 1}위</div>
       </div>
-      <div class="my-side"><b>${rows[meIdx].score}</b> ${unit}<br><small>전체 ${rows.length}${mode === "dept" ? "개 소속" : "명"}</small></div>
+      <div class="my-side"><b>${rows[meIdx].score}</b> ${unit}<br><small>전체 ${rows.length}${mode === "dept" ? "개 단과대" : "명"}</small></div>
     </div>
     <div class="podium">${podium}</div>
     ${list ? `<ol class="ranklist">${list}</ol>` : ""}
@@ -398,22 +492,30 @@ function postCardHtml(p, zoneName, myId) {
 // board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
 // myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
 // 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
+// 맨 위는 "내 순위" 대표 카드(누르면 전체 랭킹 상세 화면), 그 아래 게시판.
+// "내 글만 보기"는 탭 안의 탭으로 두지 않고 내 정보 > 내가 쓴 글에서 들어오게 했다 (들어오면 위에 칩이 뜸).
 export function renderCommunity(zones, posts, { board = "post", filter = "all" } = {}, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   const q = board === "question";
   $("view-community").innerHTML = `
-    <h1 class="sec" style="margin-top:4px">💬 커뮤니티</h1>
-    <div class="seg" role="tablist" style="margin:10px 0 6px">
+    <div class="card card-hero rank-hero" id="rank-hero">
+      <div class="qm-head"><span class="qm-title">🏆 내 순위</span></div>
+      <div class="rank-hero-stats">
+        <div><span class="sum-label">개인</span><b id="rh-total">-</b><small id="rh-total-sub">불러오는 중</small></div>
+        <div><span class="sum-label">단과대</span><b id="rh-dept">-</b><small id="rh-dept-sub">&nbsp;</small></div>
+      </div>
+      <button id="btn-rank-all" class="btn alt-ghost">전체 랭킹 보기</button>
+    </div>
+    <h3 class="sec">게시판</h3>
+    <div class="seg" role="tablist" style="margin:0 0 6px">
       <button data-board="post" role="tab" aria-selected="${!q}" class="${q ? "" : "on"}">자유게시판</button>
       <button data-board="question" role="tab" aria-selected="${q}" class="${q ? "on" : ""}">❓ 질문</button>
     </div>
-    <p class="map-guide">${q
-      ? "캠퍼스·미션에 대해 궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변으로 올라가요."
-      : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요."}</p>
-    <div class="seg-sub" style="margin:10px 0">
-      <button data-f="all" class="${filter === "all" ? "on" : ""}">전체</button>
-      <button data-f="mine" class="${filter === "mine" ? "on" : ""}">${q ? "내 질문" : "내 글"}</button>
-    </div>
+    ${filter === "mine"
+      ? `<button type="button" class="filter-chip" data-f="all">${q ? "내 질문" : "내가 쓴 글"}만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">전체 보기</span></button>`
+      : `<p class="map-guide">${q
+        ? "캠퍼스·미션에 대해 궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변으로 올라가요."
+        : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요."}</p>`}
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
@@ -664,7 +766,7 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
 }
 
 /* ---------- 내 정보 ---------- */
-export function renderMe(zones, onReset) {
+export function renderMe(zones, onReset, onMyPosts = null) {
   const st = getState();
   const myCode = getCachedProfile()?.code;
   const lv = getLevel(st.score);
@@ -702,11 +804,13 @@ export function renderMe(zones, onReset) {
       <div class="sum-big" style="font-size:30px;letter-spacing:4px">${esc(myCode)}</div>
       <div class="sum-foot">'함께하기' 미션에서 친구에게 이 코드를 알려주세요</div>
     </div>` : ""}
+    ${menuCard("btn-my-posts", "내가 쓴 글", "커뮤니티에 올린 글 모아 보기", { icon: "📝" })}
     <h3 class="sec">설정</h3>
     <button id="btn-reset" class="btn alt" style="margin-top:0">기록 초기화하고 처음부터 시작</button>`;
   $("btn-reset").onclick = () => {
     if (confirm("모든 점수와 기록을 지우고 처음부터 시작할까요?")) onReset();
   };
+  if (onMyPosts) $("btn-my-posts").onclick = onMyPosts;
   $("btn-level-info").onclick = () => showLevelInfo(lv.level);
 }
 

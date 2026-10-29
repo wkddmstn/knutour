@@ -1,5 +1,5 @@
 // js/tour.js — 호반우와 캠퍼스 투어 (담당: 장주연)
-// 흐름: 퀘스트 탭 "투어" 카드 → 코스 고르기 → [이동 화면: 지도·화살표·호반우 음성 안내] → 도착 →
+// 흐름: 홈 탭 "투어" 카드 → 코스 고르기 → [이동 화면: 지도·화살표·호반우 음성 안내] → 도착 →
 //       기존 구역 채팅(미션)으로 연결 → 미션 메뉴/구역 클리어에서 "다음 장소로 (투어)" → 다시 이동 화면 → … → 완주
 // main.js는 이 파일을 "있으면 쓰는" 방식(동적 import + try/catch)으로 불러온다.
 // 그래서 이 파일에 문제가 생겨도 기존 앱(구역 채팅·미션·AR)은 그대로 동작한다.
@@ -58,7 +58,7 @@ const POIS = [];
 let app = null;   // { zones(), openZone, goTab, store, ui }
 export function initTour(api) {
   app = api;
-  try { setHobanuPaneExtra(renderBadgeSection); } catch {}   // 퀘스트 > 호반우 탭에 투어 뱃지 칸
+  try { setHobanuPaneExtra(renderBadgeSection); } catch {}   // 도감 탭에 투어 뱃지 칸
 }
 const zoneById = (id) => app?.zones().find((z) => z.id === id);
 // 받침에 따라 "이야/야", "으로/로" 붙이기
@@ -83,7 +83,7 @@ const fmtDay = (t) => new Date(t).toLocaleDateString("ko-KR", { month: "long", d
 const badgeHtml = (c, on, big = false) => `<div class="tb-badge ${on ? "on" : ""} ${big ? "big" : ""}" data-c="${c.id}">
   <div class="tb-medal"><img src="${c.img}" alt="${c.badge}">${on ? "" : "<em>?</em>"}</div>
   <b>${on ? c.badge : "???"}</b><span>${on ? fmtDay(on) + " 획득" : c.name + " 완주 시"}</span></div>`;
-// 퀘스트 > 호반우 탭의 "투어 뱃지" 칸 (ar.js의 호반우 도감 아래에 붙음)
+// 도감 탭의 "투어 뱃지" 칸 (ar.js의 도감 대표 카드 아래에 붙음)
 function renderBadgeSection(slot) {
   if (!TOUR_ON || !slot) return;
   injectStyle();
@@ -281,7 +281,7 @@ function injectStyle() {
   document.head.appendChild(s);
 }
 
-/* ---------------- 퀘스트 탭 카드 ---------------- */
+/* ---------------- 홈 탭 투어 카드 ---------------- */
 const walkMin = (m) => Math.max(1, Math.round((m * 1.3) / 70));   // 실제 길은 직선보다 1.3배쯤 길다고 보고, 분당 70m
 function courseStats(c, gate = GATES.main) {
   let prev = gate, dist = 0;
@@ -369,9 +369,9 @@ export function next(zone) {
   if (!st) return;
   const c = course(st.course);
   if (zone && c.stops[st.idx] === zone.id) st.idx++;
-  if (st.idx >= c.stops.length) { save(null); try { app.goTab("quest"); } catch {} return finish(st); }
+  if (st.idx >= c.stops.length) { save(null); try { app.goTab("home"); } catch {} return finish(st); }
   save(st);
-  try { app.goTab("quest"); } catch {}
+  try { app.goTab("home"); } catch {}
   openMove();
 }
 
@@ -427,7 +427,7 @@ function _openMove(first) {
   const paintVoice = () => (vBtn.textContent = voiceOn() ? "🔊 음성" : "🔇 음성");
   paintVoice();
   vBtn.onclick = () => { setVoice(!voiceOn()); paintVoice(); };
-  $('[data-a="out"]').onclick = () => { stopVoice(); closeMove(); try { app.goTab("quest"); } catch {} };
+  $('[data-a="out"]').onclick = () => { stopVoice(); closeMove(); try { app.goTab("home"); } catch {} };
 
   // --- 지도 ---
   let map = null, routeLine = null, meMk = null;
@@ -644,11 +644,11 @@ function finish(st) {
   el.innerHTML = `<div class="ts" style="text-align:center">
     <h3>${c.emoji} ${c.name} 완주!</h3>
     ${badgeHtml(c, getBadges()[c.id], true)}
-    <p class="ts-sub" style="margin:0 0 6px;font-weight:800;color:var(--primary,#d4121a)">${newBadge ? `🏅 '${c.badge}' 뱃지를 받았어요!` : "이미 받은 뱃지예요"} · 퀘스트 > 호반우 탭에서 볼 수 있어요</p>
+    <p class="ts-sub" style="margin:0 0 6px;font-weight:800;color:var(--primary,#d4121a)">${newBadge ? `🏅 '${c.badge}' 뱃지를 받았어요!` : "이미 받은 뱃지예요"} · 도감 탭에서 볼 수 있어요</p>
     <p class="ts-sub">${c.stops.length}곳을 ${mins}분 동안 함께 돌았어요.${first ? " 완주 보너스 100 XP!" : ""}</p>
     <div class="r" style="font-size:13px;line-height:1.8;margin-bottom:12px">정문 → ${c.stops.map((id) => zoneById(id)?.name || id).join(" → ")}</div>
     <button class="ts-close" style="background:var(--primary,#d4121a);color:#fff">좋아!</button></div>`;
   document.body.appendChild(el);
-  el.querySelector(".ts-close").onclick = () => { el.remove(); try { app.goTab("quest"); } catch {} };
+  el.querySelector(".ts-close").onclick = () => { el.remove(); try { app.goTab("home"); } catch {} };
   playKey("finish-" + c.id, `${c.name} 완주! ${c.badge} 뱃지를 받았어. 같이 돌아서 즐거웠어!`);
 }

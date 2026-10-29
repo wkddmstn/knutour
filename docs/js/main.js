@@ -7,10 +7,11 @@ import { getRanking } from "./ranking.js";
 import { ensureProfile, getCachedProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
-import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
+import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
          setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
+import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";   // 캠퍼스 일러스트 지도
 
 // 호반우 캠퍼스 투어 (장주연): tour.js를 "있으면 쓰는" 방식으로 불러온다.
 // tour.js에 문제가 생겨도 import가 실패할 뿐 기존 앱은 그대로 동작한다.
@@ -20,7 +21,7 @@ import("./tour.js")
     if (!m.TOUR_ON) return;
     tour = m;
     m.initTour({ zones: () => zones, openZone, goTab, store, ui });
-    if (document.body.dataset.view === "quest") m.renderQuestCard($("quest-map-pane"));
+    if (document.body.dataset.view === "home") m.renderQuestCard($("home-tour-slot"));   // 홈의 투어 카드
   })
   .catch((e) => console.warn("[투어] 불러오지 못했어요 — 투어 없이 계속합니다", e));
 const tourItem = (zone) => { try { const it = tour?.menuItem(zone); return it ? [it] : []; } catch { return []; } };
@@ -51,13 +52,12 @@ const HIDDEN_MISSIONS = [
 ];
 
 let zones = [];
-let map = null;
-let campusMap = null;
-let marker = null;
+let map = null;          // 장소 화면 지도 (CampusMap)
+let campusMap = null;    // 탐험 화면 지도 (CampusMap)
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
-let communityFilter = "all";   // "all" | "mine"
+let communityFilter = "all";   // "all" | "mine" (내 정보 > 내가 쓴 글에서 들어오면 "mine")
 
 /* ================= 구역 이탈 감지(지오펜스) ================= */
 // 위치 인증이 끝난 뒤에도 계속 위치를 지켜보다가, 구역 밖으로 나가면 배너로 알려주고
@@ -162,60 +162,12 @@ function renderDailySection(opts = {}) {
   });
 }
 
-/* ================= 지도 타일 (라이트/다크 자동 전환) ================= */
-// 라이트 모드: 표준 OpenStreetMap(초록/파랑 컬러, 길·건물 이름 다 보임) — API 키 불필요.
-// 다크 모드: OSM은 다크 버전이 없어서, Esri의 무료 Dark Gray(바탕) + Reference(라벨) 조합 사용.
-const isDarkMode = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-function tileConfig() {
-  if (isDarkMode()) {
-    const attr = 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, GIS User Community';
-    return {
-      base: {
-        url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-        options: { maxZoom: 19, maxNativeZoom: 16, attribution: attr },
-      },
-      ref: {
-        url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
-        options: { maxZoom: 19, maxNativeZoom: 16 },
-      },
-    };
-  }
-  return {
-    base: {
-      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      options: {
-        maxZoom: 19, subdomains: "abc",
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    ref: null, // 표준 OSM 타일에는 이미 라벨이 포함돼 있어서 별도 레이어가 필요 없음
-  };
-}
-
-function addBaseTiles(targetMap) {
-  const cfg = tileConfig();
-  const baseLayer = L.tileLayer(cfg.base.url, cfg.base.options).addTo(targetMap);
-  const refLayer = cfg.ref ? L.tileLayer(cfg.ref.url, cfg.ref.options).addTo(targetMap) : null;
-  return { baseLayer, refLayer };
-}
-
-// 시스템 다크모드가 실시간으로 바뀌면(설정 변경 등) 열려 있는 지도 타일도 같이 바꿔준다
-let tileLayers = []; // { targetMap, baseLayer, refLayer } 목록
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-  const cfg = tileConfig();
-  tileLayers.forEach((entry) => {
-    entry.baseLayer.setUrl(cfg.base.url);
-    if (entry.refLayer && cfg.ref) entry.refLayer.setUrl(cfg.ref.url);
-    else if (entry.refLayer && !cfg.ref) { entry.targetMap.removeLayer(entry.refLayer); entry.refLayer = null; }
-    else if (!entry.refLayer && cfg.ref) { entry.refLayer = L.tileLayer(cfg.ref.url, cfg.ref.options).addTo(entry.targetMap); }
-  });
-});
-
 /* ================= 시작 ================= */
 async function init() {
   try {
     zones = (await (await fetch("data/zones.json")).json()).zones;
+    // 지도 모양 데이터 (탐험·장소 화면 지도에서 씀). 못 불러와도 지도만 빠지고 앱은 계속 동작한다
+    await loadCampusData().catch((e) => console.warn("[지도] 캠퍼스 지도 데이터를 불러오지 못했어요", e));
     // 이미 깨놓은 구역들을 기준점으로 잡아둬서, 첫 화면에서 "방금 깼다" 효과가 잘못 뜨지 않게 한다
     lastClearedSet = new Set(zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
   } catch {
@@ -228,7 +180,7 @@ async function init() {
   // 요소가 없어도(예: index.html이 구버전이라 특정 버튼이 빠져있어도) 전체가 멈추지 않도록
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
-  $("btn-back")?.addEventListener("click", () => goTab("quest"));
+  $("btn-back")?.addEventListener("click", () => goTab("explore"));
   $("btn-map")?.addEventListener("click", toggleMap);
 
   if (store.hasProfile()) {
@@ -272,36 +224,53 @@ function showOnboard() {
 }
 
 /* ================= 탭 이동 ================= */
+// 탭 4개: home(홈) · dex(도감) · community(커뮤니티) · me(내 정보)
+// 상세 화면 2개: explore(홈 > 캠퍼스 탐험 지도 > 미션 하러 가기) · rank(커뮤니티 > 내 순위 > 전체 랭킹)
+// 상세 화면의 "‹" 버튼은 자기가 나온 탭으로 돌아간다.
+const BACK_TO = { explore: "home", rank: "community" };
 async function goTab(tab, opts = {}) {
+  if (tab === "quest") tab = "explore";   // 예전 이름으로 불러도 동작하게
   leaveZone();
   ui.updateHud();
   clearCampusMap();
 
   if (tab === "home") {
     const hidden = await activeHiddenMission();
-    ui.renderDashboard(zones, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
+    ui.renderDashboard(zones, () => goTab("explore"), hidden, hidden ? () => startHiddenMission(hidden) : null);
     $("bell-btn").onclick = openNotifPanel;
     ui.showView("home");
     renderDailySection();
+    try { tour?.renderQuestCard($("home-tour-slot")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
     refreshBellBadge();
-   } else if (tab === "quest") {
+  } else if (tab === "explore") {
     const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
-    ui.renderQuestShell(clearedCount, zones.length);
-    ui.showView("quest");
+    ui.renderExplore(clearedCount, zones.length);
+    ui.showView("explore");
     initCampusMap(openZone);
     renderZoneListSection();
-    wireQuestSegment();
-    try { tour?.renderQuestCard($("quest-map-pane")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
-    if (opts.mode === "rank") switchQuestPane("rank");
+  } else if (tab === "dex") {
+    renderHobanuPane($("view-dex"));   // 도감 화면 (dex-tab.js, 장주연). 못 불러오면 예전 호반우 화면으로 대신 그림
+    ui.showView("dex");
+    refreshBellBadge();
   } else if (tab === "community") {
     await renderCommunityTab();
     ui.showView("community");
     refreshBellBadge();
+  } else if (tab === "rank") {
+    ui.renderRankView();
+    ui.showView("rank");
+    showRank(opts.mode || "total");
   } else if (tab === "me") {
-    ui.renderMe(zones, onReset);
+    ui.renderMe(zones, onReset, () => {
+      communityBoard = "post";
+      communityFilter = "mine";
+      goTab("community");
+    });
     refreshBellBadge();
     ui.showView("me");
   }
+  // 상세 화면의 뒤로 버튼 연결
+  if (BACK_TO[tab]) $("view-" + tab)?.querySelector("[data-back]")?.addEventListener("click", () => goTab(BACK_TO[tab]));
 }
 
 /* ================= 히든미션 (홈 화면) ================= */
@@ -342,9 +311,14 @@ async function renderCommunityTab() {
       renderCommunityTab();
     };
   });
-  document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
-    b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
+  document.querySelectorAll("#view-community .filter-chip").forEach((b) => {
+    b.onclick = () => { communityFilter = "all"; renderCommunityTab(); };
   });
+  $("btn-rank-all")?.addEventListener("click", () => goTab("rank"));
+  // 내 순위 카드: 랭킹은 서버에서 받아오니 카드를 먼저 그려 두고 숫자는 받아오는 대로 채운다
+  Promise.all([getRanking("total"), getRanking("dept")])
+    .then(([t, d]) => ui.fillRankHero(t, d))
+    .catch(() => ui.fillRankHero([], []));
 
   // 좋아요는 누르자마자 화면에 반영하고(낙관적 업데이트), 서버 저장에 실패하면 되돌린다
   const pending = new Set();
@@ -442,24 +416,11 @@ function renderZoneListSection() {
   lastClearedSet = clearedNow;
 }
 
-function wireQuestSegment() {
-  document.querySelectorAll(".quest-seg button").forEach((b) => {
-    b.onclick = () => switchQuestPane(b.dataset.m);
-  });
-}
-
-function switchQuestPane(mode) {
-  document.querySelectorAll(".quest-seg button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
-  $("quest-map-pane")?.classList.toggle("hidden", mode !== "map");
-  $("quest-rank-pane")?.classList.toggle("hidden", mode !== "rank");
-  $("quest-hobanu-pane")?.classList.toggle("hidden", mode !== "hobanu");   // 호반우 탭 (장주연)
-  if (mode === "rank") showQuestRank("total");
-  if (mode === "hobanu") renderHobanuPane($("quest-hobanu-pane"));
-}
-
-async function showQuestRank(mode) {
+// 전체 랭킹 상세 화면 (개인 / 단과대)
+async function showRank(mode) {
   const rows = await getRanking(mode);
-  ui.renderRankInto($("quest-rank-pane"), rows, mode, showQuestRank);
+  if (document.body.dataset.view !== "rank") return;   // 받아오는 사이 다른 화면으로 갔으면 그리지 않음
+  ui.renderRankInto($("rank-pane"), rows, mode, showRank);
 }
 
 function onReset() {
@@ -473,17 +434,11 @@ function leaveZone() {
   stopZoneGeofence();
   chat.clear();
   resetZoneTheme();
-  if (map) {
-    tileLayers = tileLayers.filter((t) => t.targetMap !== map);
-    map.remove(); map = null; marker = null;
-  }
+  if (map) { map.destroy(); map = null; }
 }
 
 function clearCampusMap() {
-  if (campusMap) {
-    tileLayers = tileLayers.filter((t) => t.targetMap !== campusMap);
-    campusMap.remove(); campusMap = null;
-  }
+  if (campusMap) { campusMap.destroy(); campusMap = null; }
 }
 
 // 구역 부가정보(extraInfo)가 있으면 상단 구역 이름 옆에 ⓘ 버튼을 띄운다 (대화 흐름을 막지 않도록).
@@ -548,7 +503,7 @@ async function runZone(zone, resuming = false) {
 
   if (!store.isVerified(zone.id)) {
     if (!resuming) {
-      await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>파란 원</b> 안으로 들어와 줘.");
+      await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>빨간 점선 영역</b> 안으로 들어와 줘.");
     }
 
     if (DEMO_MODE) {
@@ -615,11 +570,8 @@ async function startJourney(zone) {
   }
 
   if (map) {
-    const routeColor = getComputedStyle(document.documentElement).getPropertyValue("--zone-accent").trim() || "#d4121a";
-    L.polyline(route.map((p) => [p.lat, p.lng]), {
-      color: routeColor, weight: 4, opacity: .85, lineCap: "round",
-    }).addTo(map);
-    map.flyToBounds(route.map((p) => [p.lat, p.lng]), { padding: [30, 30] });
+    map.setRoute(route);   // 점선 경로
+    map.fit([...route, target], 30);
   }
 
   let simPos = { ...here, accuracy: 5 };
@@ -644,7 +596,7 @@ async function startJourney(zone) {
     if (pick === "teleport") {
       simPos = { ...target, accuracy: 5 };
       updateMarker(simPos);
-      if (map) map.flyTo([target.lat, target.lng], 17);
+      if (map) map.fit([target], (zone.radius || 50) + 60);
       continue; // 상태 갱신 후 버튼 다시 노출
     }
 
@@ -670,7 +622,6 @@ function verifyLocation(zone) {
       $("btn-skip")?.classList.add("hidden");
       $("zone-top")?.classList.add("collapsed");   // 인증이 끝나면 지도를 접어 대화 공간 확보
       if ($("btn-map")) $("btn-map").textContent = "지도 펴기";
-      setTimeout(() => map && map.invalidateSize(), 300);
       resolve();
     };
     const verify = geo.createVerifier(zone, 3, finish);
@@ -723,9 +674,9 @@ async function missionMenu(zone) {
       }),
       ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
       ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)" (장주연)
-      { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
+      { label: "장소 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
-    if (pick === "__home") { goTab("quest"); return; }
+    if (pick === "__home") { goTab("explore"); return; }
     if (pick === "__tour") { tour?.next(zone); return; }
     if (pick === "__ar") {   // AR 호반우 (장주연): 처음 만나면 +20 XP
       const r = await startAR(zone);
@@ -753,93 +704,52 @@ async function finishZone(zone) {
   if (allCleared() && store.grantBonus("all", 200)) {
     ui.reward(200);
     await chat.bot("우와, <b>전 구역 완주</b>했네!<br>완주 보너스 <b>200 XP</b>까지 챙겼어.");
-    ui.showFinale(() => goTab("quest", { mode: "rank" }));
+    ui.showFinale(() => goTab("rank"));
   }
 
   const canReplay = zone.missions.some((m) => m.type === "photo" || m.type === "ar");
   const next = await chat.choices([
     ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)"를 맨 앞에 (장주연)
-    { label: "다른 구역 보기", value: "quest" },
-    { label: "랭킹 보기", value: "quest-rank" },
+    { label: "다른 장소 보기", value: "explore" },
+    { label: "랭킹 보기", value: "rank" },
     ...(canReplay ? [{ label: "사진·AR 미션 다시 하기", value: "stay", ghost: true }] : []),   // (장주연)
   ]);
   if (next === "__tour") { tour?.next(zone); return; }
   if (next === "stay") return "stay";
-  if (next === "quest-rank") goTab("quest", { mode: "rank" });
-  else goTab("quest");
+  if (next === "rank") goTab("rank");
+  else goTab("explore");
 }
 
-/* ================= 지도 ================= */
+/* ================= 지도 (캠퍼스 일러스트 지도, campusmap.js) ================= */
+const zoneCleared = (zone) => zone.missions.every((m) => store.isDone(m.id));
+
+// 탐험 화면: 캠퍼스 전체 + 장소 핀. 핀을 누르면 말풍선 → "미션 보기"
 function initCampusMap(onSelect) {
-  if (!zones.length) return;
-  if (!window.L) {
-    $("campus-map").textContent = "지도를 불러오지 못했어요. 네트워크 연결을 확인해 주세요.";
-    return;
-  }
-  const center = [
-    zones.reduce((sum, zone) => sum + zone.lat, 0) / zones.length,
-    zones.reduce((sum, zone) => sum + zone.lng, 0) / zones.length,
-  ];
-  campusMap = L.map("campus-map").setView(center, 16);
-  const { baseLayer, refLayer } = addBaseTiles(campusMap);
-  tileLayers.push({ targetMap: campusMap, baseLayer, refLayer });
-
-  const bounds = [];
-  zones.forEach((zone) => {
-    const cleared = zone.missions.every((m) => store.isDone(m.id));
-    const position = [zone.lat, zone.lng];
-    bounds.push(position);
-
-    L.circle(position, {
-      radius: Math.max(zone.radius, 40),
-      color: cleared ? "#d4121a" : "#9a8c7c",
-      weight: cleared ? 2 : 1,
-      fillColor: cleared ? "#d4121a" : "#9a8c7c",
-      fillOpacity: cleared ? 0.22 : 0.07,
-    }).addTo(campusMap);
-
-    const icon = L.divIcon({
-      className: "",
-      html: `<div class="zone-pin ${cleared ? "cleared" : ""}">
-               <span class="zone-pin-emoji">${ui.esc(zone.emoji)}</span>
-               ${cleared ? '<span class="zone-pin-check">✓</span>' : ""}
-             </div>`,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -22],
-    });
-
-    const pin = L.marker(position, { icon }).addTo(campusMap).bindPopup(`
-      <b>${ui.esc(zone.emoji)} ${ui.esc(zone.name)}</b>
-      <button type="button" class="map-zone-button">${cleared ? "다시 보기" : "미션 보기"}</button>`);
-    pin.on("popupopen", (event) => {
-      event.popup.getElement().querySelector(".map-zone-button").onclick = () => onSelect(zone);
-    });
+  const el = $("campus-map");
+  if (!zones.length || !el) return;
+  if (!campusDataReady()) { el.textContent = "지도를 불러오지 못했어요. 아래 목록에서 장소를 골라 주세요."; return; }
+  campusMap = new CampusMap(el);
+  const next = zones.find((z) => !zoneCleared(z));
+  campusMap.setZones(zones, {
+    status: (z) => (zoneCleared(z) ? "cleared" : z === next ? "next" : ""),
+    onSelect,
   });
-  campusMap.fitBounds(bounds, { padding: [28, 28], maxZoom: 17 });
 }
 
+// 장소 화면: 그 장소 주변으로 확대 + 인증 영역(원/건물 윤곽) + 내 위치
 function initMap(zone) {
-  map = L.map("map").setView([zone.lat, zone.lng], 17);
-  const { baseLayer, refLayer } = addBaseTiles(map);
-  tileLayers.push({ targetMap: map, baseLayer, refLayer });
-
-  // zone.polygon(건물/길 윤곽 좌표 배열)이 있으면 그 모양 그대로, 없으면 원형 반경으로 표시
-  if (zone.polygon && zone.polygon.length >= 3) {
-    L.polygon(zone.polygon.map((p) => [p.lat, p.lng]), { color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
-  } else {
-    L.circle([zone.lat, zone.lng], { radius: zone.radius, color: "#3182f6", weight: 2, fillOpacity: 0.12 }).addTo(map);
-  }
-  L.marker([zone.lat, zone.lng]).addTo(map).bindPopup(zone.name);
-
-  // 디버그: 지도 클릭 = 그 위치로 순간이동
-  if (DEBUG) map.on("click", (e) => geo.injectMockPosition(e.latlng.lat, e.latlng.lng));
+  if (!campusDataReady() || !$("map")) return;
+  map = new CampusMap($("map"), {
+    // 디버그: 지도 클릭 = 그 위치로 순간이동
+    onMapClick: DEBUG ? (p) => geo.injectMockPosition(p.lat, p.lng) : null,
+  });
+  map.setArea(zone);
+  map.setZones([zone], { status: () => (zoneCleared(zone) ? "cleared" : "next") });
+  map.fit([zone], (zone.radius || 50) + 60);
 }
 
 function updateMarker(pos) {
-  if (!map) return;
-  if (!marker) marker = L.circleMarker([pos.lat, pos.lng], { radius: 8, color: "#ffffff", weight: 3, fillColor: "#191f28", fillOpacity: 1 }).addTo(map);
-  else marker.setLatLng([pos.lat, pos.lng]);
+  map?.setMe(pos);
 }
 
 function toggleMap() {
@@ -847,7 +757,6 @@ function toggleMap() {
   if (!zoneTop) return;
   const collapsed = zoneTop.classList.toggle("collapsed");
   if ($("btn-map")) $("btn-map").textContent = collapsed ? "지도 펴기" : "지도 접기";
-  setTimeout(() => map && map.invalidateSize(), 300);
 }
 
 init();
