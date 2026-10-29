@@ -18,6 +18,7 @@ const empty = () => ({
   daily: { checkin: { lastDate: null, streak: 0 }, quiz: { lastDate: null, correct: false } },  // 데일리 출석체크 / 퀴즈
   levelLog: [],    // [{ level, at }]  레벨업할 때마다 기록 (내 정보 탭의 "레벨 기록"에 사용)
   hiddenClaims: {}, // { hiddenMissionId: "YYYY-MM-DD" }  히든미션을 오늘 이미 했는지
+  photoHashes: {},  // { missionId: "0101...(64자리)" }  미션별로 제출한 사진의 pHash (재사용 사진 감지용)
 });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -218,5 +219,16 @@ export function claimHiddenMission(id) {
   const s = load();
   s.hiddenClaims = s.hiddenClaims || {};
   s.hiddenClaims[id] = todayStr();
+  save(s);
+}
+
+/* ---------- 사진 재사용(pHash) 기록 ---------- */
+export function getPhotoHashes() {
+  return load().photoHashes || {};
+}
+export function savePhotoHash(missionId, hash) {
+  const s = load();
+  s.photoHashes = s.photoHashes || {};
+  s.photoHashes[missionId] = hash;
   save(s);
 }

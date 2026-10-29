@@ -3,16 +3,18 @@ import { completeMission } from "./storage.js";
 import { reward, esc, showComposer } from "./ui.js";
 import { sendFriendRequest, hasConfirmedTogether } from "./friend.js";
 import { joinQueue, leaveQueue, waitForMatch } from "./match.js";
-import { isDone } from "./storage.js";
+import { isDone, getPhotoHashes, savePhotoHash } from "./storage.js";
 import { startAR, openPhotoStudio, photoItemsFor, MASCOTS } from "./ar.js";   // AR 호반우 (장주연)
 import { getCachedProfile } from "./supa.js";
 import { postCommunity } from "./community.js";
 import { verifyMissionPhoto } from "./verify.js";
+import { computeAHash, hammingDistance } from "./phash.js";
 
 const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝", ar: "✨" };
 export const icon = (type) => ICON[type] || "⭐";
 
 const FIRST_TRY_BONUS = 20;
+const DUPLICATE_HASH_THRESHOLD = 10;   // 64비트 중 이만큼 이내로 다르면 "같은 사진 재사용"으로 본다
 
 // 미션 1개를 대화로 진행한다. 끝나면 점수를 기록하고 보상 효과를 보여준다.
 export async function runMission(m, zone) {
@@ -183,7 +185,24 @@ async function photo(m, zone) {
       chat.user(`<img class="shot" src="${URL.createObjectURL(file)}" alt="제출한 사진">`);
     }
 
-    // AI가 이 사진이 미션 내용과 맞는지 확인한다. 안 맞으면 거절하고 다시 찍게 한다.
+    // 1단계(무료): 이 사진이 이미 "다른" 미션에서 제출했던 사진이랑 거의 똑같은지 먼저 확인한다.
+    // AI(Gemini) 호출 전에 공짜로 걸러내서, 뻔한 사진 재사용은 AI를 부르지도 않고 바로 거절한다.
+    let hash = null;
+    try {
+      hash = await computeAHash(shot);
+      const hashes = getPhotoHashes();
+      const isDuplicate = Object.entries(hashes).some(
+        ([otherMissionId, otherHash]) => otherMissionId !== m.id && hammingDistance(hash, otherHash) <= DUPLICATE_HASH_THRESHOLD
+      );
+      if (isDuplicate) {
+        await chat.bot("어? 이거 다른 미션에서 찍었던 사진이랑 거의 똑같아 보이는데? 이 미션에 맞는 새 사진으로 찍어줄래?");
+        continue;
+      }
+    } catch {
+      // 해시 계산이 실패해도(지원 안 되는 파일 형식 등) 그냥 다음 단계(AI 검증)로 진행한다
+    }
+
+    // 2단계(AI): 재사용 사진이 아니면, 그제서야 Gemini한테 미션 내용과 맞는 사진인지 물어본다.
     await chat.bot("사진을 확인하고 있어요... 🔍");
     const verdict = await verifyMissionPhoto(m.title, m.desc, shot);
     if (!verdict.ok) {
@@ -192,6 +211,8 @@ async function photo(m, zone) {
       );
       continue;
     }
+
+    if (hash) savePhotoHash(m.id, hash);   // 통과한 사진의 해시를 기억해뒀다가, 다음 미션에서 재사용하면 잡아낸다
 
     await offerCommunityUpload(zone, shot);
     return;

@@ -139,12 +139,16 @@ function injectStyle() {
   #ar-otter-say::after{content:"";position:absolute;top:100%;left:26px;border:6px solid transparent;border-top-color:#fff8d6}
   @keyframes ar-otter-hop{40%{transform:translateY(-26px) rotate(-6deg)}70%{transform:translateY(0) rotate(4deg)}}
   @keyframes ar-otter-spin{50%{transform:translateY(-20px) rotate(180deg) scale(1.1)}100%{transform:rotate(360deg)}}
-  #ar-sudal{position:absolute;left:50%;bottom:0;width:min(100vw,560px);transform:translate(-50%,100%);z-index:3;pointer-events:none;
-    transition:transform .55s cubic-bezier(.2,1.3,.4,1)}
-  #ar-sudal.up{transform:translate(-50%,8%)}
-  #ar-sudal img{display:block;width:100%;height:auto}
-  #ar-sudal p{position:absolute;left:50%;bottom:calc(100% - 4%);transform:translateX(-50%);margin:0;background:#fff;color:#5a3d00;padding:10px 16px;
-    border-radius:16px;font-size:16px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  /* 큰 수달: 아래 버튼 줄 바로 위에서 쏙 올라온다. 크기는 폭(폰)과 높이(PC) 둘 다로 제한 */
+  #ar-sudal{position:absolute;left:50%;bottom:calc(max(24px,env(safe-area-inset-bottom)) + 58px);
+    width:min(92vw,420px,calc(38vh * 1.56));transform:translate(-50%,40px);opacity:0;z-index:3;pointer-events:none;
+    transition:transform .5s cubic-bezier(.2,1.3,.4,1),opacity .35s}
+  #ar-sudal.up{transform:translate(-50%,0);opacity:1}
+  #ar-sudal img{display:block;width:100%;height:auto;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+  #ar-sudal p{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);margin:0;background:#fff;color:#5a3d00;padding:10px 16px;
+    border-radius:16px;font-size:16px;font-weight:800;white-space:nowrap;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);transition:opacity .2s}
+  #ar-sudal:not(.up) p{opacity:0}
   #ar-sudal p::after{content:"";position:absolute;top:100%;left:50%;margin-left:-8px;border:8px solid transparent;border-top-color:#fff}
   #ar-otter.flee{animation:ar-otter-out .9s ease-in forwards;pointer-events:none}
   @keyframes ar-otter-in{from{transform:translateY(70px) scale(.6);opacity:0}to{transform:none;opacity:1}}
@@ -419,9 +423,10 @@ export function startAR(zone, opts = {}) {
       pos.x = -diff * PX;
       pos.y = Math.max(-200, Math.min(200, ((e.beta ?? 90) - 90) * PX));
 
-      const inView = Math.abs(diff) < VIEW / 2 + 10;
-      if (inView && !visible) show();
-      else if (!inView && visible) hide();
+      // 화면 가장자리에서 보였다 안 보였다 반복(깜박임)하지 않게 나타날 때/사라질 때 기준을 다르게 둔다
+      const ad = Math.abs(diff);
+      if (!visible && ad < VIEW / 2 + 10) show();
+      else if (visible && ad > VIEW / 2 + 28) hide();
       headingFns.forEach((fn) => fn({ diff, y: pos.y }));
     }
 
@@ -436,7 +441,8 @@ export function startAR(zone, opts = {}) {
       visible = true;
       $("ar-stage").style.display = "block";
       const inner = $("ar-inner");
-      inner.classList.remove("pop"); void inner.offsetWidth; inner.classList.add("pop");
+      if (Date.now() - (show.last || 0) > 1500) { inner.classList.remove("pop"); void inner.offsetWidth; inner.classList.add("pop"); }
+      show.last = Date.now();
       navigator.vibrate?.(150);
       $("ar-shot").classList.remove("ar-hidden");
       if (!met && !mission && !hiddenOtter) info("호반우 발견! 눌러 보거나 쓰다듬어 봐 👆");
@@ -1186,6 +1192,10 @@ export function openDex() {
   box.onclick = (e) => { if (e.target === box) box.remove(); };
 }
 
+// 호반우 탭 아래에 다른 기능(투어 뱃지 등)을 붙일 수 있게 하는 자리. tour.js가 등록한다
+let paneExtra = null;
+export function setHobanuPaneExtra(fn) { paneExtra = fn; }
+
 // 탐색 화면의 "호반우" 탭: 사진 찍기 버튼 + 도감을 container 안에 그린다
 export function renderHobanuPane(container) {
   if (!container) return;
@@ -1202,7 +1212,9 @@ export function renderHobanuPane(container) {
           <div class="dex-head"><b>📖 호반우 도감</b><span>${b.n} / ${b.total}</span></div>
           ${b.html}
         </div>
+        <div class="hob-extra"></div>
       </div>`;
+    try { paneExtra?.(container.querySelector(".hob-extra")); } catch (e) { console.warn(e); }
     container.querySelector(".hob-photo-cta").onclick = async () => {
       await openPhotoStudio();
       draw();

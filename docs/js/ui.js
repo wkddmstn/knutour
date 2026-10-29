@@ -1,5 +1,6 @@
 import { getState, isDone, getLevel, getLevelTable, getLevelLog } from "./storage.js";
 import { getCachedProfile } from "./supa.js";
+import { pickBest } from "./community.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -141,6 +142,7 @@ export function renderQuestShell(cleared = 0, total = 0) {
     <div class="seg quest-seg">
       <button data-m="map" class="on">지도</button>
       <button data-m="rank">랭킹</button>
+      <button data-m="hobanu">호반우</button>   <!-- 호반우 도감·사진·투어 뱃지 (장주연) -->
     </div>
     <div id="quest-map-pane">
       <h1 class="sec campus-title">캠퍼스 지도</h1>
@@ -156,7 +158,8 @@ export function renderQuestShell(cleared = 0, total = 0) {
       <h3 class="sec">구역 목록</h3>
       <div id="zone-list"></div>
     </div>
-    <div id="quest-rank-pane" class="hidden"></div>`;
+    <div id="quest-rank-pane" class="hidden"></div>
+    <div id="quest-hobanu-pane" class="hidden"></div>`;
 }
 
 // 구역 목록: 남은 구역은 위, 다 깬 구역은 아래로. 방금 막 다 깬 구역(justCleared)은 "통과" 도장 효과
@@ -284,38 +287,282 @@ export function renderRankInto(container, rows, mode, onMode) {
 }
 
 /* ---------- 커뮤니티 ---------- */
-// posts: community_posts 테이블 최신순 목록, filter: "all" | "mine"
-export function renderCommunity(zones, posts, filter) {
+const ICON_HEART = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.5-9.4C1.2 7.9 3.4 4.4 7 4.4c2.2 0 3.8 1.2 5 3 1.2-1.8 2.8-3 5-3 3.6 0 5.8 3.5 4.5 6.8-1.9 4.8-9.5 9.4-9.5 9.4z"/></svg>`;
+const ICON_PENCIL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>`;
+const ICON_ASK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.8"/><path d="M12 18h.01"/></svg>`;
+const ICON_COMMENT =`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.5a8.4 8.4 0 1 1 15.6-4.4z"/></svg>`;
+
+// "방금 전", "5분 전", "3시간 전", "2일 전", 일주일이 넘으면 날짜
+export function timeAgo(iso) {
+  const sec = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return "방금 전";
+  if (sec < 3600) return `${Math.floor(sec / 60)}분 전`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}일 전`;
+  return new Date(iso).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+}
+
+const avatar = (name, cls = "") => `<span class="avatar ${cls}" aria-hidden="true">${esc([...String(name || "?")][0])}</span>`;
+// 카드 아래쪽: 자유게시판은 "좋아요 N개 / 댓글 N개 모두 보기",
+// 질문글은 좋아요를 가장 많이 받은 답변(베스트 답변)을 펼쳐 보여줘서 글을 열지 않아도 답을 알 수 있게 한다.
+function postFootHtml(p) {
+  if (p.kind !== "question") {
+    return `
+      ${p.like_count ? `<b class="like-line">좋아요 ${p.like_count}개</b>` : ""}
+      <button class="comment-line" type="button" data-act="comment">${p.comment_count ? `댓글 ${p.comment_count}개 모두 보기` : "첫 댓글을 남겨보세요"}</button>`;
+  }
+  if (p.best) {
+    const others = p.comment_count - 1;
+    return `
+      <button class="best-ans" type="button" data-act="comment">
+        <span class="best-top">
+          <span class="best-badge">👑 베스트 답변</span>
+          <b>${esc(p.best.nickname)}</b>
+          <span class="best-like">${ICON_HEART}${p.best.like_count}</span>
+        </span>
+        <span class="best-text">${esc(p.best.message)}</span>
+        <span class="best-more">${others > 0 ? `다른 답변 ${others}개 더 보기` : "답변 보기"}</span>
+      </button>`;
+  }
+  return `<button class="comment-line" type="button" data-act="comment">${
+    p.comment_count ? `답변 ${p.comment_count}개 보기 · 도움이 된 답변에 ♥를 눌러주세요` : "아직 답변이 없어요 · 첫 답변을 남겨보세요"}</button>`;
+}
+
+function postCardHtml(p, zoneName, myId) {
+  const q = p.kind === "question";
+  return `
+    <article class="post ${q ? "q-post" : ""} ${p.guide ? "guide" : ""}" data-post="${esc(p.id)}">
+      ${p.guide ? `<div class="guide-ribbon">📌 이렇게 질문해 보세요 · 예시</div>` : ""}
+      <header class="post-head">
+        ${avatar(p.nickname)}
+        <div class="post-meta">
+          <b>${esc(p.nickname)}${p.guide ? ` <span class="guide-chip">가이드</span>` : ""}</b>
+          <span>${p.zone_id ? `<em>📍 ${esc(zoneName(p.zone_id))}</em> · ` : ""}${p.guide ? "고정됨" : timeAgo(p.created_at)}</span>
+        </div>
+        ${!p.guide && p.user_id !== myId ? `<button class="post-report" type="button" data-act="report" aria-label="신고하기" title="신고하기">🚩</button>` : ""}
+      </header>
+      ${p.photo_url ? `
+      <div class="post-photo" data-act="photo">
+        <img src="${esc(p.photo_url)}" alt="${esc(p.nickname)}님이 올린 사진" loading="lazy">
+        <span class="heart-burst" aria-hidden="true">${ICON_HEART}</span>
+      </div>` : ""}
+      ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${q ? `<span class="q-mark">Q.</span>` : ""}${esc(p.message)}</p>` : ""}
+      <div class="post-actions">
+        <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
+                aria-pressed="${p.liked}" aria-label="${q ? "나도 궁금해요" : "좋아요"}">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
+        <button class="act act-comment" type="button" data-act="comment" aria-label="${q ? "답변" : "댓글"}">${ICON_COMMENT}<span class="act-n">${p.comment_count || ""}</span></button>
+        ${q && p.like_count ? `<span class="act-hint">${p.like_count}명이 궁금해해요</span>` : ""}
+      </div>
+      <div class="post-foot">${postFootHtml(p)}</div>
+    </article>`;
+}
+
+// board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
+// myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
+// 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
+export function renderCommunity(zones, posts, { board = "post", filter = "all" } = {}, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
+  const q = board === "question";
   $("view-community").innerHTML = `
-    <h1 class="sec" style="margin-top:4px">💬 게시판</h1>
-    <p class="map-guide">캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요.</p>
+    <h1 class="sec" style="margin-top:4px">💬 커뮤니티</h1>
+    <div class="seg" role="tablist" style="margin:10px 0 6px">
+      <button data-board="post" role="tab" aria-selected="${!q}" class="${q ? "" : "on"}">자유게시판</button>
+      <button data-board="question" role="tab" aria-selected="${q}" class="${q ? "on" : ""}">❓ 질문</button>
+    </div>
+    <p class="map-guide">${q
+      ? "캠퍼스·미션에 대해 궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변으로 올라가요."
+      : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요."}</p>
     <div class="seg-sub" style="margin:10px 0">
       <button data-f="all" class="${filter === "all" ? "on" : ""}">전체</button>
-      <button data-f="mine" class="${filter === "mine" ? "on" : ""}">내 글</button>
+      <button data-f="mine" class="${filter === "mine" ? "on" : ""}">${q ? "내 질문" : "내 글"}</button>
     </div>
-    <button id="btn-compose" class="btn" style="margin-bottom:14px">✏️ 글쓰기 · 사진 올리기</button>
-    <div class="list-card">
-      ${posts.length ? posts.map((p) => `
-        <div class="gb-entry">
-          ${p.photo_url ? `<img class="gb-photo" src="${esc(p.photo_url)}" alt="">` : ""}
-          <div class="gb-body">
-            <b>${esc(p.nickname)}${p.zone_id ? ` · <span style="color:var(--primary)">📍 ${esc(zoneName(p.zone_id))}</span>` : ""}</b>
-            <span>${esc(p.message)}</span>
-          </div>
-          <button class="gb-report" type="button" data-report="${p.id}" title="신고">🚩</button>
-        </div>`).join("") : `
+    <div class="feed">
+      ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
-          <p style="color:var(--mute);margin:0">${filter === "mine" ? "아직 올린 글이 없어요" : "아직 글이 없어요. 첫 글을 남겨보세요!"}</p>
+          <p style="color:var(--mute);margin:0">${filter === "mine"
+            ? (q ? "아직 올린 질문이 없어요" : "아직 올린 글이 없어요")
+            : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
         </div>`}
     </div>`;
+
+  // 글쓰기 버튼은 오른쪽 아래에 떠 있는 동그란 버튼(FAB). .view는 등장 애니메이션에 transform을 써서
+  // 그 안에 두면 position: fixed가 애니메이션 동안 흔들리므로 #app에 한 번만 만들어 두고,
+  // 커뮤니티 화면일 때만 CSS로 보이게 한다.
+  let fab = $("btn-compose");
+  if (!fab) {
+    fab = Object.assign(document.createElement("button"), { id: "btn-compose", className: "fab", type: "button" });
+    $("app").appendChild(fab);
+  }
+  const label = q ? "질문하기" : "글쓰기 · 사진 올리기";
+  fab.setAttribute("aria-label", label);
+  fab.title = label;
+  fab.innerHTML = q ? ICON_ASK : ICON_PENCIL;
+}
+
+// 좋아요/댓글 수가 바뀌었을 때 화면 전체를 다시 그리지 않고 그 글 카드만 고친다 (스크롤 위치 유지)
+export function updatePostCard(p, { pop = false } = {}) {
+  const card = document.querySelector(`#view-community [data-post="${CSS.escape(p.id)}"]`);
+  if (!card) return;
+  const like = card.querySelector(".act-like");
+  like.classList.toggle("on", p.liked);
+  like.setAttribute("aria-pressed", p.liked);
+  like.querySelector(".act-n").textContent = p.like_count || "";
+  if (pop) { like.classList.remove("pop"); void like.offsetWidth; like.classList.add("pop"); }
+  card.querySelector(".act-comment .act-n").textContent = p.comment_count || "";
+  const hint = card.querySelector(".act-hint");
+  if (p.kind === "question") {
+    if (p.like_count) {
+      const h = hint || card.querySelector(".post-actions").appendChild(Object.assign(document.createElement("span"), { className: "act-hint" }));
+      h.textContent = `${p.like_count}명이 궁금해해요`;
+    } else hint?.remove();
+  }
+  card.querySelector(".post-foot").innerHTML = postFootHtml(p);
+}
+
+// 사진 더블탭 시 가운데 큰 하트가 톡 튀어나왔다 사라지는 효과
+export function heartBurst(postId) {
+  const b = document.querySelector(`#view-community [data-post="${CSS.escape(postId)}"] .heart-burst`);
+  if (!b) return;
+  b.classList.remove("go"); void b.offsetWidth; b.classList.add("go");
+}
+
+/* ---------- 댓글 시트 ---------- */
+// 아래에서 올라오는 시트. load() => Promise<comments[] | null>, add(text) => Promise<{ok, comment, reason}>,
+// remove(id) => Promise<boolean>, likeComment(id, like) => Promise<boolean>.
+// 댓글이 늘거나 줄거나 좋아요가 바뀔 때마다 onChange(comments)를 부른다.
+// question: 질문글이면 제목이 "답변"이 되고, 질문 내용(context)을 위에 보여주며, 베스트 답변에 배지를 단다.
+// readOnly: 가이드 예시처럼 답변·좋아요를 막아야 할 때.
+export function showComments({ myId, myName, question = false, context = "", readOnly = false,
+                               load, add, remove, likeComment, onChange }) {
+  const noun = question ? "답변" : "댓글";
+  const m = $("modal");
+  m.classList.remove("hidden", "modal-center");
+  m.innerHTML = `
+    <div class="cm-sheet" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+      <div class="cm-grab" aria-hidden="true"></div>
+      <header class="cm-head">
+        <b id="cm-title">${noun}</b><span id="cm-count"></span>
+        <button id="cm-close" class="cm-x" type="button" aria-label="닫기">✕</button>
+      </header>
+      ${context ? `<div class="cm-context"><span class="q-mark">Q.</span>${esc(context)}</div>` : ""}
+      <div id="cm-list" class="cm-list" aria-live="polite">
+        <div class="cm-empty"><span class="cm-spin" aria-hidden="true"></span>불러오는 중…</div>
+      </div>
+      <form id="cm-form" class="cm-form" autocomplete="off">
+        ${avatar(myName, "sm")}
+        <input id="cm-in" class="cm-in" maxlength="200" enterkeyhint="send" ${readOnly ? "disabled" : ""}
+               placeholder="${readOnly ? "예시 글에는 답변을 달 수 없어요" : `${esc(myName || "나")}(으)로 ${noun} 달기…`}">
+        <button id="cm-send" class="cm-send" type="submit" disabled>게시</button>
+      </form>
+    </div>`;
+
+  let comments = [];
+  const list = $("cm-list"), input = $("cm-in"), send = $("cm-send");
+  const pendingLikes = new Set();
+
+  const row = (c, best) => `
+    <div class="cm-row ${best ? "is-best" : ""}" data-cid="${esc(c.id)}">
+      ${avatar(c.nickname, "sm")}
+      <div class="cm-body">
+        ${best ? `<span class="best-badge">👑 베스트 답변</span>` : ""}
+        <div><b>${esc(c.nickname)}</b><time>${timeAgo(c.created_at)}</time>
+          ${c.user_id && c.user_id === myId ? `<button class="cm-del" type="button" data-del="${esc(c.id)}">삭제</button>` : ""}</div>
+        <p>${esc(c.message)}</p>
+      </div>
+      <button class="cm-like ${c.liked ? "on" : ""}" type="button" data-clike="${esc(c.id)}"
+              aria-pressed="${!!c.liked}" aria-label="${noun} 좋아요">${ICON_HEART}<span>${c.like_count || ""}</span></button>
+    </div>`;
+  const paint = () => {
+    $("cm-count").textContent = comments.length || "";
+    const best = question ? pickBest(comments) : null;
+    list.innerHTML = comments.length ? comments.map((c) => row(c, c === best)).join("")
+      : `<div class="cm-empty"><b>아직 ${noun}이 없어요</b>${question ? "아는 만큼 편하게 알려주세요 🙌" : "첫 번째로 이야기를 건네보세요 💬"}</div>`;
+  };
+  const changed = () => { paint(); onChange?.(comments); };
+
+  load().then((data) => {
+    if (data === null) {
+      list.innerHTML = `<div class="cm-empty"><b>댓글을 불러오지 못했어요</b>잠시 후 다시 시도해 주세요.</div>`;
+      return;
+    }
+    comments = data;
+    paint();
+    list.scrollTop = list.scrollHeight;
+  });
+
+  input.oninput = () => { send.disabled = !input.value.trim(); };
+  $("cm-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || send.disabled) return;
+    send.disabled = true;
+    input.disabled = true;
+    const r = await add(text);
+    input.disabled = false;
+    if (r?.ok) {
+      comments.push(r.comment);
+      input.value = "";
+      changed();
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    } else {
+      send.disabled = false;
+      toast(r?.reason === "banned_word" ? "부적절한 표현이 포함되어 있어요." : `${noun}을 남기지 못했어요. 잠시 후 다시 시도해 주세요.`);
+    }
+    input.focus();
+  };
+
+  list.onclick = async (e) => {
+    const likeBtn = e.target.closest("[data-clike]");
+    if (likeBtn) {
+      const c = comments.find((x) => x.id === likeBtn.dataset.clike);
+      if (!c || pendingLikes.has(c.id)) return;
+      if (readOnly) { toast("예시 글이라 좋아요를 누를 수 없어요."); return; }
+      const like = !c.liked;
+      pendingLikes.add(c.id);
+      c.liked = like;
+      c.like_count += like ? 1 : -1;
+      changed();
+      if (like) list.querySelector(`[data-clike="${CSS.escape(c.id)}"]`)?.classList.add("pop");
+      if (!(await likeComment(c.id, like))) {
+        c.liked = !like;
+        c.like_count += like ? -1 : 1;
+        changed();
+        toast("좋아요를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      }
+      pendingLikes.delete(c.id);
+      return;
+    }
+    const btn = e.target.closest("[data-del]");
+    if (!btn || !confirm(`이 ${noun}을 삭제할까요?`)) return;
+    btn.disabled = true;
+    if (await remove(btn.dataset.del)) {
+      comments = comments.filter((c) => c.id !== btn.dataset.del);
+      changed();
+    } else {
+      btn.disabled = false;
+      toast("삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+
+  const close = () => {
+    document.removeEventListener("keydown", onKey);
+    m.classList.add("hidden");
+    m.innerHTML = "";
+    m.onclick = null;
+  };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  $("cm-close").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
 }
 
 /* ---------- 커뮤니티 글쓰기 (일반 글쓰기 + 미션 사진 업로드 공용) ---------- */
 // zones: [{id,name}] 배열을 주면 장소 선택 드롭다운이 뜬다. lockZone이 true면 zoneName 하나만 고정 표시(선택 불가).
 // photo를 미리 주면(File 객체 또는 "data:"로 시작하는 dataURL) 사진 선택 없이 바로 미리보기만 보여준다.
 // onSubmit(message, photo, zoneId) => Promise<boolean>. onClose()는 모달이 닫힐 때(성공/취소 상관없이) 한 번 호출된다.
-export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZone = false, photo = null, onSubmit, onClose }) {
+// title·placeholder를 주면 제목과 입력 안내 문구를 바꾼다 (질문하기 등).
+export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZone = false, photo = null,
+                               title = "", placeholder = "무슨 얘기를 남길까요?", onSubmit, onClose }) {
   const m = $("modal");
   m.classList.remove("hidden");
   m.classList.add("modal-center");
@@ -324,7 +571,7 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
 
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:18px;text-align:center">${photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기"}</h2>
+      <h2 style="font-size:18px;text-align:center">${title || (photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기")}</h2>
       ${!lockZone && zones ? `
         <select id="cw-zone" class="text-in" style="margin-bottom:8px">
           <option value="">📍 장소 선택 안 함</option>
@@ -334,7 +581,7 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
         ? `<img class="gb-photo-lg" src="${photoSrc(photo)}" alt="">`
         : `<label class="btn-file small">📷 사진 추가 (선택)<input id="cw-photo" type="file" accept="image/*" hidden></label>
            <span id="cw-photo-name" class="sum-foot" style="margin:4px 0 0;display:block"></span>`}
-      <textarea id="cw-msg" class="text-in" placeholder="무슨 얘기를 남길까요?" maxlength="200" rows="3" style="margin-top:10px"></textarea>
+      <textarea id="cw-msg" class="text-in" placeholder="${esc(placeholder)}" maxlength="200" rows="3" style="margin-top:10px"></textarea>
       <button id="cw-submit" class="btn" style="margin-top:10px">게시하기</button>
       <button id="cw-close" class="btn alt" style="margin-top:8px">닫기</button>
     </div>`;

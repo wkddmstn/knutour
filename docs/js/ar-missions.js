@@ -51,9 +51,11 @@ function injectStyle() {
     color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px 8px 12px;box-sizing:border-box;text-align:left}
   .arm-cover b{font-size:15px;line-height:1.25;word-break:keep-all}
   .arm-cover small{font-size:10px;opacity:.9}
-  .arm-tree{--tw:min(54vw,440px);position:absolute;width:var(--tw);left:max(-18vw,calc(50% - 70px - var(--tw)));bottom:calc(50% - 160px);
-    z-index:1;pointer-events:none;opacity:0;transition:opacity .6s;will-change:opacity}
+  /* 벚꽃 나무: 호반우 바로 뒤에 붙어서 같이 움직인다 */
+  .arm-tree{position:absolute;left:50%;bottom:-14px;width:min(420px,92vw,52vh);transform:translateX(-50%);z-index:0;pointer-events:none;
+    opacity:0;transition:opacity .5s}
   .arm-tree.on{opacity:1}
+  .arm-tree img,.arm-tree svg{display:block;width:100%;height:auto}
   .arm-tree svg,.arm-tree img{display:block;width:100%;height:auto}
   .arm-bookinfo{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left}
   .arm-bookinfo img{width:58px;height:86px;object-fit:cover;border-radius:3px 6px 6px 3px;box-shadow:0 3px 8px rgba(0,0,0,.25);flex:none}
@@ -342,7 +344,7 @@ function petals(ctx) {
   let caught = 0, left = TIME, tickT = 0, raf = 0, playing = false, spawnAcc = 0, lastT = 0;
 
   // 1) 호반우 옆에 큰 벚꽃 나무
-  // 나무는 휴대폰 화면 기준으로 고정 (호반우처럼 방향 따라 움직이지 않음 → 깜박임 없음)
+  // 나무는 호반우 뒤에 붙여서 같이 움직인다. 그림을 다 불러온 뒤에 넣어서 바뀌며 깜박이지 않게 한다
   const tree = el("div", "arm-tree");
   const png = new Image();
   png.alt = "";
@@ -350,7 +352,7 @@ function petals(ctx) {
   png.onerror = () => { tree.innerHTML = cherryTreeSVG(); tree.classList.add("on"); };
   png.decoding = "async";
   png.src = "img/hobanu/cherry-tree.webp";
-  ctx.root.insertBefore(tree, ctx.root.querySelector("#ar-stage"));
+  ctx.inner.insertBefore(tree, ctx.inner.firstChild);
 
   // 2) 화면 전체에 흩날리는 꽃잎 (캔버스)
   const cv = el("canvas", "arm-petal-canvas");
@@ -603,25 +605,56 @@ function normBox(p) {
   return { pts: p.map((a) => ({ x: (a.x - x0) / w, y: (a.y - y0) / h })), w, h, cx: x0 + w / 2, cy: y0 + h / 2 };
 }
 let HEART_TPL = null;
+// 하트 판정 (완화 버전): 비뚤거나, 홈이 얕거나, 살짝 기울었거나, 덧그려도 웬만하면 통과. 동그라미·세모·별은 실패.
+function judgeOnce(pts0) {
+  const { pts, w, h, cx, cy } = normBox(pts0);
+  if (Math.min(w, h) < 40) return { ok: false, why: "small", cx, cy, w, h };
+  if (w / h > 2.8 || h / w > 2.8) return { ok: false, why: "shape", cx, cy, w, h };
+  const md = (a, set) => { let m = 9; for (const b of set) m = Math.min(m, Math.hypot(a.x - b.x, a.y - b.y)); return m; };
+  const dists = pts.map((a) => md(a, HEART_TPL));
+  const score = (dists.reduce((s, d) => s + d, 0) / pts.length
+    + HEART_TPL.reduce((s, a) => s + md(a, pts), 0) / HEART_TPL.length) / 2;
+  const far = [...dists].sort((x, y) => x - y)[Math.floor(dists.length * 0.9)];   // 낙서처럼 안쪽까지 칠한 건 실패
+  const minY = (f) => { const q = pts.filter(f); return q.length ? Math.min(...q.map((a) => a.y)) : 1; };
+  const notch = minY((a) => a.x > 0.4 && a.x < 0.6) - Math.max(minY((a) => a.x < 0.35), minY((a) => a.x > 0.65));
+  // 양쪽 볼록한 부분: 위쪽 높이(15~50%)에서 좌우 끝까지 퍼져 있어야 한다 (V자는 여기가 좁음)
+  const mid = pts.filter((a) => a.y > 0.15 && a.y < 0.5);
+  const sideOk = mid.length > 2 && Math.min(...mid.map((a) => a.x)) < 0.14 && Math.max(...mid.map((a) => a.x)) > 0.86;
+  const bottom = pts.reduce((b, a) => (a.y > b.y ? a : b));
+  // 아래 끝이 뾰족한지: 맨 아래 15% 높이에 있는 점들의 폭이 좁아야 한다 (동그라미는 넓음)
+  const low = pts.filter((a) => a.y > 0.85);
+  const tipW = low.length ? Math.max(...low.map((a) => a.x)) - Math.min(...low.map((a) => a.x)) : 1;
+  const tipOk = bottom.x > 0.2 && bottom.x < 0.8 && tipW < 0.42;
+  const notchOk = (notch > 0.015 || (notch > -0.01 && score < 0.05)) && notch < 0.55;
+  const ok = score < 0.12 && tipOk && notchOk && sideOk && far < 0.2;
+  return { ok, why: ok ? "" : "shape", score, notch, tipW, cx, cy, w, h };
+}
+const rot = (p, deg) => {
+  const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+  const mx = p.reduce((t, a) => t + a.x, 0) / p.length, my = p.reduce((t, a) => t + a.y, 0) / p.length;
+  return p.map((a) => ({ x: mx + (a.x - mx) * c - (a.y - my) * s, y: my + (a.x - mx) * s + (a.y - my) * c }));
+};
 export function judgeHeart(strokes) {
   HEART_TPL = HEART_TPL || normBox(heartTemplate(64)).pts;
   strokes = strokes.filter((s) => s.length > 1);
-  const raw = resample(strokes, 64);
+  const raw = resample(strokes, 96);
   if (raw.length < 20) return { ok: false, why: "small" };
-  const { pts, w, h, cx, cy } = normBox(raw);
-  if (Math.min(w, h) < 50) return { ok: false, why: "small" };
-  if (w / h > 2.2 || h / w > 2.2) return { ok: false, why: "shape" };
-  const md = (a, set) => { let m = 9; for (const b of set) m = Math.min(m, Math.hypot(a.x - b.x, a.y - b.y)); return m; };
-  const score = (pts.reduce((s, a) => s + md(a, HEART_TPL), 0) / pts.length
-    + HEART_TPL.reduce((s, a) => s + md(a, pts), 0) / HEART_TPL.length) / 2;
-  const minY = (f) => { const q = pts.filter(f); return q.length ? Math.min(...q.map((a) => a.y)) : 1; };
-  const notch = minY((a) => a.x > 0.42 && a.x < 0.58) - Math.max(minY((a) => a.x < 0.35), minY((a) => a.x > 0.65));
-  const bottom = pts.reduce((b, a) => (a.y > b.y ? a : b));
-  const feats = notch > 0.035 && bottom.x > 0.25 && bottom.x < 0.75;
-  let closed = true;
-  if (strokes.length === 1) closed = Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) < 0.4;
-  const ok = closed && feats && score < 0.08;
-  return { ok, why: ok ? "" : !closed ? "open" : "shape", score, cx, cy, w, h };
+  let best = null;
+  for (const deg of [0, -12, 12, -24, 24]) {     // 살짝 기울여 그린 하트도 인정
+    const r = judgeOnce(deg ? rot(raw, deg) : raw);
+    if (r.ok) return r;
+    if (!best || (r.score ?? 9) < (best.score ?? 9)) best = r;
+  }
+  return best;
+}
+// 여러 번 그린 경우: 전체 → 마지막 획 → 마지막 두 획 순서로 하나라도 하트면 성공
+export function judgeHeartMulti(strokes) {
+  const tries = [strokes];
+  if (strokes.length > 1) tries.push(strokes.slice(-1), strokes.slice(-2));
+  if (strokes.length > 3) tries.push(strokes.slice(-3));
+  let last = null;
+  for (const t of tries) { last = judgeHeart(t); if (last.ok) return last; }
+  return judgeHeart(strokes);
 }
 
 function heart(ctx) {
@@ -677,15 +710,15 @@ function heart(ctx) {
     if (!cur) return;
     cur = null;
     clearTimeout(judgeT);
-    judgeT = setTimeout(judge, 450);   // 두 번에 나눠 그리는 사람도 있어서 잠깐 기다렸다가 판정
+    judgeT = setTimeout(judge, 800);   // 여러 번에 나눠 그리거나 덧그리는 사람도 있어서 잠깐 기다렸다가 판정
   };
   cv.addEventListener("pointerup", up);
   cv.addEventListener("pointercancel", up);
 
   const FAIL = {
-    small: "조금 더 크게 그려 줘! 💗",
-    open: "끝을 처음 점이랑 이어 줘! 💗",
-    shape: "위는 볼록볼록, 아래는 뾰족하게! 💗",
+    small: "조금 더 크게 그려 줘!",
+    open: "끝을 처음 점이랑 이어 줘!",
+    shape: "아래를 뾰족하게! 덧그려도 돼",
   };
   const LINES = ["고마워! 나도 좋아 💕", "심쿵… 💘", "하트 받았다! 💗", "우리 완전 단짝이야! 💞"];
 
@@ -694,15 +727,17 @@ function heart(ctx) {
     setTimeout(() => { strokes = []; redraw(); cv.classList.remove("fade"); busy = false; }, delay);
   }
   function judge() {
-    const r = judgeHeart(strokes);
-    busy = true;
+    const r = judgeHeartMulti(strokes);
     if (!r.ok) {
-      redraw("#9aa4b1");
+      // 실패해도 바로 지우지 않는다 → 이어서 덧그리면 다시 판정. 3초 동안 안 그리면 지움
+      redraw("#c3a9b5");
       ctx.say(FAIL[r.why] || FAIL.shape);
       navigator.vibrate?.(60);
-      clear(500);
+      if (strokes.length > 6) strokes = strokes.slice(-3);
+      judgeT = setTimeout(() => clear(400), 3000);
       return;
     }
+    busy = true;
     // 성공: 그린 하트를 채우고, 하트가 호반우에게 날아간다
     redraw("#ff2d78", true);
     navigator.vibrate?.([30, 40, 30]);

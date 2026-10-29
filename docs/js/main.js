@@ -9,8 +9,22 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
-import { listPosts, postCommunity, reportPost } from "./community.js";
+import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
+         setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
+
+// 호반우 캠퍼스 투어 (장주연): tour.js를 "있으면 쓰는" 방식으로 불러온다.
+// tour.js에 문제가 생겨도 import가 실패할 뿐 기존 앱은 그대로 동작한다.
+let tour = null;
+import("./tour.js")
+  .then((m) => {
+    if (!m.TOUR_ON) return;
+    tour = m;
+    m.initTour({ zones: () => zones, openZone, goTab, store, ui });
+    if (document.body.dataset.view === "quest") m.renderQuestCard($("quest-map-pane"));
+  })
+  .catch((e) => console.warn("[투어] 불러오지 못했어요 — 투어 없이 계속합니다", e));
+const tourItem = (zone) => { try { const it = tour?.menuItem(zone); return it ? [it] : []; } catch { return []; } };
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -41,6 +55,7 @@ let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
+let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
 let communityFilter = "all";   // "all" | "mine"
 
 /* ================= 구역 이탈 감지(지오펜스) ================= */
@@ -276,6 +291,7 @@ async function goTab(tab, opts = {}) {
     initCampusMap(openZone);
     renderZoneListSection();
     wireQuestSegment();
+    try { tour?.renderQuestCard($("quest-map-pane")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
     if (opts.mode === "rank") switchQuestPane("rank");
   } else if (tab === "community") {
     await renderCommunityTab();
@@ -311,31 +327,106 @@ async function startHiddenMission(h) {
 
 /* ================= 커뮤니티 탭 ================= */
 async function renderCommunityTab() {
-  const posts = await listPosts({ onlyMine: communityFilter === "mine" });
-  ui.renderCommunity(zones, posts, communityFilter);
+  const isQuestion = communityBoard === "question";
+  const posts = await listPosts({ kind: communityBoard, onlyMine: communityFilter === "mine" });
+  // 질문 게시판 "전체"에는 맨 위에 예시 질문(가이드)을 고정해서 어떻게 쓰는지 보여준다
+  if (isQuestion && communityFilter === "all") posts.unshift(structuredClone(GUIDE_QUESTION));
+  const myId = getCachedProfile()?.id || null;
+  const byId = new Map(posts.map((p) => [p.id, p]));
+  ui.renderCommunity(zones, posts, { board: communityBoard, filter: communityFilter }, myId);
+  document.querySelectorAll("#view-community [data-board]").forEach((b) => {
+    b.onclick = () => {
+      if (communityBoard === b.dataset.board) return;
+      communityBoard = b.dataset.board;
+      communityFilter = "all";
+      renderCommunityTab();
+    };
+  });
   document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
     b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
   });
-  document.querySelectorAll("#view-community [data-report]").forEach((btn) => {
-    btn.onclick = async () => {
-      if (!confirm("이 글을 신고할까요? 관리자가 확인 후 조치해요.")) return;
-      const ok = await reportPost(btn.dataset.report);
-      ui.toast(ok ? "신고가 접수됐어요." : "신고에 실패했어요. 잠시 후 다시 시도해 주세요.");
-    };
-  });
-  $("btn-compose")?.addEventListener("click", () => {
+
+  // 좋아요는 누르자마자 화면에 반영하고(낙관적 업데이트), 서버 저장에 실패하면 되돌린다
+  const pending = new Set();
+  const toggleLike = async (p, like = !p.liked) => {
+    if (p.guide) { ui.toast("예시 글이라 좋아요를 누를 수 없어요."); return; }
+    if (pending.has(p.id) || like === p.liked) return;
+    pending.add(p.id);
+    p.liked = like;
+    p.like_count += like ? 1 : -1;
+    ui.updatePostCard(p, { pop: like });
+    if (!(await setLike(p.id, like))) {
+      p.liked = !like;
+      p.like_count += like ? -1 : 1;
+      ui.updatePostCard(p);
+      ui.toast("좋아요를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+    pending.delete(p.id);
+  };
+
+  const openComments = (p) => {
+    const nickname = store.getState().profile?.nickname || "익명";
+    const q = p.kind === "question";
+    ui.showComments({
+      myId,
+      myName: nickname,
+      question: q,
+      context: q ? p.message : "",
+      readOnly: !!p.guide,
+      load: () => (p.guide ? Promise.resolve(structuredClone(p.comments)) : listComments(p.id)),
+      add: (text) => addComment(p.id, nickname, text),
+      remove: (id) => deleteComment(id),
+      likeComment: (id, like) => setCommentLike(id, like),
+      // 답변 수·베스트 답변이 바뀌면 목록 카드에도 바로 반영 (시트를 닫았을 때 최신 상태로 보이게)
+      onChange: (comments) => {
+        p.comment_count = comments.length;
+        if (q) p.best = pickBest(comments);
+        ui.updatePostCard(p);
+      },
+    });
+  };
+
+  // 사진은 두 번 빠르게 탭하면 좋아요(이미 눌렀으면 하트 효과만). 모바일·PC 모두 click 두 번으로 판단한다.
+  let lastTap = { id: null, t: 0 };
+  $("view-community").onclick = async (e) => {
+    const el = e.target.closest("[data-act]");
+    const p = byId.get(el?.closest("[data-post]")?.dataset.post);
+    if (!p) return;
+    switch (el.dataset.act) {
+      case "like": toggleLike(p); break;
+      case "comment": openComments(p); break;
+      case "photo": {
+        const now = Date.now();
+        if (lastTap.id === p.id && now - lastTap.t < 320) {
+          ui.heartBurst(p.id);
+          toggleLike(p, true);
+          lastTap = { id: null, t: 0 };
+        } else lastTap = { id: p.id, t: now };
+        break;
+      }
+      case "report": {
+        if (!confirm("이 글을 신고할까요? 관리자가 확인 후 조치해요.")) return;
+        const ok = await reportPost(p.id);
+        ui.toast(ok ? "신고가 접수됐어요." : "신고에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        break;
+      }
+    }
+  };
+  // 글쓰기 FAB은 다시 그릴 때마다 재사용되는 요소라 addEventListener 대신 onclick으로 덮어쓴다
+  $("btn-compose").onclick = () => {
     ui.showComposer({
       zones: zones.map((z) => ({ id: z.id, name: z.name })),
       zoneId: null,
       lockZone: false,
       photo: null,
+      ...(isQuestion ? { title: "❓ 질문하기", placeholder: "예) 공식당 점심은 몇 시에 제일 붐비나요?" } : {}),
       onSubmit: async (message, photo, zoneId) => {
         const nickname = store.getState().profile?.nickname || "익명";
-        return await postCommunity(zoneId || null, nickname, message, photo);
+        return await postCommunity(zoneId || null, nickname, message, photo, communityBoard);
       },
       onClose: () => renderCommunityTab(),
     });
-  });
+  };
 }
 
 // 구역 목록: 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
@@ -632,9 +723,11 @@ async function missionMenu(zone) {
         };
       }),
       ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
+      ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)" (장주연)
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
+    if (pick === "__tour") { tour?.next(zone); return; }
     if (pick === "__ar") {   // AR 호반우 (장주연): 처음 만나면 +20 XP
       const r = await startAR(zone);
       if (r?.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
@@ -666,10 +759,12 @@ async function finishZone(zone) {
 
   const canReplay = zone.missions.some((m) => m.type === "photo" || m.type === "ar");
   const next = await chat.choices([
+    ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)"를 맨 앞에 (장주연)
     { label: "다른 구역 보기", value: "quest" },
     { label: "랭킹 보기", value: "quest-rank" },
     ...(canReplay ? [{ label: "사진·AR 미션 다시 하기", value: "stay", ghost: true }] : []),   // (장주연)
   ]);
+  if (next === "__tour") { tour?.next(zone); return; }
   if (next === "stay") return "stay";
   if (next === "quest-rank") goTab("quest", { mode: "rank" });
   else goTab("quest");
