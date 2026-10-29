@@ -497,28 +497,26 @@ function postCardHtml(p, zoneName, myId) {
     </article>`;
 }
 
-// 커뮤니티 탭 첫 화면: 내 순위 카드 + 게시판 카드 2개(최근 글 몇 개 미리보기). 카드를 누르면 게시판 상세 화면(board)으로.
+// 커뮤니티 탭 첫 화면: 내 순위 카드 + 게시판 카드
+//   게시판 카드 = 위쪽 큰 타일 두 개(자유게시판 · 질문, 누르면 그 게시판으로) + 아래 "최근 올라온 글" 3개(두 게시판 섞어서)
 // posts / questions: 각 게시판 최근 글 (listPosts 결과, 최신순)
 export function renderCommunityHome(zones, posts, questions) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
-  const preview = (p) => {
+  const recent = [...posts, ...questions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
+  const latest = (list) => (list[0] ? `${timeAgo(list[0].created_at)} 새 글` : "아직 글이 없어요");
+  const row = (p) => {
     const q = p.kind === "question";
     const text = String(p.message || (p.photo_url ? "사진을 올렸어요" : "")).replace(/\s+/g, " ");
-    return `<li class="bp-row">
-      ${!q && p.photo_url ? `<img class="bp-thumb" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ""}
+    return `<li><button type="button" class="bp-row" data-open-board="${q ? "question" : "post"}">
+      <span class="bp-pill ${q ? "q" : ""}">${q ? "질문" : "자유"}</span>
       <span class="bp-body">
-        <span class="bp-text">${q ? `<b class="q-mark">Q.</b>` : ""}${esc(text)}</span>
+        <span class="bp-text">${esc(text)}</span>
         <span class="bp-meta">${esc(p.nickname)} · ${timeAgo(p.created_at)}${p.zone_id ? ` · ${esc(toTag(zoneName(p.zone_id)))}` : ""}${
           q ? ` · 답변 ${p.comment_count || 0}` : p.comment_count ? ` · 댓글 ${p.comment_count}` : ""}</span>
       </span>
-    </li>`;
+      ${!q && p.photo_url ? `<img class="bp-thumb" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ""}
+    </button></li>`;
   };
-  // 게시판 카드 하나 안에 자유게시판 · 질문 두 칸. 칸을 누르면 그 게시판으로 들어간다
-  const boardSec = (board, title, list, empty) => `
-    <button type="button" class="board-sec" data-open-board="${board}">
-      <span class="bc-head"><b>${title}</b><span class="bc-more">전체 보기 ›</span></span>
-      ${list.length ? `<ul class="bp-list">${list.map(preview).join("")}</ul>` : `<span class="bc-empty">${empty}</span>`}
-    </button>`;
   $("view-community").innerHTML = `
     <div class="card card-hero rank-hero" id="rank-hero">
       <div class="qm-head"><span class="qm-title">🏆 내 순위</span></div>
@@ -529,9 +527,22 @@ export function renderCommunityHome(zones, posts, questions) {
       <button id="btn-rank-all" class="btn alt-ghost">전체 랭킹 보기</button>
     </div>
     <div class="card board-hub">
-      <div class="qm-head"><span class="qm-title">💬 게시판</span></div>
-      ${boardSec("post", "자유게시판", posts, "아직 글이 없어요. 첫 글을 남겨보세요!")}
-      ${boardSec("question", "질문", questions, "아직 질문이 없어요. 처음으로 물어보세요!")}
+      <div class="qm-head"><span class="qm-title">게시판</span></div>
+      <div class="bh-tiles">
+        <button type="button" class="bh-tile" data-open-board="post">
+          ${icon("chat", { cls: "bh-ic" })}
+          <b>자유게시판</b><small>${latest(posts)}</small>
+        </button>
+        <button type="button" class="bh-tile q" data-open-board="question">
+          ${icon("question", { cls: "bh-ic" })}
+          <b>질문</b><small>${latest(questions)}</small>
+        </button>
+      </div>
+      <div class="bh-recent">
+        <span class="bh-label">최근 올라온 글</span>
+        ${recent.length ? `<ul class="bp-list">${recent.map(row).join("")}</ul>`
+          : `<p class="bc-empty">아직 글이 없어요. 첫 글을 남겨보세요!</p>`}
+      </div>
     </div>`;
 }
 

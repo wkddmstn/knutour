@@ -406,11 +406,11 @@ async function startHiddenMission(h) {
 }
 
 /* ================= 커뮤니티 탭 ================= */
-// 첫 화면: 내 순위 + 게시판 카드(자유게시판·질문 두 칸, 최근 글 2개씩 미리보기). 카드를 누르면 게시판 상세 화면으로.
+// 첫 화면: 내 순위 + 게시판 카드(자유게시판·질문 타일 + 최근 올라온 글 3개). 카드를 누르면 게시판 상세 화면으로.
 async function renderCommunityHome() {
   const [posts, questions] = await Promise.all([
-    listPosts({ kind: "post", limit: 2 }),
-    listPosts({ kind: "question", limit: 2 }),
+    listPosts({ kind: "post", limit: 3 }),
+    listPosts({ kind: "question", limit: 3 }),
   ]);
   ui.renderCommunityHome(allZones, posts, questions);
   $("view-community").querySelectorAll("[data-open-board]").forEach((b) => {

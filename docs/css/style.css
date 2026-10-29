@@ -1049,21 +1049,33 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 .jelly-emoji { font-size: 20px; line-height: 1; }/* 내 정보 카드: 경험치 막대 아래 총 XP · 다음 레벨까지 */
 .me-xp-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13px; color: var(--sub); }
 .me-xp-line b { font-size: 15px; color: var(--primary); }
-/* ============ 커뮤니티 첫 화면: 게시판 카드 (최근 글 미리보기) ============ */
-.board-hub { padding: 18px 18px 8px; }
-.board-hub .qm-head { margin-bottom: 4px; }
-.board-sec { display: block; width: 100%; text-align: left; margin: 0 -10px; width: calc(100% + 20px); padding: 12px 10px; border-radius: 14px;
-  transition: background .15s, transform .12s var(--ease-toss); }
-.board-sec + .board-sec { border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; }
-.board-sec:active { background: var(--cream-weak); transform: scale(.99); }
-.bc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.bc-head b { font-size: 15px; }
-.bc-more { font-size: 13px; font-weight: 700; color: var(--primary); white-space: nowrap; }
-.bc-empty { display: block; margin-top: 12px; font-size: 13px; color: var(--sub); }
-.bp-list { list-style: none; margin: 6px 0 0; padding: 0; }
-.bp-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
-.bp-thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--cream-weak); }
+/* ============ 커뮤니티 첫 화면: 게시판 카드 (타일 두 개 + 최근 올라온 글) ============ */
+.board-hub { padding: 18px; }
+.board-hub .qm-head { margin-bottom: 12px; }
+.bh-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bh-tile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 112px;
+  padding: 14px; border-radius: 18px; text-align: left; background: #fff4f5; overflow: hidden;
+  transition: transform .12s var(--ease-toss); }
+.bh-tile.q { background: #f1f6ff; }
+.bh-tile:active { transform: scale(.97); }
+.bh-tile .bh-ic { width: 40px; height: 40px; margin-bottom: auto; }
+.bh-tile b { margin-top: 10px; font-size: 16px; color: var(--ink); }
+.bh-tile small { font-size: 12px; color: var(--sub); }
+.bh-tile::after { content: "›"; position: absolute; right: 14px; top: 12px; font-size: 20px; font-weight: 700; color: var(--mute); }
+.bh-recent { margin-top: 16px; }
+.bh-label { font-size: 13px; font-weight: 700; color: var(--mute); }
+.bc-empty { margin: 8px 0 0; font-size: 13px; color: var(--sub); }
+.bp-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.bp-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 0; text-align: left; border-bottom: 1px solid var(--line); }
+.bp-list li:last-child .bp-row { border-bottom: 0; padding-bottom: 0; }
+.bp-pill { flex: none; padding: 3px 8px; border-radius: 999px; background: var(--primary-weak); color: var(--primary); font-size: 11px; font-weight: 800; }
+.bp-pill.q { background: #e8f0ff; color: #2f6fed; }
 .bp-body { min-width: 0; flex: 1; }
-.bp-text { display: block; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bp-text .q-mark { margin-right: 4px; }
+.bp-text { display: block; font-size: 14px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bp-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bp-thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--cream-weak); }
+@media (prefers-color-scheme: dark) {
+  .bh-tile { background: #2a1d20; }
+  .bh-tile.q { background: #1b2433; }
+  .bp-pill.q { background: #1b2433; color: #7fb3ff; }
+}
