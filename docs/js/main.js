@@ -742,6 +742,7 @@ function initMap(zone) {
   map = new CampusMap($("map"), {
     // 디버그: 지도 클릭 = 그 위치로 순간이동
     onMapClick: DEBUG ? (p) => geo.injectMockPosition(p.lat, p.lng) : null,
+    labelAt: { big: 0.5, all: 1.0, zone: 0.5 },   // 작은 지도라 덜 확대해도 이름이 보이게
   });
   map.setArea(zone);
   map.setZones([zone], { status: () => (zoneCleared(zone) ? "cleared" : "next") });
