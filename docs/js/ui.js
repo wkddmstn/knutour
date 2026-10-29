@@ -663,6 +663,21 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
   };
 }
 
+/* ---------- 단대별 호반우 캐릭터 ---------- */
+// img/stickers/collegeNN.png 번호 (11번은 원본에 없음). ar-stickers.js의 단대 스티커 목록과 같은 번호다.
+const COLLEGE_STICKER = {
+  "인문대학": "01", "사회과학대학": "02", "자연과학대학": "03", "경상대학": "04", "공과대학": "05",
+  "IT대학": "06", "농업생명과학대학": "07", "예술대학": "08", "사범대학": "09", "의과대학": "10",
+  "치과대학": "12", "수의과대학": "13", "생활과학대학": "14", "간호대학": "15", "약학대학": "16",
+  "첨단기술융합대학": "17", "생태환경대학": "18", "과학기술대학": "19", "행정학부": "20", "자율전공학부": "21",
+  // 전용 캐릭터가 없는 소속은 가장 비슷한 단대 캐릭터를 쓴다
+  "AI대학": "06",             // → IT대학
+  "공학첨단자율학부": "05",    // → 공과대학
+  "경영대학": "04",           // 예전 이름 → 경상대학
+  "기타": "21",               // 예전 선택지 → 자율전공학부
+};
+export const collegeSticker = (dept) => `img/stickers/college${COLLEGE_STICKER[dept] || "21"}.png`;
+
 /* ---------- 내 정보 ---------- */
 export function renderMe(zones, onReset) {
   const st = getState();
@@ -680,8 +695,8 @@ export function renderMe(zones, onReset) {
 
   const el = $("view-me");
   el.innerHTML = `
-    <div class="card card-hero" style="position:relative">
-      <img class="mascot-corner" src="img/mascot/badge-campus.png" alt="호반우" style="width:64px">
+    <div class="card card-hero me-hero">
+      <img class="me-college" src="${collegeSticker(st.profile.dept)}" alt="${esc(st.profile.dept)} 호반우">
       <div class="sum-label">${esc(st.profile.dept)}</div>
       <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>
       <div class="sum-foot" style="margin-top:6px">
