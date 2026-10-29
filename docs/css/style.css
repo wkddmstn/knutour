@@ -325,10 +325,11 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .modal-card .btn { margin-top: 20px; }
 .modal-card .btn + .btn { margin-top: 8px; }
 
-/* 구역별 방명록 팝업 */
+/* 커뮤니티 게시판 피드 + 글쓰기 모달 (예전 "구역별 방명록"을 대체) */
 .gb-list { display: flex; flex-direction: column; gap: 10px; max-height: 36vh; overflow-y: auto; margin: 10px 0; }
 .gb-entry { display: flex; gap: 10px; padding: 10px; background: var(--bg); border-radius: 14px; }
 .gb-photo { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; }
+.gb-photo-lg { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 4px; }
 .gb-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gb-body b { font-size: 13px; color: var(--primary-dark); }
 .gb-body span { font-size: 14px; color: var(--ink); line-height: 1.4; word-break: break-word; }
@@ -336,6 +337,15 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .gb-form textarea.text-in { resize: none; padding: 12px; }
 .gb-form-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .btn-file.small { display: inline-block; padding: 8px 14px; font-size: 13px; }
+
+/* 홈 화면 히든미션 카드 */
+.hidden-mission-card {
+  margin-top: 14px;
+  border: 2px dashed var(--primary);
+  background: linear-gradient(135deg, rgba(49,130,246,.07), transparent 70%);
+  position: relative;
+  overflow: hidden;
+}
 
 /* 내 정보 탭 - 레벨 옆 작은 안내 버튼 + 레벨 기준/기록 팝업 */
 .level-info-btn {

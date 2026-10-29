@@ -4,12 +4,12 @@ import * as store from "./storage.js";
 import * as ui from "./ui.js";
 import { runMission, icon } from "./missions.js";
 import { getRanking } from "./ranking.js";
-import { ensureProfile } from "./supa.js";
+import { ensureProfile, getCachedProfile } from "./supa.js";
 import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { listAnnouncements } from "./notifications.js";
-import { startAR, MASCOTS, renderHobanuPane, OTTER_DEMO } from "./ar.js";   // AR 호반우 (장주연)
-import { listGuestbook, postGuestbookEntry } from "./guestbook.js";
+import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연)
+import { listPosts, postCommunity } from "./community.js";
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
@@ -21,12 +21,26 @@ const DEMO_MODE = true;
 const DEPTS = ["인문대학", "사회과학대학", "자연과학대학", "경영대학", "공과대학", "IT대학",
                "농업생명과학대학", "사범대학", "의과대학", "기타"];
 
+// 히든미션: 홈 화면에만 가끔 나타나는 보너스 미션. 지금은 데모용으로 1개만 두고,
+// "하루에 한 번"이면 나타날 수 있게 했다. 나중에 특정 시간대 조건을 추가하려면
+// storage.js의 isHiddenMissionAvailable() 안에 시각 체크를 더 넣으면 된다.
+const HIDDEN_MISSIONS = [
+  {
+    id: "otter-sincheon",
+    emoji: "🦦",
+    title: "신천 수달이 나타났어요!",
+    desc: "캠퍼스 근처 신천에만 가끔 나타나는 신비한 손님이에요. 지금 바로 만나러 가볼까요?",
+    reward: 50,
+  },
+];
+
 let zones = [];
 let map = null;
 let campusMap = null;
 let marker = null;
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
+let communityFilter = "all";   // "all" | "mine"
 
 /* ================= 구역 이탈 감지(지오펜스) ================= */
 // 위치 인증이 끝난 뒤에도 계속 위치를 지켜보다가, 구역 밖으로 나가면 배너로 알려주고
@@ -245,7 +259,8 @@ async function goTab(tab, opts = {}) {
 
   if (tab === "home") {
     const anns = await listAnnouncements(store.getState().profile?.dept);
-    ui.renderDashboard(zones, anns, () => goTab("quest"));
+    const hidden = activeHiddenMission();
+    ui.renderDashboard(zones, anns, () => goTab("quest"), hidden, hidden ? () => startHiddenMission(hidden) : null);
     ui.showView("home");
     renderDailySection();
    } else if (tab === "quest") {
@@ -257,14 +272,54 @@ async function goTab(tab, opts = {}) {
     wireQuestSegment();
     if (opts.mode === "rank") switchQuestPane("rank");
   } else if (tab === "community") {
-    const anns = await listAnnouncements(store.getState().profile?.dept);
-    ui.renderCommunity(anns);
+    await renderCommunityTab();
     ui.showView("community");
   } else if (tab === "me") {
     ui.renderMe(zones, onReset);
     refreshBellBadge();
     ui.showView("me");
   }
+}
+
+/* ================= 히든미션 (홈 화면) ================= */
+function activeHiddenMission() {
+  return HIDDEN_MISSIONS.find((h) => store.isHiddenMissionAvailable(h.id)) || null;
+}
+
+async function startHiddenMission(h) {
+  // "신천 수달"은 일청담 근처라는 설정이라 그 구역의 배경/마스코트를 그대로 쓴다. 나중에 다른 히든미션을 추가하면
+  // h에 zoneId 필드를 둬서 여기서 찾아 쓰면 된다.
+  const zone = zones.find((z) => z.id === "ilcheongdam") || { id: "hidden", name: "신천" };
+  const r = await startAR(zone, { hidden: "otter" });
+  if (r?.otter) {
+    store.claimHiddenMission(h.id);
+    if (store.grantBonus("hidden:" + h.id, h.reward)) ui.reward(h.reward);
+    ui.toast(`✨ ${h.emoji} 신천 수달을 만났어! 보너스 ${h.reward} XP`);
+    await goTab("home");   // 카드 갱신 (오늘은 다시 안 뜸)
+  }
+}
+
+/* ================= 커뮤니티 탭 ================= */
+async function renderCommunityTab() {
+  const anns = await listAnnouncements(store.getState().profile?.dept);
+  const posts = await listPosts({ onlyMine: communityFilter === "mine" });
+  ui.renderCommunity(anns, zones, posts, communityFilter);
+  document.querySelectorAll("#view-community .seg-sub button").forEach((b) => {
+    b.onclick = () => { communityFilter = b.dataset.f; renderCommunityTab(); };
+  });
+  $("btn-compose")?.addEventListener("click", () => {
+    ui.showComposer({
+      zones: zones.map((z) => ({ id: z.id, name: z.name })),
+      zoneId: null,
+      lockZone: false,
+      photo: null,
+      onSubmit: async (message, photo, zoneId) => {
+        const nickname = store.getState().profile?.nickname || "익명";
+        return await postCommunity(zoneId || null, nickname, message, photo);
+      },
+      onClose: () => renderCommunityTab(),
+    });
+  });
 }
 
 // 구역 목록: 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
@@ -533,17 +588,6 @@ function verifyLocation(zone) {
   });
 }
 
-// 구역 방명록 팝업 열기 (목록 불러오고, 글 남기면 새로고침된 목록으로 다시 띄운다)
-async function openGuestbook(zone) {
-  const entries = await listGuestbook(zone.id);
-  ui.showGuestbook(zone.name, entries, async (message, photoFile) => {
-    const nickname = store.getState().profile?.nickname || "익명";
-    const ok = await postGuestbookEntry(zone.id, nickname, message, photoFile);
-    if (ok) await openGuestbook(zone);
-    return ok;
-  });
-}
-
 // 미션 선택 메뉴 (챗봇의 선택 버튼)
 async function missionMenu(zone) {
   let replay = false;   // 구역 클리어 후 "사진·AR 미션 다시 하기"를 고른 경우 (장주연)
@@ -573,20 +617,12 @@ async function missionMenu(zone) {
         };
       }),
       ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
-      // 데모용 히든 미션: 일청담에서 신천 수달 만나기 (장주연)
-      ...(OTTER_DEMO && zone.id === "ilcheongdam" ? [{ label: "🦦 히든 미션! (데모)", value: "__otter", ghost: true }] : []),
-      { label: "📖 방명록", value: "__guestbook", ghost: true },
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
-    if (pick === "__guestbook") { await openGuestbook(zone); continue; }
-    if (pick === "__ar" || pick === "__otter") {   // AR 호반우 (장주연): 처음 만나면 +20 XP, 일청담 희귀 수달 +50 XP
-      const r = await startAR(zone, pick === "__otter" ? { hidden: "otter" } : {});
-      if (r.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
-      if (r.otter && store.grantBonus("otter", 50)) {
-        ui.reward(50);
-        await chat.bot("✨ 희귀 <b>신천 수달</b>을 만났어! 보너스 <b>50 XP</b>!");
-      }
+    if (pick === "__ar") {   // AR 호반우 (장주연): 처음 만나면 +20 XP
+      const r = await startAR(zone);
+      if (r?.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
       continue;
     }
     if (!inZone) {
