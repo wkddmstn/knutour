@@ -55,12 +55,19 @@ export function pickBest(comments = []) {
 // onlyMine이면 내가 쓴 글만 가져온다. 각 글에 like_count, liked(내가 눌렀는지), comment_count가 붙고,
 // 질문글에는 best(좋아요를 가장 많이 받은 댓글)도 붙는다.
 // supabase/*.sql이 아직 실행되지 않았으면 쓸 수 있는 정보만으로 단계적으로 물러나서 글 목록은 보여준다.
-export async function listPosts({ kind = "post", zoneId = null, onlyMine = false, limit = 50 } = {}) {
+// 해시태그 글자: 한글·영문·숫자·밑줄만. 장소 이름은 띄어쓰기·가운뎃점을 뺀 것이 태그가 된다 ("센트럴 파크" → #센트럴파크)
+export const toTag = (s) => String(s || "").replace(/[^0-9A-Za-z가-힣_]/g, "");
+export const TAG_RE = /#([0-9A-Za-z가-힣_]+)/g;
+
+// tag: { tag, zoneId } — 그 장소(zone_id)로 올린 글 + 본문에 #tag를 직접 쓴 글을 함께 보여준다
+export async function listPosts({ kind = "post", zoneId = null, onlyMine = false, tag = null, limit = 50 } = {}) {
   const me = getCachedProfile();
   if (onlyMine && !me) return [];
+  const t = toTag(tag?.tag);
   const build = ([columns, byKind]) => {
     let q = client.from("community_posts").select(columns).order("created_at", { ascending: false }).limit(limit);
     if (byKind) q = q.eq("kind", kind);
+    if (t) q = tag.zoneId ? q.or(`zone_id.eq.${tag.zoneId},message.ilike.*#${t}*`) : q.ilike("message", `%#${t}%`);
     if (zoneId) q = q.eq("zone_id", zoneId);
     if (onlyMine) q = q.eq("user_id", me.id);
     return q;
