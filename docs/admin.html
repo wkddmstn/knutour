@@ -16,7 +16,27 @@
   .ann-item .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
   .ann-item time { font-size: 12px; color: var(--mute); }
   .ann-item button { color: var(--red); font-size: 13px; font-weight: 600; }
-  .admin-form input, .admin-form textarea {
+  .post-item { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+  .post-item img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex: none; }
+  .post-item .post-body { flex: 1; min-width: 0; }
+  .post-item .post-body b { font-size: 13px; }
+  .post-item .post-body p { font-size: 13px; color: var(--sub); margin: 2px 0; word-break: break-word; }
+  .post-item .post-body p.reason { color: var(--red); }
+  .post-item .meta button { font-size: 12px; font-weight: 600; margin-left: 10px; }
+  .post-item .meta button[data-del-post] { color: var(--red); }
+  .zone-progress { padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+  .zone-progress .zp-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; }
+  .zone-progress .zp-mission { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); padding: 3px 0; }
+  .rank-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .hidden-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .hidden-row:last-child { border-bottom: none; }
+  .switch { position: relative; width: 44px; height: 24px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider { position: absolute; inset: 0; background: var(--line); border-radius: 24px; cursor: pointer; transition: .2s; }
+  .switch .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .switch input:checked + .slider { background: var(--primary); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .admin-form input, .admin-form textarea, .admin-form select {
     display: block; width: 100%; padding: 12px; margin-bottom: 8px; border: 1.5px solid var(--line);
     border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; box-sizing: border-box;
   }
@@ -52,6 +72,19 @@
       <div class="admin-form">
         <input type="text" id="ann-title" placeholder="제목">
         <textarea id="ann-body" placeholder="내용"></textarea>
+        <select id="ann-dept">
+          <option value="">전체 공지</option>
+          <option value="인문대학">인문대학</option>
+          <option value="사회과학대학">사회과학대학</option>
+          <option value="자연과학대학">자연과학대학</option>
+          <option value="경영대학">경영대학</option>
+          <option value="공과대학">공과대학</option>
+          <option value="IT대학">IT대학</option>
+          <option value="농업생명과학대학">농업생명과학대학</option>
+          <option value="사범대학">사범대학</option>
+          <option value="의과대학">의과대학</option>
+          <option value="기타">기타</option>
+        </select>
         <button class="btn" id="ann-submit">등록하기</button>
         <p class="admin-err" id="ann-err"></p>
       </div>
@@ -60,6 +93,34 @@
     <div class="admin-card">
       <h2>공지사항 관리</h2>
       <div id="ann-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>커뮤니티 게시판 관리</h2>
+      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">부적절한 글이나 사진을 찾아 삭제할 수 있어요.</p>
+      <div id="post-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>🚩 신고 접수함</h2>
+      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">사용자가 신고한 글만 모아서 보여줘요.</p>
+      <div id="report-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>✨ 히든미션 관리</h2>
+      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">끄면 홈 화면에서 즉시 안 보이게 돼요.</p>
+      <div id="hidden-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>구역/미션 진행 현황</h2>
+      <div id="progress-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>실시간 랭킹</h2>
+      <div id="rank-list">불러오는 중...</div>
     </div>
   </div>
 
