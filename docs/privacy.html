@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OnCampus 개인정보 안내</title>
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* 앱의 디자인 토큰(css/style.css)을 그대로 쓰고, 문서 페이지에 필요한 것만 덧붙인다 */
+    .pv { max-width: 720px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 16px 48px; }
+    .pv-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .pv-head img { width: 56px; height: 56px; flex: none; }
+    .pv-brand { font-family: "Jua", var(--font); font-size: 22px; color: var(--primary); line-height: 1.1; }
+    .pv h1 { font-size: 24px; font-weight: 800; color: var(--ink); line-height: 1.3; }
+    .pv-meta { margin: 10px 0 20px; color: var(--mute); font-size: 13px; }
+    .pv-lead { margin: 0 0 20px; color: var(--sub); font-size: 15px; line-height: 1.7; }
+    .pv-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 24px; }
+    .pv-summary div { padding: 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+    .pv-summary b { display: block; font-size: 14px; color: var(--ink); margin-bottom: 2px; }
+    .pv-summary span { font-size: 12px; color: var(--mute); line-height: 1.5; }
+    .pv-toc { margin: 0 0 24px; padding: 14px 18px; border-radius: 16px; background: var(--cream-weak); font-size: 14px; line-height: 1.9; }
+    .pv-toc a { color: var(--sub); text-decoration: none; }
+    .pv-toc a:hover { color: var(--primary); text-decoration: underline; }
+    .pv section { scroll-margin-top: 16px; margin-bottom: 14px; padding: 20px; border-radius: 20px;
+                  background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow-card); }
+    .pv h2 { font-size: 17px; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px; }
+    .pv dl { margin: 0; display: grid; grid-template-columns: 92px 1fr; gap: 10px 12px; font-size: 14px; line-height: 1.6; }
+    .pv dt { color: var(--mute); font-weight: 700; font-size: 13px; padding-top: 1px; }
+    .pv dd { margin: 0; color: var(--ink); }
+    .pv dd ul { margin: 0; padding-left: 18px; }
+    .pv dd li + li { margin-top: 2px; }
+    .pv p.note { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--amber-weak);
+                 color: var(--amber); font-size: 13px; line-height: 1.6; }
+    .pv table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.55; }
+    .pv th, .pv td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .pv th { color: var(--mute); font-weight: 700; white-space: nowrap; }
+    .pv td:first-child { font-weight: 700; white-space: nowrap; }
+    .pv-table-wrap { overflow-x: auto; margin: 0 -4px; }
+    .pv section a { color: var(--primary); }
+    .pv-back { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; padding: 12px 18px; border-radius: 14px;
+               background: var(--primary); color: #fff; font-weight: 700; text-decoration: none; box-shadow: var(--shadow-btn); }
+    @media (max-width: 420px) { .pv dl { grid-template-columns: 1fr; gap: 2px; } .pv dd { margin-bottom: 10px; } }
+  </style>
+</head>
+<body>
+  <main class="pv">
+    <div class="pv-head">
+      <img src="img/logo.png" alt="">
+      <div>
+        <div class="pv-brand">OnCampus</div>
+        <h1>접속 기록 · 개인정보 안내</h1>
+      </div>
+    </div>
+    <p class="pv-meta">시행일 2026년 10월 30일</p>
+
+    <p class="pv-lead">
+      OnCampus(경북대 캠퍼스 퀘스트)는 아이디·비밀번호·이메일·전화번호 없이 쓰는 서비스예요.
+      닉네임과 소속만으로 시작하고, 어떤 정보가 어디에 저장되고 누구에게 전달되는지 아래에 모두 적어 두었어요.
+    </p>
+
+    <div class="pv-summary" aria-label="한눈에 보기">
+      <div><b>실명·연락처 수집 안 함</b><span>닉네임·소속만 받아요</span></div>
+      <div><b>광고·방문 통계 도구 없음</b><span>Google Analytics 등 사용 안 함</span></div>
+      <div><b>위치는 기기에서만 판단</b><span>서버에 위치를 저장하지 않아요</span></div>
+      <div><b>녹음은 업로드 안 함</b><span>음성 미션 녹음은 기기에만</span></div>
+    </div>
+
+    <nav class="pv-toc" aria-label="목차">
+      <a href="#browser">1. 이 브라우저에 저장하는 정보</a><br>
+      <a href="#account">2. 익명 로그인과 프로필</a><br>
+      <a href="#progress">3. 미션 진행과 랭킹</a><br>
+      <a href="#community">4. 커뮤니티 (글·사진·댓글·좋아요)</a><br>
+      <a href="#report">5. 신고</a><br>
+      <a href="#notice">6. 알림과 함께하기 미션</a><br>
+      <a href="#device">7. 위치·카메라·마이크 권한</a><br>
+      <a href="#photo">8. 미션 사진 확인 (Google Cloud Vision)</a><br>
+      <a href="#log">9. 접속 기록과 외부 서비스</a><br>
+      <a href="#rights">10. 삭제 요청과 문의</a>
+    </nav>
+
+    <section id="browser">
+      <h2>1. 이 브라우저에 저장하는 정보</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>닉네임, 소속, XP·레벨 기록, 미션 진행 상태, 출석·퀴즈 기록, 구역 채팅 기록, 호반우 도감, 캠퍼스 투어 진행·뱃지,
+            음성 안내 설정, 알림 확인 시각, 사진 앨범(도감에 기록한 사진), 로그인 유지용 인증 토큰</dd>
+        <dt>목적</dt>
+        <dd>새로고침하거나 다시 접속해도 이어서 이용할 수 있게 하기 위해</dd>
+        <dt>보관</dt>
+        <dd>내 정보 탭의 ‘기록 초기화하고 처음부터 시작’을 누르거나, 브라우저의 사이트 데이터를 지울 때까지</dd>
+        <dt>제3자</dt>
+        <dd>없음 (이 기기의 브라우저 저장공간에만 있고, 다른 기기와 동기화하지 않아요)</dd>
+      </dl>
+      <p class="note">브라우저 데이터를 지우거나 시크릿 모드를 닫으면 로그인 정보도 사라져, 같은 계정으로 다시 들어올 수 없어요.
+        아이폰 Safari는 홈 화면에 추가하지 않은 사이트를 7일 정도 쓰지 않으면 저장공간을 지울 수 있어요.</p>
+    </section>
+
+    <section id="account">
+      <h2>2. 익명 로그인과 프로필</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>무작위로 만들어지는 사용자 ID, 닉네임, 소속(단과대학), 친구 코드, 총 XP</dd>
+        <dt>목적</dt>
+        <dd>사용자 구분, 랭킹 표시, ‘함께하기’ 미션의 친구 찾기</dd>
+        <dt>보관</dt>
+        <dd>자동 삭제 기간 없음. 삭제를 원하면 <a href="#rights">10번</a>의 방법으로 요청</dd>
+        <dt>처리 위탁</dt>
+        <dd>Supabase (데이터베이스·로그인·파일 저장)</dd>
+        <dt>공개 범위</dt>
+        <dd>닉네임·소속·XP는 랭킹에서 다른 이용자에게 보여요. 사용자 ID는 화면에 보이지 않아요.</dd>
+      </dl>
+    </section>
+
+    <section id="progress">
+      <h2>3. 미션 진행과 랭킹</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>완료한 미션 ID와 획득 점수, 총 XP</dd>
+        <dt>목적</dt>
+        <dd>랭킹 집계, 운영진의 구역·미션별 진행 현황 확인 (관리자 페이지)</dd>
+        <dt>보관</dt>
+        <dd>자동 삭제 기간 없음</dd>
+        <dt>처리 위탁</dt>
+        <dd>Supabase</dd>
+      </dl>
+    </section>
+
+    <section id="community">
+      <h2>4. 커뮤니티 (글·사진·댓글·좋아요)</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>
+          <ul>
+            <li>게시글·질문: 닉네임, 내용, 선택한 장소, 올린 사진, 작성 시각</li>
+            <li>댓글·답변: 닉네임, 내용, 작성 시각</li>
+            <li>좋아요: 누른 사람의 사용자 ID와 시각 (게시글·댓글 모두)</li>
+          </ul>
+        </dd>
+        <dt>목적</dt>
+        <dd>게시판 운영, 좋아요 수·베스트 답변 표시, 내 글에 반응이 달렸을 때 알림</dd>
+        <dt>공개 범위</dt>
+        <dd>글·사진·댓글은 앱을 쓰는 모든 사람이 볼 수 있어요. 사진은 링크를 아는 누구나 열 수 있는 공개 저장소에 올라가요.</dd>
+        <dt>보관</dt>
+        <dd>자동 삭제 기간 없음. 댓글은 직접 삭제, 좋아요는 직접 취소할 수 있어요.
+            게시글은 아직 직접 삭제 기능이 없어, 운영진에게 삭제를 요청해 주세요. 게시글이 삭제되면 그 글의 댓글·좋아요도 함께 삭제돼요.</dd>
+        <dt>처리 위탁</dt>
+        <dd>Supabase (게시글·댓글 저장, 사진 저장소)</dd>
+      </dl>
+      <p class="note">사진을 올리기 전에 얼굴·학번·연락처처럼 다른 사람이나 나를 알아볼 수 있는 정보가 찍혀 있지 않은지 확인해 주세요.
+        사진의 위치 정보(EXIF)는 앱에서 따로 지우지 않아요.</p>
+    </section>
+
+    <section id="report">
+      <h2>5. 신고</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>신고한 게시글, 신고한 사람의 사용자 ID, 신고 시각</dd>
+        <dt>목적</dt>
+        <dd>부적절한 글 관리. 신고 내용은 관리자만 확인해요.</dd>
+        <dt>보관</dt>
+        <dd>자동 삭제 기간 없음</dd>
+      </dl>
+    </section>
+
+    <section id="notice">
+      <h2>6. 알림과 함께하기 미션</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>
+          <ul>
+            <li>알림: 받는 사람, 알림 종류와 문구(예: ‘OO님이 내 게시글에 좋아요를 눌렀어요’), 읽음 여부, 시각</li>
+            <li>함께하기: 미션 ID, 요청한 사람·받은 사람의 사용자 ID, 수락 여부와 시각</li>
+          </ul>
+        </dd>
+        <dt>목적</dt>
+        <dd>친구 요청·수락, 내 글 반응, 공지를 알려 드리기 위해</dd>
+        <dt>보관</dt>
+        <dd>자동 삭제 기간 없음</dd>
+        <dt>처리 위탁</dt>
+        <dd>Supabase</dd>
+      </dl>
+      <p class="note">랜덤 매칭에서 고르는 성별·원하는 상대 조건은 이 기기 안에서만 쓰이고 서버에 보내지 않아요.</p>
+    </section>
+
+    <section id="device">
+      <h2>7. 위치·카메라·마이크 권한</h2>
+      <div class="pv-table-wrap">
+        <table>
+          <thead><tr><th>권한</th><th>쓰는 곳</th><th>어디로 가나요</th></tr></thead>
+          <tbody>
+            <tr><td>위치</td><td>구역 도착 확인, 지도에 내 위치 표시, 도보 길찾기, 앨범 사진의 촬영 장소 분류</td>
+                <td>거리 계산은 기기 안에서만 해요. 서버에 위치를 저장하지 않아요. 단, 길찾기를 할 때는 출발지(현재 위치)와 도착지 좌표가 경로 계산 서비스(OSRM)로 전송돼요.</td></tr>
+            <tr><td>카메라</td><td>AR 호반우, 사진 미션, 사진 꾸미기</td>
+                <td>화면은 기기에서만 처리해요. 사진 미션의 사진은 <a href="#photo">8번</a>처럼 확인을 위해 전송되고, 커뮤니티에 올린 사진만 서버에 저장돼요.</td></tr>
+            <tr><td>마이크</td><td>음성 미션 녹음</td>
+                <td>녹음은 기기에서 재생해 보는 용도로만 쓰고, 어디에도 업로드하지 않아요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">권한은 해당 기능을 처음 쓸 때 브라우저가 물어보며, 거부해도 다른 기능은 쓸 수 있어요. 브라우저 설정에서 언제든 바꿀 수 있어요.</p>
+    </section>
+
+    <section id="photo">
+      <h2>8. 미션 사진 확인 (Google Cloud Vision)</h2>
+      <dl>
+        <dt>항목</dt>
+        <dd>사진 미션에서 찍은 사진 (긴 변 800px로 줄인 사본)</dd>
+        <dt>목적</dt>
+        <dd>사진이 미션 내용과 맞는지 자동으로 확인 (사진 속 물체·장면, 필요한 미션에서만 글자 인식)</dd>
+        <dt>보관</dt>
+        <dd>OnCampus는 확인 결과만 쓰고 사진을 따로 저장하지 않아요. Google의 처리·보관은
+            <a class="ext" href="https://cloud.google.com/vision/docs/data-usage" target="_blank" rel="noopener">Cloud Vision 데이터 사용 안내</a>를 따라요.</dd>
+        <dt>제3자</dt>
+        <dd>Google LLC (Google Cloud Vision API)</dd>
+      </dl>
+    </section>
+
+    <section id="log">
+      <h2>9. 접속 기록과 외부 서비스</h2>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.7;color:var(--sub)">
+        OnCampus는 방문 통계·광고 도구를 쓰지 않고, 접속 기록을 따로 모으지 않아요.
+        다만 앱 화면을 보여 주기 위해 아래 서비스에 접속하며, 이때 각 서비스가 일반적인 접속 기록(IP 주소, 접속 시각, 브라우저 정보)을 남길 수 있어요.
+      </p>
+      <div class="pv-table-wrap">
+        <table>
+          <thead><tr><th>서비스</th><th>용도</th><th>전달되는 정보</th></tr></thead>
+          <tbody>
+            <tr><td>GitHub Pages</td><td>앱 페이지 제공 (호스팅)</td><td>접속 기록</td></tr>
+            <tr><td>Supabase</td><td>로그인, 데이터·사진 저장</td><td>접속 기록, 위 2~6번의 정보</td></tr>
+            <tr><td>Google Cloud Vision</td><td>미션 사진 확인</td><td>접속 기록, 미션 사진</td></tr>
+            <tr><td>OSRM</td><td>도보 경로 계산</td><td>접속 기록, 출발·도착 좌표</td></tr>
+            <tr><td>OpenStreetMap</td><td>투어 지도 이미지</td><td>접속 기록, 보고 있는 지도 범위</td></tr>
+            <tr><td>Google Fonts, jsDelivr, unpkg</td><td>글꼴·프로그램 파일 제공</td><td>접속 기록</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="rights">
+      <h2>10. 삭제 요청과 문의</h2>
+      <dl>
+        <dt>직접 할 수 있는 것</dt>
+        <dd>
+          <ul>
+            <li>내 댓글 삭제, 좋아요 취소</li>
+            <li>‘기록 초기화하고 처음부터 시작’으로 이 기기의 기록 삭제 (서버의 프로필·게시글은 남아요)</li>
+            <li>위치·카메라·마이크 권한 끄기 (브라우저 설정)</li>
+          </ul>
+        </dd>
+        <dt>요청해야 하는 것</dt>
+        <dd>게시글 삭제, 서버의 프로필·미션 기록·알림 삭제. 익명 계정이라 본인 확인을 위해 내 정보 탭의 <b>친구 코드</b>를 함께 알려 주세요.</dd>
+        <dt>문의처</dt>
+        <dd>OnCampus 운영팀 · <span style="color:var(--mute)">[문의 이메일 또는 문의 폼 링크를 여기에 적어 주세요]</span></dd>
+      </dl>
+    </section>
+
+    <a class="pv-back" href="./">← OnCampus로 돌아가기</a>
+  </main>
+</body>
+</html>

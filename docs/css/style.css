@@ -116,6 +116,9 @@ body[data-view="zone"] main { padding-bottom: 40px; }
 }
 .onb-title { margin: 20px 4px 10px; font-size: 27px; line-height: 1.35; font-weight: 800; color: var(--ink); }
 .onb-title-display { font-family: "Jua", var(--font); font-weight: 400; letter-spacing: 0; }
+/* 가입 화면 맨 아래 개인정보 안내 링크 */
+.onb-privacy { margin: 14px 4px 8px; text-align: center; font-size: 12px; color: var(--mute); line-height: 1.6; }
+.onb-privacy a { color: var(--sub); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 /* 사이트 이름: 가입 화면 제목 위 */
 .onb-brand { margin: 18px 4px -14px; font-family: "Jua", var(--font); font-size: 30px; line-height: 1.2; color: var(--primary); }
 

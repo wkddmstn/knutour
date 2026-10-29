@@ -107,7 +107,8 @@ export function renderOnboard(depts, onSubmit) {
       </label>
       <p id="onb-err" class="err"></p>
       <button id="btn-start" class="btn">시작하기</button>
-    </div>`;
+    </div>
+    <p class="onb-privacy">시작하면 <a href="privacy.html" target="_blank" rel="noopener">접속 기록 · 개인정보 안내</a>에 동의한 것으로 봐요.</p>`;
   const submit = () => {
     const nickname = $("in-nick").value.trim();
     if (nickname.length < 2) { $("onb-err").textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
