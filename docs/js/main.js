@@ -13,6 +13,19 @@ import { listPosts, postCommunity, reportPost, setLike, listComments, addComment
          setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 
+// 호반우 캠퍼스 투어 (장주연): tour.js를 "있으면 쓰는" 방식으로 불러온다.
+// tour.js에 문제가 생겨도 import가 실패할 뿐 기존 앱은 그대로 동작한다.
+let tour = null;
+import("./tour.js")
+  .then((m) => {
+    if (!m.TOUR_ON) return;
+    tour = m;
+    m.initTour({ zones: () => zones, openZone, goTab, store, ui });
+    if (document.body.dataset.view === "quest") m.renderQuestCard($("quest-map-pane"));
+  })
+  .catch((e) => console.warn("[투어] 불러오지 못했어요 — 투어 없이 계속합니다", e));
+const tourItem = (zone) => { try { const it = tour?.menuItem(zone); return it ? [it] : []; } catch { return []; } };
+
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
 // 데모 모드: true면 실제 GPS를 쓰지 않고, 구역에 들어올 때마다 "위치 이동" 버튼을 눌러야 미션이 시작됩니다.
@@ -278,6 +291,7 @@ async function goTab(tab, opts = {}) {
     initCampusMap(openZone);
     renderZoneListSection();
     wireQuestSegment();
+    try { tour?.renderQuestCard($("quest-map-pane")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
     if (opts.mode === "rank") switchQuestPane("rank");
   } else if (tab === "community") {
     await renderCommunityTab();
@@ -708,9 +722,11 @@ async function missionMenu(zone) {
         };
       }),
       ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
+      ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)" (장주연)
       { label: "구역 목록으로 돌아가기", value: "__home", ghost: true },
     ]);
     if (pick === "__home") { goTab("quest"); return; }
+    if (pick === "__tour") { tour?.next(zone); return; }
     if (pick === "__ar") {   // AR 호반우 (장주연): 처음 만나면 +20 XP
       const r = await startAR(zone);
       if (r?.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
@@ -742,10 +758,12 @@ async function finishZone(zone) {
 
   const canReplay = zone.missions.some((m) => m.type === "photo" || m.type === "ar");
   const next = await chat.choices([
+    ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)"를 맨 앞에 (장주연)
     { label: "다른 구역 보기", value: "quest" },
     { label: "랭킹 보기", value: "quest-rank" },
     ...(canReplay ? [{ label: "사진·AR 미션 다시 하기", value: "stay", ghost: true }] : []),   // (장주연)
   ]);
+  if (next === "__tour") { tour?.next(zone); return; }
   if (next === "stay") return "stay";
   if (next === "quest-rank") goTab("quest", { mode: "rank" });
   else goTab("quest");
