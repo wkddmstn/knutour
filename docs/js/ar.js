@@ -694,7 +694,9 @@ export function startAR(zone, opts = {}) {
       const items = collectedItems();
       if (!items.some((it) => it.id === id)) items.unshift({ id: id || "ar", name: m.name, img: m.img });
       if (otter && !items.some((it) => it.id === "otter")) items.push({ id: "otter", name: RARE.otter.name, img: RARE.otter.img });
-      await openPhotoStudio({ items, start: id || "ar", place: zone.name || "", zoneId: zone.id || null });   // zoneId → 커뮤니티 #장소 태그
+      const r = await openPhotoStudio({ items, start: id || "ar", place: zone.name || "", zoneId: zone.id || null });   // zoneId → 커뮤니티 #장소 태그
+      // "커뮤니티에 공유"를 눌렀으면 AR 화면도 닫아서 글쓰기 창이 바로 보이게 (카메라로 돌아가지 않음)
+      if (r?.shared) { $("ar-close")?.click(); return; }
       if (!closed) startCam();
     };
 
@@ -1150,7 +1152,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
     if ($("ps-community")) $("ps-community").onclick = async () => {   // 기록하고 → 카메라 닫고 → 커뮤니티 글쓰기 창
       await record(true);
       const shot = lastShot;
-      close();
+      close({ shared: true });   // 사진 찍기 화면을 연 쪽(AR 화면 등)도 함께 닫으라는 표시
       try { (await import("./album.js")).shareToCommunity(shot, zoneId); } catch (e) { console.warn(e); }
     };
     if (submit) $("ps-submit").onclick = async () => { await record(true); close({ dataUrl: lastShot, mascot: current.id }); };

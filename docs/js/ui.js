@@ -134,7 +134,6 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
 
   $("view-home").innerHTML = `
     <div class="home-head">
-      <img class="mascot-corner" src="img/mascot/cheer.png" alt="응원하는 호반우">
       <!-- 알림은 앱의 출발점인 홈 머리 오른쪽에 둔다. 다른 탭에선 하단 "홈" 탭의 빨간 점으로 새 알림을 알린다 -->
       <button id="bell-btn" class="bell-btn" type="button" aria-label="알림 보기">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>

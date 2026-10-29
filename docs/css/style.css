@@ -575,7 +575,7 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 
 /* ============ 알림 종 버튼 + 패널 ============ */
 /* 홈 머리: 인사말 왼쪽, 오른쪽 위 끝에 종 버튼, 그 아래에 마스코트 */
-.home-head { position: relative; padding-right: 128px; }
+.home-head { position: relative; padding-right: 60px; }   /* 오른쪽엔 알림 종만 */
 .home-head .mascot-corner { right: 46px; width: 68px; }
 .bell-btn { position: absolute; top: 10px; right: 0; z-index: 1; width: 44px; height: 44px; display: grid; place-items: center;
             border-radius: 50%; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow-card);
@@ -1012,14 +1012,15 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 .hx-cloud::before { width: 26px; height: 26px; left: 10px; top: -12px; }
 .hx-cloud::after { width: 20px; height: 20px; left: 30px; top: -8px; }
 @keyframes hxDrift { from { transform: translateX(440px); } to { transform: translateX(-120px); } }
-.hx-walker { position: absolute; left: 50%; bottom: 28px; width: 92px; margin-left: -46px; z-index: 3; animation: hxBob .5s ease-in-out infinite; }
+/* 걷기: 두 장면(commute1·2)을 번갈아 "한 장씩만" 보여 준다 (겹쳐 보이지 않게). 위아래로 부드럽게 통통 */
+.hx-walker { position: absolute; left: 50%; bottom: 26px; width: 92px; margin-left: -46px; z-index: 3;
+  animation: hxBob .7s cubic-bezier(.45, 0, .55, 1) infinite; will-change: transform; }
 .hx-walker img { width: 100%; display: block; }
-.hx-walker .hx-f2 { position: absolute; inset: 0; opacity: 0; animation: hxFrame .5s steps(1) infinite; }
-@keyframes hxFrame { 50% { opacity: 1; } }
-@keyframes hxBob { 50% { transform: translateY(-5px) rotate(-1.5deg); } }
-.hx-shadow { position: absolute; left: 50%; bottom: 24px; width: 64px; height: 12px; margin-left: -32px; border-radius: 50%;
-  background: rgba(25, 31, 40, .10); z-index: 2; animation: hxSh .5s ease-in-out infinite; }
-@keyframes hxSh { 50% { transform: scale(.85); } }
+.hx-walker .hx-f1 { animation: hxF1 .7s steps(1, end) infinite; }
+.hx-walker .hx-f2 { position: absolute; inset: 0; animation: hxF2 .7s steps(1, end) infinite; }
+@keyframes hxF1 { 0% { visibility: visible; } 50% { visibility: hidden; } }
+@keyframes hxF2 { 0% { visibility: hidden; } 50% { visibility: visible; } }
+@keyframes hxBob { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(-4px); } }
 .hx-bubble { position: absolute; left: calc(50% + 26px); bottom: 126px; z-index: 5; background: #fff; border-radius: 16px 16px 16px 4px;
   padding: 7px 11px; font-size: 13px; font-weight: 800; line-height: 1.35; color: var(--primary); max-width: calc(50% - 32px);
   word-break: keep-all; box-shadow: 0 4px 12px rgba(25, 31, 40, .10); animation: hxFloat 2.6s ease-in-out infinite; }
@@ -1083,6 +1084,7 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 /* 맨 뒤에 깔리는 그림. 카드 사이 빈 공간에서는 잘 보이고, 카드는 거의 불투명(살짝 비침 + 흐림)이라 글에 집중된다.
    폰: 그림을 모서리·가장자리에 작게 / 노트북(760px 이상): 가운데 앱 양옆 넓은 공간에 크게 */
 #theme-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+#theme-bg > * { opacity: .7; }   /* 그림 전체를 조금 더 연하게 (바탕색은 그대로) */
 #app { z-index: 1; }
 body[data-view="zone"] #theme-bg, body[data-view="onboard"] #theme-bg { display: none; }
 body[data-theme-bg]:not([data-view="zone"]):not([data-view="onboard"]) { background: transparent; }
@@ -1096,7 +1098,7 @@ body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-
 .tb-conf { border-radius: 3px; opacity: .75; }
 
 /* 3월 첫 주: 활기찬 새 학기 */
-.tb-march { background: linear-gradient(180deg, #e3f2ff 0%, #fffbea 55%, #effaf2 100%); }
+.tb-march { background: linear-gradient(180deg, #edf6ff 0%, #fffdf2 55%, #f5fcf7 100%); }
 .tb-sun { position: absolute; top: 74px; right: 5%; width: 84px; height: 84px; border-radius: 50%; background: #ffe7a3;
   box-shadow: 0 0 0 18px rgba(255, 231, 163, .35), 0 0 0 40px rgba(255, 231, 163, .15); animation: tbPulse 4s ease-in-out infinite; }
 @keyframes tbPulse { 50% { transform: scale(1.06); } }
@@ -1112,7 +1114,7 @@ body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-
 .tb-hills { position: absolute; left: 0; bottom: 0; width: 100%; height: 110px; }
 
 /* 벚꽃 기간: 벚꽃나무 + 꽃잎 */
-.tb-cherry { background: linear-gradient(180deg, #fff1f4 0%, #fffafa 60%, #fff0f3 100%); }
+.tb-cherry { background: linear-gradient(180deg, #fff6f8 0%, #fffcfc 60%, #fff5f7 100%); }
 .tb-tree { position: absolute; }
 .tb-tree-a { right: -110px; top: -30px; width: 280px; opacity: .45; }
 .tb-tree-b { display: none; }
@@ -1121,7 +1123,7 @@ body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-
   filter: drop-shadow(0 2px 2px rgba(212, 18, 26, .15)); pointer-events: none; }
 
 /* 중간고사: 달밤의 도서관 */
-.tb-midterm { background: linear-gradient(180deg, #e4defc 0%, #f3efff 50%, #faf8ff 100%); }
+.tb-midterm { background: linear-gradient(180deg, #eeeafd 0%, #f7f5ff 50%, #fcfbff 100%); }
 .tb-moon { position: absolute; top: 64px; right: 9%; width: 54px; height: 54px; border-radius: 50%;
   box-shadow: inset -14px -6px 0 0 #fff3c4; transform: rotate(-20deg); filter: drop-shadow(0 0 14px rgba(255, 238, 170, .8)); }
 .tb-star { position: absolute; color: #b4a4ff; font-size: 12px; animation: tbTw 3s ease-in-out infinite; }
