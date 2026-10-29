@@ -383,7 +383,8 @@ export function renderMe(zones, onReset) {
   const st = getState();
   const myCode = getCachedProfile()?.code;
   const lv = getLevel(st.score);
-  const missions = zones.flatMap((z) => z.missions);
+  // AR 미션은 보너스라 "완료한 미션" 집계에서 빼고, 구역별 메인 미션 1개만 센다 (8구역 = 8개)
+  const missions = zones.flatMap((z) => z.missions).filter((m) => m.type !== "ar");
   const doneCnt = missions.filter((m) => isDone(m.id)).length;
   const clearCnt = zones.filter((z) => z.missions.every((m) => isDone(m.id))).length;
 
