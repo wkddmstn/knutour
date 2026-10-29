@@ -286,7 +286,9 @@ export function renderRankInto(container, rows, mode, onMode) {
 
 /* ---------- 커뮤니티 ---------- */
 const ICON_HEART = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.5-9.4C1.2 7.9 3.4 4.4 7 4.4c2.2 0 3.8 1.2 5 3 1.2-1.8 2.8-3 5-3 3.6 0 5.8 3.5 4.5 6.8-1.9 4.8-9.5 9.4-9.5 9.4z"/></svg>`;
-const ICON_COMMENT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.5a8.4 8.4 0 1 1 15.6-4.4z"/></svg>`;
+const ICON_PENCIL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>`;
+const ICON_ASK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.8"/><path d="M12 18h.01"/></svg>`;
+const ICON_COMMENT =`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.5a8.4 8.4 0 1 1 15.6-4.4z"/></svg>`;
 
 // "방금 전", "5분 전", "3시간 전", "2일 전", 일주일이 넘으면 날짜
 export function timeAgo(iso) {
@@ -372,7 +374,6 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all" }
       <button data-f="all" class="${filter === "all" ? "on" : ""}">전체</button>
       <button data-f="mine" class="${filter === "mine" ? "on" : ""}">${q ? "내 질문" : "내 글"}</button>
     </div>
-    <button id="btn-compose" class="btn" style="margin-bottom:16px">${q ? "❓ 질문하기" : "✏️ 글쓰기 · 사진 올리기"}</button>
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
@@ -381,6 +382,19 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all" }
             : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
         </div>`}
     </div>`;
+
+  // 글쓰기 버튼은 오른쪽 아래에 떠 있는 동그란 버튼(FAB). .view는 등장 애니메이션에 transform을 써서
+  // 그 안에 두면 position: fixed가 애니메이션 동안 흔들리므로 #app에 한 번만 만들어 두고,
+  // 커뮤니티 화면일 때만 CSS로 보이게 한다.
+  let fab = $("btn-compose");
+  if (!fab) {
+    fab = Object.assign(document.createElement("button"), { id: "btn-compose", className: "fab", type: "button" });
+    $("app").appendChild(fab);
+  }
+  const label = q ? "질문하기" : "글쓰기 · 사진 올리기";
+  fab.setAttribute("aria-label", label);
+  fab.title = label;
+  fab.innerHTML = q ? ICON_ASK : ICON_PENCIL;
 }
 
 // 좋아요/댓글 수가 바뀌었을 때 화면 전체를 다시 그리지 않고 그 글 카드만 고친다 (스크롤 위치 유지)

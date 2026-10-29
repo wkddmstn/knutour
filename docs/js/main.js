@@ -398,7 +398,8 @@ async function renderCommunityTab() {
       }
     }
   };
-  $("btn-compose")?.addEventListener("click", () => {
+  // 글쓰기 FAB은 다시 그릴 때마다 재사용되는 요소라 addEventListener 대신 onclick으로 덮어쓴다
+  $("btn-compose").onclick = () => {
     ui.showComposer({
       zones: zones.map((z) => ({ id: z.id, name: z.name })),
       zoneId: null,
@@ -411,7 +412,7 @@ async function renderCommunityTab() {
       },
       onClose: () => renderCommunityTab(),
     });
-  });
+  };
 }
 
 // 구역 목록: 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
