@@ -216,6 +216,9 @@ async function photo(m, zone) {
 
     if (hash) savePhotoHash(m.id, hash);   // 통과한 사진의 해시를 기억해뒀다가, 다음 미션에서 재사용하면 잡아낸다
 
+    // 통과했다고 바로 알려준다 (예전엔 말없이 버튼만 떠서 멈춘 것처럼 보였음)
+    // review: 사진 검사를 못 했지만(한도 도달·일시 오류) 막지 않고 받아 준 경우
+    await chat.bot(verdict.review ? "사진 잘 받았어! ✅" : "좋아, 미션이랑 딱 맞는 사진이야! ✅ 통과!");
     await offerCommunityUpload(zone, shot);
     return;
   }
