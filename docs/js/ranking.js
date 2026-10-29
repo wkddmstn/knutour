@@ -4,9 +4,10 @@
 import { getState } from "./storage.js";
 import { client, getCachedProfile } from "./supa.js";
 
-// mode: "total"(개인) | "dept"(소속별 평균)
-export async function getRanking(mode = "total") {
+// mode: "theme"(이번 테마 미션 점수, missionIds 필요) | "total"(개인) | "dept"(소속별 평균)
+export async function getRanking(mode = "total", missionIds = []) {
   const meId = getCachedProfile()?.id;
+  if (mode === "theme") return getThemeRanking(meId, missionIds);
   const { data, error } = await client
     .from("profiles")
     .select("id, nickname, dept, score")
@@ -39,6 +40,20 @@ export async function getRanking(mode = "total") {
   }
 
   // 동점이면 나를 위로 (내가 방금 깬 걸 바로 체감할 수 있게)
+  return rows
+    .sort((a, b) => b.score - a.score || (a.id === meId ? -1 : 1))
+    .map((p) => ({ name: p.nickname, sub: p.dept, score: p.score, me: p.id === meId }));
+}
+// 이번 테마 랭킹: 테마 미션(mission_completions)으로 얻은 점수 합계 (supabase/themes.sql의 theme_ranking)
+async function getThemeRanking(meId, missionIds) {
+  const { data, error } = await client.rpc("theme_ranking", { p_missions: missionIds });
+  const rows = (error || !data) ? [] : data.map((p) => ({ ...p, score: Number(p.score) || 0 }));
+  // 방금 깬 미션이 아직 서버에 반영 전일 수 있으니 내 점수는 이 기기 기록으로 보정
+  const st = getState();
+  const local = missionIds.reduce((sum, id) => sum + (st.done[id]?.pts || 0), 0);
+  const mine = rows.find((p) => p.id === meId);
+  if (mine) mine.score = Math.max(mine.score, local);
+  else if (meId && st.profile && local > 0) rows.push({ id: meId, nickname: st.profile.nickname, dept: st.profile.dept, score: local });
   return rows
     .sort((a, b) => b.score - a.score || (a.id === meId ? -1 : 1))
     .map((p) => ({ name: p.nickname, sub: p.dept, score: p.score, me: p.id === meId }));

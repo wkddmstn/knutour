@@ -30,6 +30,15 @@
   .rank-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
   .hidden-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .hidden-row:last-child { border-bottom: none; }
+  .theme-now { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: var(--line); font-size: 14px; }
+  .theme-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .theme-row:last-child { border-bottom: none; }
+  .theme-row .tr-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .theme-row .tr-missions { font-size: 12px; color: var(--mute); margin: 2px 0 8px; }
+  .theme-row .tr-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .theme-row input[type=date] { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+  .theme-row button { padding: 6px 12px; border-radius: 8px; border: none; background: #d4121a; color: #fff; font: inherit; cursor: pointer; }
+  .theme-row .tr-default { font-size: 13px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
   .switch { position: relative; width: 44px; height: 24px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .switch .slider { position: absolute; inset: 0; background: var(--line); border-radius: 24px; cursor: pointer; transition: .2s; }
@@ -115,6 +124,13 @@
       <h2>🚩 신고 접수함</h2>
       <p style="color:var(--mute);font-size:13px;margin-bottom:10px">사용자가 신고한 글만 모아서 보여줘요.</p>
       <div id="report-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>🗓️ 테마(시즌) 관리</h2>
+      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">테마마다 기간을 정하면, 앱은 오늘 날짜가 들어가는 테마의 장소·미션을 보여줘요. 어느 기간에도 안 들어가는 날엔 아래 "기본 테마"를 보여줘요.</p>
+      <div id="theme-now" class="theme-now"></div>
+      <div id="theme-list">불러오는 중...</div>
     </div>
 
     <div class="admin-card">

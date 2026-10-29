@@ -9,9 +9,10 @@ import { subscribeFriendRequests } from "./friend.js";
 import { openNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
-         setCommentLike, pickBest, GUIDE_QUESTION } from "./community.js";
+         setCommentLike, pickBest, GUIDE_QUESTION, toTag } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
 import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";   // 캠퍼스 일러스트 지도
+import * as themes from "./themes.js";   // 테마(시즌)별 미션
 
 // 호반우 캠퍼스 투어 (장주연): tour.js를 "있으면 쓰는" 방식으로 불러온다.
 // tour.js에 문제가 생겨도 import가 실패할 뿐 기존 앱은 그대로 동작한다.
@@ -20,7 +21,7 @@ import("./tour.js")
   .then((m) => {
     if (!m.TOUR_ON) return;
     tour = m;
-    m.initTour({ zones: () => zones, openZone, goTab, store, ui });
+    m.initTour({ zones: () => allZones, openZone, goTab, store, ui });   // 투어 코스는 모든 장소 기준 (지금 테마에 없는 장소는 openZone이 안내)
     if (document.body.dataset.view === "home") m.renderQuestCard($("home-tour-slot"));   // 홈의 투어 카드
   })
   .catch((e) => console.warn("[투어] 불러오지 못했어요 — 투어 없이 계속합니다", e));
@@ -51,12 +52,15 @@ const HIDDEN_MISSIONS = [
   },
 ];
 
-let zones = [];
+let allZones = [];     // zones.json의 모든 장소
+let zones = [];        // 지금 테마에 열린 장소 (미션도 지금 테마 것만)
+let lockedZones = [];  // 지금 테마에 없는 장소 (다른 테마에서 열림)
 let map = null;          // 장소 화면 지도 (CampusMap)
 let campusMap = null;    // 탐험 화면 지도 (CampusMap)
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
+let communityTag = null;      // 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자
 let communityFilter = "all";   // "all" | "mine" (내 정보 > 내가 쓴 글에서 들어오면 "mine")
 
 /* ================= 구역 이탈 감지(지오펜스) ================= */
@@ -165,7 +169,15 @@ function renderDailySection(opts = {}) {
 /* ================= 시작 ================= */
 async function init() {
   try {
-    zones = (await (await fetch("data/zones.json")).json()).zones;
+    allZones = (await (await fetch("data/zones.json")).json()).zones;
+    zones = allZones;
+    // 테마: 오늘 날짜(관리자가 정한 기간) 기준으로 지금 테마를 정하고, 그 테마의 장소·미션만 연다
+    try {
+      await themes.loadThemes();
+      ({ active: zones, locked: lockedZones } = themes.splitZones(allZones));
+    } catch (e) {
+      console.warn("[테마] 불러오지 못해서 모든 장소를 엽니다", e);
+    }
     // 지도 모양 데이터 (탐험·장소 화면 지도에서 씀). 못 불러와도 지도만 빠지고 앱은 계속 동작한다
     await loadCampusData().catch((e) => console.warn("[지도] 캠퍼스 지도 데이터를 불러오지 못했어요", e));
     // 이미 깨놓은 구역들을 기준점으로 잡아둬서, 첫 화면에서 "방금 깼다" 효과가 잘못 뜨지 않게 한다
@@ -181,6 +193,7 @@ async function init() {
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
   $("btn-back")?.addEventListener("click", () => goTab("explore"));
+  window.addEventListener("notif:goto", (e) => goTab(e.detail));   // 알림 패널에서 "내 게시글" 알림을 눌렀을 때
   $("btn-map")?.addEventListener("click", toggleMap);
 
   if (store.hasProfile()) {
@@ -236,7 +249,10 @@ async function goTab(tab, opts = {}) {
 
   if (tab === "home") {
     const hidden = await activeHiddenMission();
-    ui.renderDashboard(zones, () => goTab("explore"), hidden, hidden ? () => startHiddenMission(hidden) : null);
+    const theme = themes.currentTheme();
+    const specials = themes.todaysSpecials().filter((sp) => !store.isDone(sp.id));
+    ui.renderDashboard(zones, () => goTab("explore"), hidden, hidden ? () => startHiddenMission(hidden) : null,
+      { theme, period: themes.periodText(theme), specials, onSpecial: startSpecial });
     $("bell-btn").onclick = openNotifPanel;
     ui.showView("home");
     renderDailySection();
@@ -244,7 +260,7 @@ async function goTab(tab, opts = {}) {
     refreshBellBadge();
   } else if (tab === "explore") {
     const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
-    ui.renderExplore(clearedCount, zones.length);
+    ui.renderExplore(clearedCount, zones.length, themes.currentTheme());
     ui.showView("explore");
     initCampusMap(openZone);
     renderZoneListSection();
@@ -259,11 +275,12 @@ async function goTab(tab, opts = {}) {
   } else if (tab === "rank") {
     ui.renderRankView();
     ui.showView("rank");
-    showRank(opts.mode || "total");
+    showRank(opts.mode || (themes.currentTheme() ? "theme" : "total"));
   } else if (tab === "me") {
-    ui.renderMe(zones, onReset, () => {
+    ui.renderMe(allZones, onReset, () => {
       communityBoard = "post";
       communityFilter = "mine";
+      communityTag = null;
       goTab("community");
     });
     refreshBellBadge();
@@ -271,6 +288,36 @@ async function goTab(tab, opts = {}) {
   }
   // 상세 화면의 뒤로 버튼 연결
   if (BACK_TO[tab]) $("view-" + tab)?.querySelector("[data-back]")?.addEventListener("click", () => goTab(BACK_TO[tab]));
+}
+
+/* ================= 특별 미션 (홈 화면, 그날 하루만) ================= */
+// 예: 만우절 교복 사진 — 사진을 커뮤니티 게시판에 올리면 완료
+function startSpecial(sp) {
+  if (store.isDone(sp.id)) { ui.toast("이미 완료한 미션이에요"); return; }
+  let posted = false;
+  ui.showComposer({
+    zones: allZones.map((z) => ({ id: z.id, name: z.name })),
+    zoneId: null,
+    lockZone: false,
+    photo: null,
+    requirePhoto: true,
+    title: `${sp.emoji || "✨"} ${sp.title}`,
+    placeholder: `${sp.tag || ""} 오늘의 사진을 소개해 주세요`.trim(),
+    initialText: sp.tag ? `${sp.tag} ` : "",
+    onSubmit: async (message, photo, zoneId) => {
+      const nickname = store.getState().profile?.nickname || "익명";
+      const res = await postCommunity(zoneId || null, nickname, message, photo, "post");
+      if (res?.ok) posted = true;   // 게시판에 실제로 올라갔을 때만 완료
+      return res;
+    },
+    onClose: () => {
+      if (posted && store.completeMission(sp.id, sp.points)) {
+        ui.reward(sp.points);
+        ui.toast(`${sp.emoji || "✨"} ${sp.title} 완료!`);
+      }
+      goTab("home");
+    },
+  });
 }
 
 /* ================= 히든미션 (홈 화면) ================= */
@@ -284,7 +331,7 @@ async function activeHiddenMission() {
 async function startHiddenMission(h) {
   // "신천 수달"은 일청담 근처라는 설정이라 그 구역의 배경/마스코트를 그대로 쓴다. 나중에 다른 히든미션을 추가하면
   // h에 zoneId 필드를 둬서 여기서 찾아 쓰면 된다.
-  const zone = zones.find((z) => z.id === "ilcheongdam") || { id: "hidden", name: "신천" };
+  const zone = allZones.find((z) => z.id === "ilcheongdam") || { id: "hidden", name: "신천" };
   const r = await startAR(zone, { hidden: "otter" });
   if (r?.otter) {
     store.claimHiddenMission(h.id);
@@ -297,22 +344,29 @@ async function startHiddenMission(h) {
 /* ================= 커뮤니티 탭 ================= */
 async function renderCommunityTab() {
   const isQuestion = communityBoard === "question";
-  const posts = await listPosts({ kind: communityBoard, onlyMine: communityFilter === "mine" });
+  // 태그가 장소 이름이면 그 장소(zone_id)로 올린 글도 함께 찾는다
+  const tagZone = communityTag ? allZones.find((z) => toTag(z.name) === communityTag) : null;
+  const posts = await listPosts({
+    kind: communityBoard,
+    onlyMine: communityFilter === "mine",
+    tag: communityTag ? { tag: communityTag, zoneId: tagZone?.id || null } : null,
+  });
   // 질문 게시판 "전체"에는 맨 위에 예시 질문(가이드)을 고정해서 어떻게 쓰는지 보여준다
-  if (isQuestion && communityFilter === "all") posts.unshift(structuredClone(GUIDE_QUESTION));
+  if (isQuestion && communityFilter === "all" && !communityTag) posts.unshift(structuredClone(GUIDE_QUESTION));
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
-  ui.renderCommunity(zones, posts, { board: communityBoard, filter: communityFilter }, myId);
+  ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag }, myId);
   document.querySelectorAll("#view-community [data-board]").forEach((b) => {
     b.onclick = () => {
       if (communityBoard === b.dataset.board) return;
       communityBoard = b.dataset.board;
       communityFilter = "all";
+      communityTag = null;
       renderCommunityTab();
     };
   });
   document.querySelectorAll("#view-community .filter-chip").forEach((b) => {
-    b.onclick = () => { communityFilter = "all"; renderCommunityTab(); };
+    b.onclick = () => { communityFilter = "all"; communityTag = null; renderCommunityTab(); };
   });
   $("btn-rank-all")?.addEventListener("click", () => goTab("rank"));
   // 내 순위 카드: 랭킹은 서버에서 받아오니 카드를 먼저 그려 두고 숫자는 받아오는 대로 채운다
@@ -363,6 +417,15 @@ async function renderCommunityTab() {
   // 사진은 두 번 빠르게 탭하면 좋아요(이미 눌렀으면 하트 효과만). 모바일·PC 모두 click 두 번으로 판단한다.
   let lastTap = { id: null, t: 0 };
   $("view-community").onclick = async (e) => {
+    // #해시태그를 누르면 그 태그(장소)의 방문 기록만 모아 본다
+    const tagEl = e.target.closest("[data-tag]");
+    if (tagEl) {
+      communityTag = tagEl.dataset.tag;
+      communityFilter = "all";
+      await renderCommunityTab();
+      document.querySelector("#view-community .filter-chip")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const el = e.target.closest("[data-act]");
     const p = byId.get(el?.closest("[data-post]")?.dataset.post);
     if (!p) return;
@@ -388,7 +451,7 @@ async function renderCommunityTab() {
   };
   $("btn-compose")?.addEventListener("click", () => {
     ui.showComposer({
-      zones: zones.map((z) => ({ id: z.id, name: z.name })),
+      zones: allZones.map((z) => ({ id: z.id, name: z.name })),
       zoneId: null,
       lockZone: false,
       photo: null,
@@ -406,22 +469,26 @@ async function renderCommunityTab() {
 function renderZoneListSection() {
   const clearedNow = new Set(zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
   const justCleared = new Set([...clearedNow].filter((id) => !lastClearedSet.has(id)));
-  ui.renderZoneList(zones, store.isDone, justCleared);
+  ui.renderZoneList(zones, store.isDone, justCleared, lockedZones);
   document.querySelectorAll("#zone-list .zone-row").forEach((btn) => {
     btn.onclick = () => {
-      const zone = zones.find((z) => z.id === btn.dataset.zone);
+      const zone = allZones.find((z) => z.id === btn.dataset.zone);
       if (zone) openZone(zone);
     };
   });
   lastClearedSet = clearedNow;
 }
 
-// 전체 랭킹 상세 화면 (개인 / 단과대)
+// 전체 랭킹 상세 화면 (이번 테마 / 개인 / 단과대)
 async function showRank(mode) {
-  const rows = await getRanking(mode);
+  const theme = themes.currentTheme();
+  if (mode === "theme" && !theme) mode = "total";
+  const rows = await getRanking(mode, theme ? themeMissionIds(theme) : []);
   if (document.body.dataset.view !== "rank") return;   // 받아오는 사이 다른 화면으로 갔으면 그리지 않음
-  ui.renderRankInto($("rank-pane"), rows, mode, showRank);
+  ui.renderRankInto($("rank-pane"), rows, mode, showRank, theme);
 }
+// 테마 랭킹에 들어가는 미션 (장소 미션 + 특별 미션)
+const themeMissionIds = (t) => [...t.missions, ...t.special.map((sp) => sp.id)];
 
 function onReset() {
   store.resetAll();
@@ -462,6 +529,14 @@ function setupZoneInfoBtn(zone) {
 }
 
 function openZone(zone) {
+  // 지금 테마의 장소면 그 테마 미션만 담긴 장소로, 아니면 "○○에 열려요" 안내만 (투어 등에서 열 때)
+  const opened = zones.find((z) => z.id === zone.id);
+  if (!opened) {
+    const locked = lockedZones.find((z) => z.id === zone.id);
+    ui.toast(`${zone.name}은(는) ${locked?.openTheme ? `'${locked.openTheme.name}' 테마에` : "다른 테마에서"} 열려요`);
+    return;
+  }
+  zone = opened;
   clearCampusMap();
   leaveZone();
   applyZoneTheme(zone);
@@ -478,6 +553,7 @@ function openZone(zone) {
   const resuming = !!savedChat;
   if (resuming) {
     $("chat").innerHTML = savedChat;
+    chat.fixDeadMedia($("chat"));   // 예전에 저장된 깨진 사진·녹음(blob:)은 글자 표시로
     requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
   }
 
@@ -701,9 +777,12 @@ async function finishZone(zone) {
     await chat.bot("여긴 이미 다 깬 곳이야!");
   }
 
-  if (allCleared() && store.grantBonus("all", 200)) {
+  const theme = themes.currentTheme();
+  if (allCleared() && store.grantBonus(theme ? "all:" + theme.id : "all", 200)) {
     ui.reward(200);
-    await chat.bot("우와, <b>전 구역 완주</b>했네!<br>완주 보너스 <b>200 XP</b>까지 챙겼어.");
+    await chat.bot(theme
+      ? `우와, <b>${theme.emoji} ${theme.name}</b> 테마 장소를 다 돌았네!<br>테마 완주 보너스 <b>200 XP</b>까지 챙겼어.`
+      : "우와, <b>전 구역 완주</b>했네!<br>완주 보너스 <b>200 XP</b>까지 챙겼어.");
     ui.showFinale(() => goTab("rank"));
   }
 
@@ -730,8 +809,10 @@ function initCampusMap(onSelect) {
   if (!campusDataReady()) { el.textContent = "지도를 불러오지 못했어요. 아래 목록에서 장소를 골라 주세요."; return; }
   campusMap = new CampusMap(el);
   const next = zones.find((z) => !zoneCleared(z));
-  campusMap.setZones(zones, {
-    status: (z) => (zoneCleared(z) ? "cleared" : z === next ? "next" : ""),
+  // 지금 테마 장소 + 다른 테마 장소(잠금 핀, 누르면 "○○에 열려요")
+  campusMap.setZones([...zones, ...lockedZones], {
+    status: (z) => (z.openTheme !== undefined ? "locked" : zoneCleared(z) ? "cleared" : z === next ? "next" : ""),
+    lockNote: (z) => (z.openTheme ? `'${z.openTheme.name}' 테마에 열려요` : "다른 테마에서 열려요"),
     onSelect,
   });
 }

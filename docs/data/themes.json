@@ -1,0 +1,45 @@
+{
+  "_설명": "테마(시즌)별 미션 묶음. missions에는 zones.json의 미션 id를 넣는다. start/end는 기본 날짜(한국 시간, 그날 포함)이고, 관리자 페이지에서 바꾸면 Supabase(theme_settings)에 저장된 날짜가 우선한다. special은 장소 없이 특정 날짜(date: MM-DD)에만 홈에 뜨는 미션. 오늘이 어느 테마 기간에도 안 들어가면 관리자가 정한 기본 테마(없으면 defaultTheme)를 보여준다.",
+  "defaultTheme": "march",
+  "themes": [
+    {
+      "id": "march",
+      "name": "3월 첫 주",
+      "emoji": "🌱",
+      "desc": "새 학기, 캠퍼스와 친해지기",
+      "start": "2027-03-02",
+      "end": "2027-03-08",
+      "missions": ["m-gongstaurant-photo", "m-gongstaurant-ar", "m-bokji-quiz", "m-bokji-ar", "m-stadium-together"]
+    },
+    {
+      "id": "cherry",
+      "name": "벚꽃 기간",
+      "emoji": "🌸",
+      "desc": "벚꽃 핀 캠퍼스에서 봄 즐기기",
+      "start": "2027-03-30",
+      "end": "2027-04-11",
+      "missions": ["m-centralpark-photo", "m-centralpark-ar", "m-cherryroad-ar", "m-loveroad-together"],
+      "special": [
+        {
+          "id": "m-aprilfools-uniform",
+          "type": "post",
+          "date": "04-01",
+          "emoji": "🎒",
+          "title": "만우절 교복 입고 사진 찍기",
+          "desc": "만우절엔 교복 입고 등교! 캠퍼스에서 교복 입은 사진을 찍어 커뮤니티 게시판에 올려 주세요.",
+          "tag": "#만우절교복",
+          "points": 100
+        }
+      ]
+    },
+    {
+      "id": "midterm",
+      "name": "중간고사 기간",
+      "emoji": "📚",
+      "desc": "시험 기간, 도서관과 일청담에서 버티기",
+      "start": "2027-04-12",
+      "end": "2027-04-25",
+      "missions": ["m-library-photo", "m-library-ar", "m-ilcheongdam-photo"]
+    }
+  ]
+}

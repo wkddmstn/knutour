@@ -34,7 +34,21 @@ function snapshot() {
   clone.querySelectorAll(".row.choices, .row.widget, .bubble.typing").forEach((el) => {
     (el.closest(".row") || el).remove();
   });
+  fixDeadMedia(clone);
   return clone.innerHTML;
+}
+
+// blob: 주소(사진·녹음 미리보기)는 새로고침하면 사라져서, 저장했다 복원하면 깨진 이미지와 콘솔 오류가 생긴다.
+// 저장할 때와 예전에 저장된 기록을 복원할 때, 이런 것들을 글자 표시로 바꿔 둔다.
+export function fixDeadMedia(root) {
+  const swap = (el, text) => {
+    const s = document.createElement("span");
+    s.className = "media-gone";
+    s.textContent = text;
+    el.replaceWith(s);
+  };
+  root.querySelectorAll('img[src^="blob:"]').forEach((el) => swap(el, "📷 제출한 사진"));
+  root.querySelectorAll('audio[src^="blob:"]').forEach((el) => swap(el, "🎙️ 제출한 녹음"));
 }
 
 function persist() {

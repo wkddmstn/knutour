@@ -63,6 +63,9 @@ async function together(m) {
   }
   await chat.bot(`<b>${m.title}</b><br>${m.desc || ""}`);
 
+  // 랜덤 매칭은 아직 실제 서버 없이 같은 브라우저 안에서만 동작해서(localdb), 켜기 전까지는 친구 코드 확인만 쓴다
+  if (!RANDOM_MATCH_ON) { await togetherWithFriend(m); return; }
+
   const withWhom = await chat.choices([
     { label: "친구와 함께 왔어요", value: "friend" },
     { label: "혼자 왔어요 (랜덤 매칭)", value: "random" },
@@ -71,6 +74,7 @@ async function together(m) {
   if (withWhom === "friend") await togetherWithFriend(m);
   else await togetherRandom(m);
 }
+const RANDOM_MATCH_ON = false;   // 랜덤 매칭을 Supabase로 옮긴 뒤 true로
 
 /* ---------- 친구 코드 상호 확인 ---------- */
 async function togetherWithFriend(m) {
@@ -148,6 +152,28 @@ async function togetherRandom(m) {
 }
 
 /* ---------- 사진 ---------- */
+// 제출한 사진을 대화창에 보여줄 작은 미리보기(dataURL, 긴 변 480px). 실패하면 임시 주소로라도 보여준다
+async function shotThumb(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = url;
+    });
+    const scale = Math.min(1, 480 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth * scale);
+    c.height = Math.round(img.naturalHeight * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    return c.toDataURL("image/jpeg", 0.72);
+  } catch {
+    return url;
+  }
+}
+
 async function photo(m, zone) {
   const withHob = !!(zone && MASCOTS[zone.id]);   // 이 장소에 호반우가 있으면 "호반우와 함께 찍기" 제공 (장주연)
   while (true) {
@@ -182,7 +208,8 @@ async function photo(m, zone) {
       chat.user(`<img class="shot" src="${studio.dataUrl}" alt="제출한 사진">`);
     } else {
       shot = file;
-      chat.user(`<img class="shot" src="${URL.createObjectURL(file)}" alt="제출한 사진">`);
+      // 대화 기록에 저장돼도 다시 볼 수 있게, 임시 주소(blob:) 대신 작은 미리보기 이미지로 넣는다
+      chat.user(`<img class="shot" src="${await shotThumb(file)}" alt="제출한 사진">`);
     }
 
     // 1단계(무료): 이 사진이 이미 "다른" 미션에서 제출했던 사진이랑 거의 똑같은지 먼저 확인한다.

@@ -1,6 +1,6 @@
 import { getState, isDone, getLevel, getLevelTable, getLevelLog } from "./storage.js";
 import { getCachedProfile } from "./supa.js";
-import { pickBest } from "./community.js";
+import { pickBest, toTag } from "./community.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -107,7 +107,8 @@ export function renderOnboard(depts, onSubmit) {
       </label>
       <p id="onb-err" class="err"></p>
       <button id="btn-start" class="btn">시작하기</button>
-    </div>`;
+    </div>
+    <p class="onb-privacy">시작하면 <a href="privacy.html" target="_blank" rel="noopener">접속 기록 · 개인정보 안내</a>에 동의한 것으로 봐요.</p>`;
   const submit = () => {
     const nickname = $("in-nick").value.trim();
     if (nickname.length < 2) { $("onb-err").textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
@@ -123,7 +124,9 @@ export function renderOnboard(depts, onSubmit) {
 /* ---------- 홈: 캠퍼스 탐험 지도(대표 카드) · 데일리 · 투어 · 히든미션 ---------- */
 // 홈은 "오늘 뭐 하지?"에 답하는 화면. 지도·장소 목록 같은 디테일은 "미션 하러 가기"를 눌러야 열린다.
 // 진행 상황은 미션 개수가 아니라 장소 단위(그 장소의 미션을 다 깼는지)로 센다 (장소마다 미션 수가 달라서).
-export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = null) {
+// themeInfo: { theme, period, specials, onSpecial } — 지금 테마 이름·기간, 오늘의 특별 미션
+export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = null, themeInfo = {}) {
+  const { theme = null, period = "", specials = [], onSpecial = null } = themeInfo;
   const st = getState();
   const lv = getLevel(st.score);
   const total = zones.length;
@@ -141,7 +144,15 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
       <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
       <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
     </div>
+    ${specials.map((sp) => `
+    <div class="card special-card">
+      <div class="sum-label">🎉 오늘만 열리는 특별 미션</div>
+      <div class="sum-big" style="font-size:18px">${esc(sp.emoji || "✨")} ${esc(sp.title)}</div>
+      <p class="sum-foot" style="margin:6px 0 12px">${esc(sp.desc || "")}</p>
+      <button class="btn cta-glow" data-special="${esc(sp.id)}">사진 올리고 +${sp.points} XP</button>
+    </div>`).join("")}
     <div class="card card-hero quest-map-card">
+      ${theme ? `<div class="theme-badge"><span>${esc(theme.emoji || "")} ${esc(theme.name)}</span>${period ? `<small>${esc(period)}</small>` : ""}</div>` : ""}
       <div class="qm-head">
         <span class="qm-title">캠퍼스 탐험 지도</span>
         <span class="qm-chip">${cleared} / ${total} 장소</span>
@@ -164,6 +175,9 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
     </div>` : ""}`;
   $("btn-go-quest").onclick = onGoExplore;
   if (hidden) $("btn-hidden-mission").onclick = onHidden;
+  document.querySelectorAll("#view-home [data-special]").forEach((b) => {
+    b.onclick = () => onSpecial?.(specials.find((sp) => sp.id === b.dataset.special));
+  });
 }
 
 // 홈 대표 카드 안의 미니 지도. 실제 지도 대신 장소를 네모 칸으로 보여준다.
@@ -233,10 +247,10 @@ function miniMapSvg(zones, nextZone) {
 }
 
 /* ---------- 캠퍼스 탐험 (홈 카드의 "미션 하러 가기"로 여는 상세 화면): 지도 · 장소 목록 ---------- */
-export function renderExplore(cleared = 0, total = 0) {
+export function renderExplore(cleared = 0, total = 0, theme = null) {
   $("view-explore").innerHTML = `
     ${subHeader("캠퍼스 탐험", `<span class="qm-chip">${cleared} / ${total} 장소</span>`)}
-    <p class="map-guide">지도나 목록에서 장소를 골라 미션을 시작해 보세요.</p>
+    <p class="map-guide">${theme ? `지금은 <b>${esc(theme.emoji || "")} ${esc(theme.name)}</b> 테마예요. ` : ""}지도나 목록에서 장소를 골라 미션을 시작해 보세요.</p>
     <div id="campus-map" role="application" aria-label="경북대학교 캠퍼스 지도"></div>
     <h3 class="sec">장소 목록</h3>
     <div id="zone-list"></div>`;
@@ -260,7 +274,8 @@ export function fillRankHero(totalRows, deptRows) {
 }
 
 // 장소 목록: 남은 장소는 위, 다 깬 장소는 아래로. 방금 막 다 깬 장소(justCleared)는 "통과" 도장 효과
-export function renderZoneList(zones, isDone, justCleared = new Set()) {
+// locked: 지금 테마에 없는 장소 (흐리게, 누르면 "○○에 열려요" 안내)
+export function renderZoneList(zones, isDone, justCleared = new Set(), locked = []) {
   const el = $("zone-list");
   if (!el) return;
   const rows = zones
@@ -279,7 +294,17 @@ export function renderZoneList(zones, isDone, justCleared = new Set()) {
         <span>${doneCnt}/${z.missions.length} 미션</span>
       </span>
       ${done ? '<span class="zr-check">✓ 통과</span>' : '<span class="zr-arrow">›</span>'}
-    </button>`).join("");
+    </button>`).join("") + (locked.length ? `
+    <h3 class="sec locked-sec">다른 테마 장소</h3>
+    ${locked.map((z) => `
+    <button type="button" class="zone-row locked" data-zone="${z.id}">
+      <span class="zr-emoji">${esc(z.emoji)}</span>
+      <span class="zr-body">
+        <strong>${esc(z.name)}</strong>
+        <span>${z.openTheme ? `${esc(z.openTheme.emoji || "")} ${esc(z.openTheme.name)}에 열려요` : "다른 테마에서 열려요"}</span>
+      </span>
+      <span class="zr-lock" aria-hidden="true">🔒</span>
+    </button>`).join("")}` : "");
 }
 
 /* ---------- 데일리 출석체크 / 퀴즈 ---------- */
@@ -379,9 +404,10 @@ export function showDailyQuiz(q, onAnswer) {
   $("quiz-modal-close").onclick = close;
 }
 
-export function renderRankInto(container, rows, mode, onMode) {
+export function renderRankInto(container, rows, mode, onMode, theme = null) {
   if (!container) return;
   const meIdx = rows.findIndex((r) => r.me);
+  const me = rows[meIdx];
   const unit = mode === "dept" ? "평균 XP" : "XP";
   const podium = [1, 0, 2]
     .filter((i) => rows[i])
@@ -402,19 +428,22 @@ export function renderRankInto(container, rows, mode, onMode) {
 
   container.innerHTML = `
     <div class="seg-sub" style="margin-top:12px">
+      ${theme ? `<button data-m="theme" class="${mode === "theme" ? "on" : ""}">${esc(theme.emoji || "")} 이번 테마</button>` : ""}
       <button data-m="total" class="${mode === "total" ? "on" : ""}">개인</button>
       <button data-m="dept" class="${mode === "dept" ? "on" : ""}">단과대</button>
     </div>
+    ${mode === "theme" ? `<p class="map-guide" style="margin-top:4px">${esc(theme.name)} 테마 미션으로 얻은 점수 순위예요.</p>` : ""}
     <div class="card my-rank">
       <div>
-        <div class="sum-label">내 ${mode === "dept" ? "단과대 " : ""}순위</div>
-        <div class="my-big">${meIdx + 1}위</div>
+        <div class="sum-label">내 ${mode === "dept" ? "단과대 " : mode === "theme" ? "테마 " : ""}순위</div>
+        <div class="my-big">${me ? `${meIdx + 1}위` : "-"}</div>
       </div>
-      <div class="my-side"><b>${rows[meIdx].score}</b> ${unit}<br><small>전체 ${rows.length}${mode === "dept" ? "개 단과대" : "명"}</small></div>
+      <div class="my-side">${me
+        ? `<b>${me.score}</b> ${unit}<br><small>전체 ${rows.length}${mode === "dept" ? "개 단과대" : "명"}</small>`
+        : `<small>${mode === "theme" ? "이번 테마 미션을 하면<br>순위에 올라가요" : "순위를 불러오지 못했어요"}</small>`}</div>
     </div>
-    <div class="podium">${podium}</div>
-    ${list ? `<ol class="ranklist">${list}</ol>` : ""}
-    <p class="note">지금은 데모용 더미 순위예요. 서버를 연결하면 실제 참가자 순위가 표시돼요.</p>`;
+    ${rows.length ? `<div class="podium">${podium}</div>` : `<p class="note">아직 순위에 오른 사람이 없어요. 첫 번째가 되어 보세요!</p>`}
+    ${list ? `<ol class="ranklist">${list}</ol>` : ""}`;
   container.querySelectorAll(".seg-sub button").forEach((b) => (b.onclick = () => onMode(b.dataset.m)));
 }
 
@@ -460,8 +489,14 @@ function postFootHtml(p) {
     p.comment_count ? `답변 ${p.comment_count}개 보기 · 도움이 된 답변에 ♥를 눌러주세요` : "아직 답변이 없어요 · 첫 답변을 남겨보세요"}</button>`;
 }
 
+// 본문 속 #해시태그를 눌러서 모아 볼 수 있는 버튼으로 바꾼다. esc() 뒤에 돌리므로 "&#39;" 같은 엔티티는
+// 앞이 공백/줄 시작이 아니라 걸리지 않는다.
+const tagBtn = (t) => `<button type="button" class="tag" data-tag="${esc(t)}">#${esc(t)}</button>`;
+const linkifyTags = (html) => html.replace(/(^|\s)#([0-9A-Za-z가-힣_]+)/g, (_, pre, t) => pre + tagBtn(t));
+
 function postCardHtml(p, zoneName, myId) {
   const q = p.kind === "question";
+  const place = p.zone_id ? toTag(zoneName(p.zone_id)) : "";
   return `
     <article class="post ${q ? "q-post" : ""} ${p.guide ? "guide" : ""}" data-post="${esc(p.id)}">
       ${p.guide ? `<div class="guide-ribbon">📌 이렇게 질문해 보세요 · 예시</div>` : ""}
@@ -469,7 +504,7 @@ function postCardHtml(p, zoneName, myId) {
         ${avatar(p.nickname)}
         <div class="post-meta">
           <b>${esc(p.nickname)}${p.guide ? ` <span class="guide-chip">가이드</span>` : ""}</b>
-          <span>${p.zone_id ? `<em>📍 ${esc(zoneName(p.zone_id))}</em> · ` : ""}${p.guide ? "고정됨" : timeAgo(p.created_at)}</span>
+          <span>${place ? `${tagBtn(place)} · ` : ""}${p.guide ? "고정됨" : timeAgo(p.created_at)}</span>
         </div>
         ${!p.guide && p.user_id !== myId ? `<button class="post-report" type="button" data-act="report" aria-label="신고하기" title="신고하기">🚩</button>` : ""}
       </header>
@@ -478,7 +513,7 @@ function postCardHtml(p, zoneName, myId) {
         <img src="${esc(p.photo_url)}" alt="${esc(p.nickname)}님이 올린 사진" loading="lazy">
         <span class="heart-burst" aria-hidden="true">${ICON_HEART}</span>
       </div>` : ""}
-      ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${q ? `<span class="q-mark">Q.</span>` : ""}${esc(p.message)}</p>` : ""}
+      ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${q ? `<span class="q-mark">Q.</span>` : ""}${linkifyTags(esc(p.message))}</p>` : ""}
       <div class="post-actions">
         <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
                 aria-pressed="${p.liked}" aria-label="${q ? "나도 궁금해요" : "좋아요"}">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
@@ -494,9 +529,11 @@ function postCardHtml(p, zoneName, myId) {
 // 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
 // 맨 위는 "내 순위" 대표 카드(누르면 전체 랭킹 상세 화면), 그 아래 게시판.
 // "내 글만 보기"는 탭 안의 탭으로 두지 않고 내 정보 > 내가 쓴 글에서 들어오게 했다 (들어오면 위에 칩이 뜸).
-export function renderCommunity(zones, posts, { board = "post", filter = "all" } = {}, myId = null) {
+// tag: 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자 (위에 "#일청담 · N개" 칩이 뜨고 ✕로 해제)
+export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null } = {}, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   const q = board === "question";
+  const count = posts.filter((p) => !p.guide).length;
   $("view-community").innerHTML = `
     <div class="card card-hero rank-hero" id="rank-hero">
       <div class="qm-head"><span class="qm-title">🏆 내 순위</span></div>
@@ -511,15 +548,18 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all" }
       <button data-board="post" role="tab" aria-selected="${!q}" class="${q ? "" : "on"}">자유게시판</button>
       <button data-board="question" role="tab" aria-selected="${q}" class="${q ? "on" : ""}">❓ 질문</button>
     </div>
-    ${filter === "mine"
+    ${tag
+      ? `<button type="button" class="filter-chip tag-chip" data-f="all"><b>#${esc(tag)}</b> 방문 기록 ${count}개 <span aria-hidden="true">✕</span><span class="sr-only">해시태그 모아 보기 끄기</span></button>`
+      : filter === "mine"
       ? `<button type="button" class="filter-chip" data-f="all">${q ? "내 질문" : "내가 쓴 글"}만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">전체 보기</span></button>`
       : `<p class="map-guide">${q
         ? "캠퍼스·미션에 대해 궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변으로 올라가요."
-        : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 자유롭게 나눠보세요."}</p>`}
+        : "캠퍼스 곳곳의 이야기와 호반우 인증샷을 나눠보세요. #장소 태그를 누르면 그곳의 방문 기록만 모아 볼 수 있어요."}</p>`}
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
-          <p style="color:var(--mute);margin:0">${filter === "mine"
+          <p style="color:var(--mute);margin:0">${tag ? `아직 #${esc(tag)} 태그가 달린 ${q ? "질문" : "글"}이 없어요`
+            : filter === "mine"
             ? (q ? "아직 올린 질문이 없어요" : "아직 올린 글이 없어요")
             : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
         </div>`}
@@ -702,7 +742,8 @@ export function showComments({ myId, myName, question = false, context = "", rea
 // onSubmit(message, photo, zoneId) => Promise<boolean>. onClose()는 모달이 닫힐 때(성공/취소 상관없이) 한 번 호출된다.
 // title·placeholder를 주면 제목과 입력 안내 문구를 바꾼다 (질문하기 등).
 export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZone = false, photo = null,
-                               title = "", placeholder = "무슨 얘기를 남길까요?", onSubmit, onClose }) {
+                               title = "", placeholder = "무슨 얘기를 남길까요?", requirePhoto = false, initialText = "",
+                               onSubmit, onClose }) {
   const m = $("modal");
   m.classList.remove("hidden");
   m.classList.add("modal-center");
@@ -713,15 +754,17 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
     <div class="modal-card pop-in" style="text-align:left">
       <h2 style="font-size:18px;text-align:center">${title || (photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기")}</h2>
       ${!lockZone && zones ? `
-        <select id="cw-zone" class="text-in" style="margin-bottom:8px">
-          <option value="">📍 장소 선택 안 함</option>
-          ${zones.map((z) => `<option value="${esc(z.id)}" ${z.id === zoneId ? "selected" : ""}>${esc(z.name)}</option>`).join("")}
-        </select>` : (zoneName ? `<div class="sum-foot" style="margin-bottom:8px">📍 ${esc(zoneName)}</div>` : "")}
+        <select id="cw-zone" class="text-in" style="margin-bottom:4px" aria-label="장소 해시태그">
+          <option value=""># 장소 태그 없음</option>
+          ${zones.map((z) => `<option value="${esc(z.id)}" ${z.id === zoneId ? "selected" : ""}>#${esc(toTag(z.name))}</option>`).join("")}
+        </select>
+        <p class="cw-tag-hint">장소 태그를 달면 커뮤니티에서 그 장소의 방문 기록으로 모아 볼 수 있어요. 본문에 #태그를 직접 써도 돼요.</p>`
+        : (zoneName ? `<div class="cw-tag-lock"><span class="tag">#${esc(toTag(zoneName))}</span> 태그가 붙어요</div>` : "")}
       ${photo
         ? `<img class="gb-photo-lg" src="${photoSrc(photo)}" alt="">`
-        : `<label class="btn-file small">📷 사진 추가 (선택)<input id="cw-photo" type="file" accept="image/*" hidden></label>
+        : `<label class="btn-file small">📷 사진 추가 (${requirePhoto ? "필수" : "선택"})<input id="cw-photo" type="file" accept="image/*" hidden></label>
            <span id="cw-photo-name" class="sum-foot" style="margin:4px 0 0;display:block"></span>`}
-      <textarea id="cw-msg" class="text-in" placeholder="${esc(placeholder)}" maxlength="200" rows="3" style="margin-top:10px"></textarea>
+      <textarea id="cw-msg" class="text-in" placeholder="${esc(placeholder)}" maxlength="200" rows="3" style="margin-top:10px">${esc(initialText)}</textarea>
       <button id="cw-submit" class="btn" style="margin-top:10px">게시하기</button>
       <button id="cw-close" class="btn alt" style="margin-top:8px">닫기</button>
     </div>`;
@@ -744,6 +787,7 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
 
   $("cw-submit").onclick = async () => {
     const msg = $("cw-msg").value.trim();
+    if (requirePhoto && !pickedPhoto) { toast("사진을 꼭 함께 올려 주세요."); return; }
     if (!msg && !pickedPhoto) { toast("글이나 사진 중 하나는 있어야 해요."); return; }
     const zid = lockZone ? zoneId : ($("cw-zone")?.value || null);
     const btn = $("cw-submit");

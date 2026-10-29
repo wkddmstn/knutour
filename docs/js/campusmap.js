@@ -337,7 +337,8 @@ export class CampusMap {
 
   // ----- 장소 핀 -----
   // status(zone) → "cleared" | "next" | "" , onSelect(zone)
-  setZones(zones, { status = () => "", onSelect = null, bubble = true } = {}) {
+  // status: "cleared" | "next" | "locked"(다른 테마 장소, 누르면 lockNote 안내만) | ""
+  setZones(zones, { status = () => "", onSelect = null, bubble = true, lockNote = () => "" } = {}) {
     this.pins.forEach((p) => p.node.remove());
     this.pins = zones.map((z) => {
       const st = status(z);
@@ -347,9 +348,11 @@ export class CampusMap {
       node.setAttribute("aria-label", `${z.name}${st === "cleared" ? " (클리어)" : ""}`);
       node.innerHTML = `<span class="cm-pin-head"><span class="cm-pin-emoji">${esc(z.emoji || "📍")}</span></span>
         ${st === "cleared" ? '<span class="cm-pin-check">✓</span>' : ""}
+        ${st === "locked" ? '<span class="cm-pin-check cm-pin-lock">🔒</span>' : ""}
         <span class="cm-pin-name">${esc(z.name)}</span>`;
       node.onclick = (e) => {
         e.stopPropagation();
+        if (st === "locked") { this.showBubble(z, st, null, lockNote(z)); return; }
         if (!onSelect) return;
         if (bubble) this.showBubble(z, st, onSelect); else onSelect(z);
       };
@@ -359,13 +362,15 @@ export class CampusMap {
     this.place();
   }
   // 핀을 누르면 뜨는 작은 말풍선: 장소 이름 + "미션 보기"
-  showBubble(z, st, onSelect) {
+  showBubble(z, st, onSelect, note = "") {
     this.hideBubble();
     const node = document.createElement("div");
     node.className = "cm-bubble";
-    node.innerHTML = `<b>${esc(z.emoji || "")} ${esc(z.name)}</b>
+    node.innerHTML = st === "locked"
+      ? `<b>${esc(z.emoji || "")} ${esc(z.name)}</b><span class="cm-bubble-note">🔒 ${esc(note)}</span>`
+      : `<b>${esc(z.emoji || "")} ${esc(z.name)}</b>
       <button type="button">${st === "cleared" ? "다시 보기" : "미션 보기"}</button>`;
-    node.querySelector("button").onclick = (e) => { e.stopPropagation(); onSelect(z); };
+    node.querySelector("button")?.addEventListener("click", (e) => { e.stopPropagation(); onSelect(z); });
     node.onclick = (e) => e.stopPropagation();
     this.layer.appendChild(node);
     this.bubble = { lat: z.lat, lng: z.lng, node };

@@ -28,6 +28,7 @@ async function tryEnter(pw) {
   loadAnnouncements();
   loadCommunityPosts();
   loadReports();
+  loadThemes();
   loadHiddenMissions();
   loadProgress();
   loadRanking();
@@ -156,6 +157,76 @@ async function loadReports() {
       await client.rpc("admin_delete_community_post", { p_password: password, p_id: btn.dataset.delPost });
       loadReports();
       loadCommunityPosts();
+    };
+  });
+}
+
+/* ---------- 🗓️ 테마(시즌) 기간 · 기본 테마 ---------- */
+// 테마 목록은 data/themes.json, 관리자가 바꾼 날짜·기본 테마는 Supabase theme_settings (supabase/themes.sql)
+async function loadThemes() {
+  const list = $("theme-list"), now = $("theme-now");
+  let cfg = null, zones = [];
+  try {
+    cfg = await (await fetch("data/themes.json")).json();
+    zones = (await (await fetch("data/zones.json")).json()).zones || [];
+  } catch { /* ignore */ }
+  if (!cfg) { list.textContent = "data/themes.json을 불러오지 못했어요."; return; }
+  const { data, error } = await client.from("theme_settings").select("*");
+  if (error) {
+    list.innerHTML = `<p style="color:var(--mute);font-size:13px">테마 설정 표가 아직 없어요. supabase/themes.sql을 SQL Editor에서 실행해 주세요.</p>`;
+    return;
+  }
+  const saved = Object.fromEntries((data || []).map((r) => [r.id, r]));
+  const themes = cfg.themes.map((t) => ({
+    ...t,
+    start: saved[t.id]?.start_date || t.start,
+    end: saved[t.id]?.end_date || t.end,
+  }));
+  const defaultId = (data || []).find((r) => r.is_default)?.id || cfg.defaultTheme || themes[0]?.id;
+  const missionName = Object.fromEntries(zones.flatMap((z) => z.missions.map((m) => [m.id, `${z.name}·${m.title}`])));
+
+  // 지금 앱에 적용되는 테마 (앱과 같은 규칙: 오늘이 기간 안인 테마 → 없으면 기본 테마)
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const active = themes.find((t) => t.start && t.end && t.start <= today && today <= t.end);
+  const shown = active || themes.find((t) => t.id === defaultId);
+  now.innerHTML = `오늘(${today}) 앱에 보이는 테마: <b>${esc(shown?.emoji || "")} ${esc(shown?.name || "-")}</b>
+    <span style="color:var(--mute)">${active ? "(기간 안)" : "(기간 밖이라 기본 테마)"}</span>`;
+
+  list.innerHTML = themes.map((t) => `
+    <div class="theme-row" data-theme="${esc(t.id)}">
+      <div class="tr-head">
+        <b>${esc(t.emoji || "")} ${esc(t.name)}</b>
+        <label class="tr-default"><input type="radio" name="default-theme" value="${esc(t.id)}" ${t.id === defaultId ? "checked" : ""}> 기본 테마</label>
+      </div>
+      <div class="tr-missions">${t.missions.map((id) => esc(missionName[id] || id)).join(" · ")}${(t.special || []).length ? ` · 특별: ${t.special.map((s) => `${esc(s.title)}(${esc(s.date)})`).join(", ")}` : ""}</div>
+      <div class="tr-dates">
+        <input type="date" data-k="start" value="${esc(t.start || "")}"> ~
+        <input type="date" data-k="end" value="${esc(t.end || "")}">
+        <button type="button" data-save>기간 저장</button>
+      </div>
+    </div>`).join("");
+
+  list.querySelectorAll("[data-save]").forEach((btn) => {
+    btn.onclick = async () => {
+      const row = btn.closest("[data-theme]");
+      const start = row.querySelector('[data-k="start"]').value || null;
+      const end = row.querySelector('[data-k="end"]').value || null;
+      if (start && end && end < start) { alert("종료일이 시작일보다 빨라요."); return; }
+      // 다른 테마와 기간이 겹치면 앞쪽 테마가 우선이라 미리 알려준다
+      const overlap = themes.find((o) => o.id !== row.dataset.theme && o.start && o.end && start && end && !(end < o.start || o.end < start));
+      if (overlap && !confirm(`'${overlap.name}' 테마와 기간이 겹쳐요. 겹치는 날엔 목록에서 위에 있는 테마가 보여요. 그래도 저장할까요?`)) return;
+      btn.disabled = true;
+      const { error } = await client.rpc("admin_set_theme", { p_password: password, p_id: row.dataset.theme, p_start: start, p_end: end });
+      btn.disabled = false;
+      if (error) { alert("저장 실패: " + error.message); return; }
+      loadThemes();
+    };
+  });
+  list.querySelectorAll('input[name="default-theme"]').forEach((r) => {
+    r.onchange = async () => {
+      const { error } = await client.rpc("admin_set_default_theme", { p_password: password, p_id: r.value });
+      if (error) { alert("변경 실패: " + error.message); }
+      loadThemes();
     };
   });
 }

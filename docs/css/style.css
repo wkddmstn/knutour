@@ -116,6 +116,9 @@ body[data-view="zone"] main { padding-bottom: 40px; }
 }
 .onb-title { margin: 20px 4px 10px; font-size: 27px; line-height: 1.35; font-weight: 800; color: var(--ink); }
 .onb-title-display { font-family: "Jua", var(--font); font-weight: 400; letter-spacing: 0; }
+/* 가입 화면 맨 아래 개인정보 안내 링크 */
+.onb-privacy { margin: 14px 4px 8px; text-align: center; font-size: 12px; color: var(--mute); line-height: 1.6; }
+.onb-privacy a { color: var(--sub); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 /* 사이트 이름: 가입 화면 제목 위 */
 .onb-brand { margin: 18px 4px -14px; font-family: "Jua", var(--font); font-size: 30px; line-height: 1.2; color: var(--primary); }
 
@@ -597,6 +600,8 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 .notif-empty { padding: 32px 18px; text-align: center; color: var(--mute); font-size: 14px; }
 .notif-list { display: flex; flex-direction: column; }
 .notif-item { display: flex; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.notif-item.notif-link { cursor: pointer; transition: background .15s; }
+.notif-item.notif-link:hover { background: var(--bg); }
 .notif-item[data-kind="personal"]:not([data-read]) { background: var(--primary-weak); }
 .notif-item.notif-handled { opacity: .5; }
 .notif-icon { font-size: 18px; flex: none; }
@@ -766,6 +771,13 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
 .btn.alt-ghost:active { background: var(--primary-weak); }
 
 /* 커뮤니티: "내가 쓴 글만 보는 중" 칩 (누르면 전체 보기) */
+/* #해시태그: 글 머리(장소)와 본문 안에서 누르면 그 태그의 방문 기록만 모아 본다 */
+.tag { display: inline; padding: 0; color: var(--primary); font: inherit; font-weight: 700; cursor: pointer; }
+.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
+.post-meta .tag { font-size: 12px; }
+.tag-chip b { color: inherit; font-weight: 800; }
+.cw-tag-hint { margin: 0 2px 10px; font-size: 12px; color: var(--mute); line-height: 1.5; }
+.cw-tag-lock { margin-bottom: 10px; font-size: 13px; color: var(--sub); }
 .filter-chip { display: inline-flex; align-items: center; gap: 6px; margin: 4px 4px 12px; padding: 7px 12px;
                border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 600; }
 
@@ -873,3 +885,22 @@ body[data-view="community"] main { padding-bottom: 160px; }   /* 마지막 카�
   .cm-label.g { color: #7fc79a; }
   .cm-label.w { color: #7db8dc; }
 }
+/* 대화 기록을 다시 열었을 때 사라진 사진·녹음 자리 표시 (chat.js fixDeadMedia) */
+.media-gone { display: inline-block; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .2); font-size: 13px; }
+
+/* ============ 테마(시즌) ============ */
+/* 홈 대표 카드 위쪽의 지금 테마 표시 */
+.theme-badge { display: flex; align-items: baseline; gap: 8px; margin: -4px 0 12px; }
+.theme-badge span { font-size: 13px; font-weight: 800; color: var(--primary); background: var(--primary-weak);
+                    padding: 4px 10px; border-radius: 999px; }
+.theme-badge small { font-size: 12px; color: var(--mute); }
+/* 오늘만 열리는 특별 미션 카드 (만우절 등) */
+.special-card { border: 2px dashed var(--primary); background: var(--primary-weak); }
+/* 지금 테마에 없는 장소: 목록·지도에서 흐리게 */
+.locked-sec { color: var(--mute); font-size: 15px; }
+.zone-row.locked { opacity: .55; background: var(--cream-weak); }
+.zone-row.locked .zr-emoji { filter: grayscale(1); }
+.zr-lock { font-size: 15px; }
+.cm-pin.locked .cm-pin-head { border-color: var(--mute); filter: grayscale(1); opacity: .7; }
+.cm-pin-lock { border-color: var(--mute) !important; font-size: 9px !important; }
+.cm-bubble-note { font-size: 12px; color: var(--sub); }

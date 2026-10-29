@@ -126,7 +126,7 @@
       ],
       "missions": [
         { "id": "m-stadium-together", "type": "together", "title": "대운동장 함께 돌기",
-          "desc": "친구와 함께 대운동장을 한 바퀴 돌아보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 },
+          "desc": "친구와 함께 대운동장을 한 바퀴 돌아보세요. 서로 친구 코드를 입력하면 인증돼요.", "points": 100 },
         { "id": "m-stadium-ar", "type": "ar", "ar": "cheer", "title": "축제 응원 흔들기 (AR)",
           "desc": "휴대폰을 흔들어 응원 게이지를 가득 채워 보세요!", "points": 100 }
       ]
@@ -151,9 +151,9 @@
       ],
       "missions": [
         { "id": "m-gongstaurant-photo", "type": "photo", "title": "학식 먹기",
-          "desc": "식권이나 오늘 먹은 메뉴를 사진으로 남겨주세요.", "points": 100 },
-        { "id": "m-gongstaurant-ar", "type": "ar", "ar": "snack", "title": "호반우에게 학식 주기 (AR)",
-          "desc": "배고픈 호반우에게 공식당 인기 메뉴를 끌어다 주세요.", "points": 100 }
+          "desc": "식권이나 오늘 먹은 메뉴를 사진으로 남겨주세요. (교직원식당에서 먹어도 돼요)", "points": 100 },
+        { "id": "m-gongstaurant-ar", "type": "ar", "ar": "snack", "title": "호반우에게 학식 먹이기 (AR)",
+          "desc": "배고픈 호반우에게 공식당 인기 메뉴 치즈알밥과 육회비빔밥을 끌어다 주세요. (교직원식당도 가능)", "points": 100 }
       ]
     },
     {
@@ -180,7 +180,7 @@
       "polygonBuffer": 10,
       "missions": [
         { "id": "m-loveroad-together", "type": "together", "title": "러브로드 함께 돌기",
-          "desc": "친구와 함께 백양로를 걸어보세요. 친구가 없다면 랜덤으로 매칭해드려요.", "points": 100 },
+          "desc": "친구와 함께 백양로를 걸어보세요. 서로 친구 코드를 입력하면 인증돼요.", "points": 100 },
         { "id": "m-loveroad-ar", "type": "ar", "ar": "heart", "goal": 3, "title": "호반우에게 하트 그리기 (AR)",
           "desc": "화면에 손가락으로 하트를 그려서 러브로드의 호반우에게 마음을 전해 보세요.", "points": 100 }
       ]

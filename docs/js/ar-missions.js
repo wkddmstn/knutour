@@ -197,7 +197,8 @@ async function roulette(ctx) {
   box.addEventListener("click", spin);
 
   function showResult(c) {
-    const list = data.restaurants.filter((r) => r.category === c.id);
+    // 같은 카테고리 가게 중 하나를 무작위로 추천 (매번 같은 가게만 나오지 않게)
+    const list = data.restaurants.filter((r) => r.category === c.id).sort(() => Math.random() - 0.5);
     ctx.react("proud", `오늘 피크닉은 ${c.name} 어때?`, 2600);
     ctx.info(`오늘의 피크닉 메뉴는 ${c.emoji} ${c.name}!`);
     navigator.vibrate?.(120);
