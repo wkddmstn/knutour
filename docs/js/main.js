@@ -236,7 +236,8 @@ async function init() {
     setupNotifications();
     goTab("home");
   } else {
-    showOnboard();
+    showOnboard();     // 가입 화면을 먼저 뒤에 그려 두고
+    ui.showSplash();   // 처음 가입 전에만 로고 스플래시를 1초 띄웠다가 걷어낸다
   }
 }
 

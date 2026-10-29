@@ -43,6 +43,24 @@ export function reward(pts) {
   updateHud();
 }
 
+/* ---------- 첫 실행 스플래시 ---------- */
+// 처음 가입하기 전에만: 화면 가운데 로고 + "OnCampus"를 1초쯤 보여주고 사라진다.
+// 가입 화면은 미리 뒤에 그려 두고 그 위를 덮었다가 걷어내서, 넘어가는 순간이 매끄럽게 보이게 한다.
+export function showSplash(ms = 1000) {
+  const el = document.createElement("div");
+  el.className = "splash";
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", "OnCampus");
+  el.innerHTML = `<img class="splash-logo" src="img/logo.png" alt=""><div class="splash-name">OnCampus</div>`;
+  document.body.appendChild(el);
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      el.classList.add("out");
+      setTimeout(() => { el.remove(); resolve(); }, 350);   // .splash.out 페이드 시간과 맞춤
+    }, ms);
+  });
+}
+
 /* ---------- 온보딩 ---------- */
 export function renderOnboard(depts, onSubmit) {
   $("view-onboard").innerHTML = `
@@ -53,13 +71,10 @@ export function renderOnboard(depts, onSubmit) {
                  L258,36 L284,36 L284,55 L320,55 L320,46 L346,46 L346,55 L400,55 L400,90 Z"
               fill="none" stroke="var(--primary)" stroke-opacity="0.16" stroke-width="2"/>
       </svg>
-      <div class="onb-badge">
-        <span class="onb-badge-ring">KNU</span>
-        <strong>캠퍼스 퀘스트</strong>
-      </div>
-      <img class="onb-logo" src="img/logo.png" alt="캠퍼스 퀘스트 로고">
+      <img class="onb-logo" src="img/logo.png" alt="OnCampus 로고">
     </div>
-    <h1 class="onb-title onb-title-display">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
+    <p class="onb-brand">OnCampus</p>
+    <h1 class="onb-title">캠퍼스를 걸으며<br>미션을 클리어해요</h1>
     <p class="onb-sub">구역마다 위치를 인증하고, 사진·음성·퀴즈 미션을 수행해 보세요.<br>모은 점수로 랭킹에도 도전할 수 있어요.</p>
     <div class="card">
       <label class="field">닉네임
