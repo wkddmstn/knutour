@@ -156,10 +156,10 @@ async function photo(m, zone) {
           <input type="file" accept="image/*" capture="environment" hidden>
         </label>
         <img class="preview hidden" alt="미리보기">
-        <button class="chip primary hidden">이 사진으로 제출</button>`;
+        <button class="chip primary submit-shot hidden">이 사진으로 제출</button>`;
       const input = card.querySelector("input");
       const img = card.querySelector("img");
-      const send = card.querySelector(".chip");
+      const send = card.querySelector(".submit-shot");
       let picked = null;
       input.onchange = () => {
         picked = input.files[0];
