@@ -3,48 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>관리자 - 경북대학교 캠퍼스 퀘스트</title>
+<!-- 보안: 검색엔진에 안 걸리게, 다른 사이트로 주소가 새지 않게, 정해진 곳에서만 스크립트·연결 허용 -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>관리자 · OnCampus</title>
 <link rel="icon" type="image/png" href="img/favicon-64.png">
-<link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  body { max-width: 560px; margin: 0 auto; padding: 24px 20px 80px; }
+  body { margin: 0; background: var(--bg); }
+  .hidden { display: none !important; }
+  .admin-err { color: var(--red); font-size: 13px; min-height: 18px; }
+
+  /* ----- 잠금 화면 ----- */
+  #lock-screen { max-width: 320px; margin: 80px auto; padding: 0 20px; text-align: center; }
+  #lock-screen input { width: 100%; padding: 14px; margin: 16px 0; border-radius: 12px; border: 1.5px solid var(--line);
+    background: var(--card); color: var(--ink); font: inherit; text-align: center; box-sizing: border-box; }
+
+  /* ----- 위쪽 고정 바 + 탭 ----- */
+  .ad-top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 92%, transparent);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .ad-bar { max-width: 1000px; margin: 0 auto; padding: 12px 16px 0; display: flex; align-items: center; gap: 10px; }
+  .ad-bar h1 { font-size: 18px; font-weight: 800; flex: 1; }
+  .ad-bar small { color: var(--mute); font-size: 12px; }
+  .ad-btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--sub); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .ad-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .ad-btn.danger { color: var(--red); }
+  .ad-btn:disabled { opacity: .5; cursor: default; }
+  .ad-tabs { max-width: 1000px; margin: 0 auto; padding: 8px 12px 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .ad-tabs::-webkit-scrollbar { display: none; }
+  .ad-tabs button { flex: none; padding: 10px 12px; border: none; background: none; color: var(--mute); font: inherit; font-size: 14px; font-weight: 700;
+    border-bottom: 2.5px solid transparent; cursor: pointer; white-space: nowrap; }
+  .ad-tabs button.on { color: var(--primary); border-bottom-color: var(--primary); }
+  .ad-tabs .cnt { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+  .ad-tabs .cnt:empty { display: none; }
+  .ad-tabs .cnt.gray { background: var(--line); color: var(--sub); }   /* 개수만 알려 줌 (처리할 일 아님) */
+
+  .ad-main { max-width: 1000px; margin: 0 auto; padding: 16px 16px 80px; }
+  .ad-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 600px) { .ad-stats { grid-template-columns: repeat(2, 1fr); } }
+  .ad-stat { padding: 14px 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); cursor: pointer; text-align: left; font: inherit; color: inherit; }
+  .ad-stat span { display: block; font-size: 12px; color: var(--mute); font-weight: 700; }
+  .ad-stat b { display: block; margin-top: 2px; font-size: 26px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .ad-stat.alert b { color: var(--primary); }
+
   .admin-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
-  .admin-card h2 { font-size: 15px; margin-bottom: 12px; color: var(--sub); }
-  .stat-num { font-size: 36px; font-weight: 800; color: var(--primary); }
-  .ann-item { padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
-  .ann-item h3 { font-size: 15px; margin-bottom: 4px; }
-  .ann-item p { font-size: 13px; color: var(--sub); white-space: pre-wrap; }
-  .ann-item .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-  .ann-item time { font-size: 12px; color: var(--mute); }
-  .ann-item button { color: var(--red); font-size: 13px; font-weight: 600; }
-  /* 의견과 제안 */
-  .fb-new { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 4px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 12px; vertical-align: 1px; }
-  .fb-new:empty { display: none; }
-  .fb-filter { display: flex; gap: 14px; margin-bottom: 10px; font-size: 13px; color: var(--sub); }
-  .fb-item { padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
-  .fb-item.done { opacity: .55; }
-  .fb-item .fb-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
-  .fb-item .fb-cat { padding: 2px 8px; border-radius: 999px; background: var(--primary-weak); color: var(--primary-dark); font-weight: 700; font-size: 12px; }
-  .fb-item .fb-who { font-weight: 700; }
-  .fb-item time { margin-left: auto; font-size: 12px; color: var(--mute); }
-  .fb-item p { margin: 8px 0 0; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
-  .fb-item .fb-dev { margin-top: 6px; font-size: 11px; color: var(--mute); word-break: break-all; }
-  .fb-item .meta { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-  .fb-item .meta button { font-size: 12px; font-weight: 700; color: var(--sub); }
-  .fb-item .meta button[data-fb-del] { color: var(--red); }
-  .post-item { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
-  .post-item img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex: none; }
-  .post-item .post-body { flex: 1; min-width: 0; }
-  .post-item .post-body b { font-size: 13px; }
-  .post-item .post-body p { font-size: 13px; color: var(--sub); margin: 2px 0; word-break: break-word; }
-  .post-item .post-body p.reason { color: var(--red); }
-  .post-item .meta button { font-size: 12px; font-weight: 600; margin-left: 10px; }
-  .post-item .meta button[data-del-post] { color: var(--red); }
+  .admin-card h2 { font-size: 16px; margin-bottom: 6px; color: var(--ink); }
+  .admin-card .desc { color: var(--mute); font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
+
+  /* 목록: 자체 스크롤 + 검색·필터 줄 */
+  .ad-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .ad-tools input[type=search], .ad-tools select { flex: 1; min-width: 140px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
+  .ad-tools label { font-size: 13px; color: var(--sub); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .ad-count { font-size: 12px; color: var(--mute); margin: 0 2px 6px; }
+  .ad-scroll { max-height: min(68vh, 720px); overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+  .ad-more { display: block; width: 100%; margin-top: 8px; }
+  .empty { color: var(--mute); font-size: 13px; padding: 8px 2px; }
+
+  .row-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--card); }
+  .row-item.done { opacity: .55; }
+  .row-item img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; flex: none; cursor: zoom-in; background: var(--line); }
+  .row-body { flex: 1; min-width: 0; }
+  .row-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+  .row-top b { font-weight: 700; }
+  .row-top time { margin-left: auto; font-size: 12px; color: var(--mute); white-space: nowrap; }
+  .row-body p { margin: 4px 0 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+  .row-body .sub { color: var(--mute); font-size: 11.5px; word-break: break-all; margin-top: 4px; }
+  .row-body .reason { color: var(--red); }
+  .row-act { display: flex; justify-content: flex-end; gap: 12px; margin-top: 6px; }
+  .row-act button { border: none; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--sub); cursor: pointer; padding: 2px 0; }
+  .row-act button.danger { color: var(--red); }
+  .chip-tag { padding: 2px 8px; border-radius: 999px; background: var(--primary-weak); color: var(--primary-dark); font-weight: 700; font-size: 11.5px; }
+  .chip-tag.gray { background: var(--line); color: var(--sub); }
+
+  /* 알림 보내기 */
+  .admin-form input, .admin-form textarea, .admin-form select { display: block; width: 100%; padding: 12px; margin-bottom: 8px; border: 1.5px solid var(--line);
+    border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; box-sizing: border-box; }
+  .admin-form textarea { min-height: 90px; resize: vertical; }
+  .nt-preview { margin: 4px 0 10px; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px dashed var(--line); font-size: 13px; }
+  .nt-preview .np-title { font-weight: 700; }
+  .nt-preview .np-body { color: var(--sub); margin-top: 2px; white-space: pre-wrap; }
+
+  /* 사용자 표 */
+  .user-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .user-table th, .user-table td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+  .user-table th { position: sticky; top: 0; background: var(--card); color: var(--mute); font-size: 12px; z-index: 1; }
+  .user-table td.num, .user-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .dept-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .dept-chips button { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--sub); font: inherit; font-size: 12px; cursor: pointer; }
+  .dept-chips button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* 운영 설정 (테마·데모·히든미션) — 예전 스타일 그대로 */
   .zone-progress { padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
   .zone-progress .zp-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; }
   .zone-progress .zp-mission { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); padding: 3px 0; }
-  .rank-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .progress-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
   .hidden-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .hidden-row:last-child { border-bottom: none; }
   .theme-now { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: var(--line); font-size: 14px; }
@@ -62,127 +115,168 @@
   .switch .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
   .switch input:checked + .slider { background: var(--primary); }
   .switch input:checked + .slider::before { transform: translateX(20px); }
-  .admin-form input, .admin-form textarea, .admin-form select {
-    display: block; width: 100%; padding: 12px; margin-bottom: 8px; border: 1.5px solid var(--line);
-    border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; box-sizing: border-box;
-  }
-  .admin-form textarea { min-height: 90px; resize: vertical; }
-  #lock-screen { max-width: 320px; margin: 80px auto; text-align: center; }
-  #lock-screen input {
-    width: 100%; padding: 14px; margin: 16px 0; border-radius: 12px; border: 1.5px solid var(--line);
-    background: var(--card); color: var(--ink); font: inherit; text-align: center; box-sizing: border-box;
-  }
-  .hidden { display: none !important; }
-  .admin-err { color: var(--red); font-size: 13px; min-height: 18px; }
+
+  /* 사진 크게 보기 */
+  #ad-lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.8); display: grid; place-items: center; padding: 20px; cursor: zoom-out; }
+  #ad-lightbox img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
 </style>
 </head>
 <body>
   <div id="lock-screen">
-    <h1 style="font-size:20px;font-weight:800">🔒 관리자 페이지</h1>
+    <h1 style="font-size:20px;font-weight:800">🔒 OnCampus 관리자</h1>
     <p style="color:var(--sub);font-size:14px">비밀번호를 입력하세요</p>
-    <input type="password" id="pw-input" placeholder="비밀번호">
+    <input type="password" id="pw-input" placeholder="비밀번호" autocomplete="current-password">
     <button class="btn" id="pw-submit">입장</button>
     <p class="admin-err" id="pw-err"></p>
+    <p style="color:var(--mute);font-size:12px;line-height:1.6;margin-top:18px">공용 PC에서는 다 쓴 뒤 꼭 <b>로그아웃</b>하세요.<br>20분 동안 아무것도 안 하면 자동으로 잠겨요.</p>
   </div>
 
   <div id="admin-app" class="hidden">
-    <h1 style="font-size:20px;font-weight:800;margin-bottom:16px">📊 관리자 대시보드</h1>
-
-    <div class="admin-card">
-      <h2>가입자 수</h2>
-      <div class="stat-num" id="stat-users">-</div>
-    </div>
-
-    <div class="admin-card">
-      <h2>공지사항 등록</h2>
-      <div class="admin-form">
-        <input type="text" id="ann-title" placeholder="제목">
-        <textarea id="ann-body" placeholder="내용"></textarea>
-        <select id="ann-dept">
-          <option value="">전체 공지</option>
-          <option value="인문대학">인문대학</option>
-          <option value="사회과학대학">사회과학대학</option>
-          <option value="자연과학대학">자연과학대학</option>
-          <option value="경상대학">경상대학</option>
-          <option value="공과대학">공과대학</option>
-          <option value="IT대학">IT대학</option>
-          <option value="AI대학">AI대학</option>
-          <option value="농업생명과학대학">농업생명과학대학</option>
-          <option value="예술대학">예술대학</option>
-          <option value="사범대학">사범대학</option>
-          <option value="의과대학">의과대학</option>
-          <option value="치과대학">치과대학</option>
-          <option value="수의과대학">수의과대학</option>
-          <option value="생활과학대학">생활과학대학</option>
-          <option value="간호대학">간호대학</option>
-          <option value="약학대학">약학대학</option>
-          <option value="첨단기술융합대학">첨단기술융합대학</option>
-          <option value="행정학부">행정학부</option>
-          <option value="자율전공학부">자율전공학부</option>
-          <option value="공학첨단자율학부">공학첨단자율학부</option>
-        </select>
-        <button class="btn" id="ann-submit">등록하기</button>
-        <p class="admin-err" id="ann-err"></p>
+    <header class="ad-top">
+      <div class="ad-bar">
+        <h1>📊 OnCampus 관리자</h1>
+        <small id="ad-idle"></small>
+        <button class="ad-btn" id="ad-refresh" title="새로 불러오기">↻ 새로고침</button>
+        <button class="ad-btn danger" id="ad-logout">로그아웃</button>
       </div>
-    </div>
+      <nav class="ad-tabs" role="tablist">
+        <button data-panel="notice" class="on">📢 전체 알림</button>
+        <button data-panel="posts">💬 커뮤니티 <span class="cnt gray" id="tab-posts"></span></button>
+        <button data-panel="reports">🚩 신고 <span class="cnt" id="tab-reports"></span></button>
+        <button data-panel="feedback">📮 의견 <span class="cnt" id="tab-feedback"></span></button>
+        <button data-panel="users">👥 사용자</button>
+        <button data-panel="ops">⚙️ 운영 설정</button>
+        <button data-panel="progress">📍 진행 현황</button>
+      </nav>
+    </header>
 
-    <div class="admin-card">
-      <h2>공지사항 관리</h2>
-      <div id="ann-list">불러오는 중...</div>
-    </div>
-
-    <div class="admin-card">
-      <h2>커뮤니티 게시판 관리</h2>
-      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">부적절한 글이나 사진을 찾아 삭제할 수 있어요.</p>
-      <div id="post-list">불러오는 중...</div>
-    </div>
-
-    <div class="admin-card">
-      <h2>💬 의견과 제안 <span id="fb-new" class="fb-new"></span></h2>
-      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">학생들이 내 정보 &gt; 의견과 제안으로 보낸 글이에요. 확인한 의견은 '확인 완료'로 표시해 두세요.</p>
-      <div class="fb-filter">
-        <label><input type="radio" name="fb-f" value="new" checked> 새 의견</label>
-        <label><input type="radio" name="fb-f" value="all"> 전체</label>
+    <main class="ad-main">
+      <div class="ad-stats">
+        <button class="ad-stat" data-go="users"><span>가입자</span><b id="stat-users">-</b></button>
+        <button class="ad-stat" data-go="feedback"><span>새 의견</span><b id="stat-feedback">-</b></button>
+        <button class="ad-stat" data-go="reports"><span>신고 대기</span><b id="stat-reports">-</b></button>
+        <button class="ad-stat" data-go="posts"><span>게시글</span><b id="stat-posts">-</b></button>
       </div>
-      <div id="feedback-list">불러오는 중...</div>
-    </div>
 
-    <div class="admin-card">
-      <h2>🚩 신고 접수함</h2>
-      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">사용자가 신고한 글만 모아서 보여줘요.</p>
-      <div id="report-list">불러오는 중...</div>
-    </div>
+      <!-- 📢 전체 알림: 앱의 🔔 알림 창에 📢로 뜬다 (예전 '공지사항') -->
+      <section id="panel-notice" class="ad-panel">
+        <div class="admin-card">
+          <h2>알림 보내기</h2>
+          <p class="desc">보내면 학생들 앱의 🔔 알림 창에 바로 뜨고, 홈 종 아이콘과 홈 탭에 새 알림 표시가 생겨요. (앱은 1분마다 새 알림을 확인해요)</p>
+          <div class="admin-form">
+            <select id="nt-target" aria-label="받는 사람">
+              <option value="">👥 모든 사용자에게</option>
+              <option>인문대학</option><option>사회과학대학</option><option>자연과학대학</option><option>경상대학</option>
+              <option>공과대학</option><option>IT대학</option><option>AI대학</option><option>농업생명과학대학</option>
+              <option>예술대학</option><option>사범대학</option><option>의과대학</option><option>치과대학</option>
+              <option>수의과대학</option><option>생활과학대학</option><option>간호대학</option><option>약학대학</option>
+              <option>첨단기술융합대학</option><option>행정학부</option><option>자율전공학부</option><option>공학첨단자율학부</option>
+            </select>
+            <input type="text" id="nt-title" maxlength="80" placeholder="알림 제목 (예: 벚꽃 시즌 미션 오픈!)">
+            <textarea id="nt-body" maxlength="500" placeholder="알림 내용"></textarea>
+            <div class="nt-preview" aria-live="polite"><div class="np-title" id="nt-pv-title">📢 (제목)</div><div class="np-body" id="nt-pv-body">앱 알림 창에 이렇게 보여요</div></div>
+            <button class="btn" id="nt-send">알림 보내기</button>
+            <p class="admin-err" id="nt-err"></p>
+          </div>
+        </div>
+        <div class="admin-card">
+          <h2>보낸 알림</h2>
+          <p class="desc">지우면 학생들 알림 창에서도 사라져요.</p>
+          <div class="ad-count" id="nt-count"></div>
+          <div class="ad-scroll" id="nt-list">불러오는 중...</div>
+        </div>
+      </section>
 
-    <div class="admin-card">
-      <h2>🗓️ 테마(시즌) 관리</h2>
-      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">테마마다 기간을 정하면, 앱은 오늘 날짜가 들어가는 테마의 장소·미션을 보여줘요. 어느 기간에도 안 들어가는 날엔 아래 "기본 테마"를 보여줘요.</p>
-      <div id="theme-now" class="theme-now"></div>
-      <div id="theme-list">불러오는 중...</div>
-    </div>
+      <!-- 💬 커뮤니티 게시판 -->
+      <section id="panel-posts" class="ad-panel hidden">
+        <div class="admin-card">
+          <h2>커뮤니티 게시판 관리</h2>
+          <p class="desc">부적절한 글이나 사진을 찾아 지울 수 있어요. 사진을 누르면 크게 볼 수 있어요.</p>
+          <div class="ad-tools">
+            <input type="search" id="post-q" placeholder="닉네임·내용 검색">
+            <label><input type="checkbox" id="post-photo"> 사진 있는 글만</label>
+          </div>
+          <div class="ad-count" id="post-count"></div>
+          <div class="ad-scroll" id="post-list">불러오는 중...</div>
+          <button class="ad-btn ad-more hidden" id="post-more">더 보기</button>
+        </div>
+      </section>
 
-    <div class="admin-card">
-      <h2>🎬 데모(시연) 모드</h2>
-      <p style="color:var(--mute);font-size:13px;margin-bottom:10px;line-height:1.6">켜면 "위치 이동하기 (데모)", "데모로 걷기", "트랙 한 바퀴 걷기 (데모)" 같은 시연용 버튼이 보이고 GPS 없이 진행돼요.<br>
-        끄면 실제 사용자 화면 그대로예요 (진짜 GPS로 위치 인증). 시연 영상을 찍을 땐 꺼 주세요. 앱을 새로고침하면 적용돼요.<br>
-        <b>이 기기만</b>: 지금 이 폰·PC에서만 바뀌어요 (관리자 비밀번호 없이 <a href="demo.html">demo.html</a>에서도 바꿀 수 있어요).</p>
-      <div id="demo-setting">불러오는 중...</div>
-    </div>
+      <!-- 🚩 신고 -->
+      <section id="panel-reports" class="ad-panel hidden">
+        <div class="admin-card">
+          <h2>신고 접수함</h2>
+          <p class="desc">사용자가 신고한 글만 모아서 보여줘요. 문제가 없으면 '무시하기', 부적절하면 '글 삭제'.</p>
+          <div class="ad-count" id="report-count"></div>
+          <div class="ad-scroll" id="report-list">불러오는 중...</div>
+        </div>
+      </section>
 
-    <div class="admin-card">
-      <h2>✨ 히든미션 관리</h2>
-      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">끄면 홈 화면에서 즉시 안 보이게 돼요.</p>
-      <div id="hidden-list">불러오는 중...</div>
-    </div>
+      <!-- 📮 의견과 제안 -->
+      <section id="panel-feedback" class="ad-panel hidden">
+        <div class="admin-card">
+          <h2>의견과 제안</h2>
+          <p class="desc">학생들이 내 정보 › 의견과 제안으로 보낸 글이에요. 확인한 의견은 '확인 완료'로 표시해 두세요.</p>
+          <div class="ad-tools">
+            <input type="search" id="fb-q" placeholder="내용·닉네임 검색">
+            <select id="fb-cat" aria-label="유형"><option value="">모든 유형</option></select>
+            <label><input type="radio" name="fb-f" value="new" checked> 새 의견</label>
+            <label><input type="radio" name="fb-f" value="all"> 전체</label>
+          </div>
+          <div class="ad-count" id="fb-count"></div>
+          <div class="ad-scroll" id="feedback-list">불러오는 중...</div>
+        </div>
+      </section>
 
-    <div class="admin-card">
-      <h2>구역/미션 진행 현황</h2>
-      <div id="progress-list">불러오는 중...</div>
-    </div>
+      <!-- 👥 사용자 -->
+      <section id="panel-users" class="ad-panel hidden">
+        <div class="admin-card">
+          <h2>사용자</h2>
+          <p class="desc">닉네임·단과대·XP만 보여줘요. 단과대를 누르면 그 단과대 사용자만 볼 수 있어요.</p>
+          <div class="dept-chips" id="user-depts"></div>
+          <div class="ad-tools">
+            <input type="search" id="user-q" placeholder="닉네임 검색">
+            <select id="user-sort" aria-label="정렬">
+              <option value="score">XP 높은 순</option>
+              <option value="name">닉네임 순</option>
+            </select>
+          </div>
+          <div class="ad-count" id="user-count"></div>
+          <div class="ad-scroll"><table class="user-table"><thead><tr><th class="num">#</th><th>닉네임</th><th>단과대</th><th class="num">XP</th></tr></thead><tbody id="user-list"></tbody></table></div>
+          <button class="ad-btn ad-more hidden" id="user-more">더 보기</button>
+        </div>
+      </section>
 
-    <div class="admin-card">
-      <h2>실시간 랭킹</h2>
-      <div id="rank-list">불러오는 중...</div>
-    </div>
+      <!-- ⚙️ 운영 설정 -->
+      <section id="panel-ops" class="ad-panel hidden">
+        <div class="admin-card">
+          <h2>🗓️ 테마(시즌) 관리</h2>
+          <p class="desc">테마마다 기간을 정하면, 앱은 오늘 날짜가 들어가는 테마의 장소·미션을 보여줘요. 어느 기간에도 안 들어가는 날엔 아래 "기본 테마"를 보여줘요.</p>
+          <div id="theme-now" class="theme-now"></div>
+          <div id="theme-list">불러오는 중...</div>
+        </div>
+        <div class="admin-card">
+          <h2>🎬 데모(시연) 모드</h2>
+          <p class="desc">켜면 "위치 이동하기 (데모)", "데모로 걷기", "트랙 한 바퀴 걷기 (데모)" 같은 시연용 버튼이 보이고 GPS 없이 진행돼요.<br>
+            끄면 실제 사용자 화면 그대로예요 (진짜 GPS로 위치 인증). 시연 영상을 찍을 땐 꺼 주세요. 앱을 새로고침하면 적용돼요.<br>
+            <b>이 기기만</b>: 지금 이 폰·PC에서만 바뀌어요 (관리자 비밀번호 없이 <a href="demo.html">demo.html</a>에서도 바꿀 수 있어요).</p>
+          <div id="demo-setting">불러오는 중...</div>
+        </div>
+        <div class="admin-card">
+          <h2>✨ 히든미션 관리</h2>
+          <p class="desc">끄면 홈 화면에서 즉시 안 보이게 돼요.</p>
+          <div id="hidden-list">불러오는 중...</div>
+        </div>
+      </section>
+
+      <!-- 📍 진행 현황 -->
+      <section id="panel-progress" class="ad-panel hidden">
+        <div class="admin-card">
+          <h2>구역/미션 진행 현황</h2>
+          <div id="progress-list" class="progress-grid">불러오는 중...</div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
