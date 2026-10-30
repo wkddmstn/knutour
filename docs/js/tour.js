@@ -16,9 +16,10 @@ const KEY = "knu-tour-v1";
 const BADGE_KEY = "knu-tour-badges";      // { courseId: 받은 시각 }
 const VOICE_KEY = "knu-tour-voice";
 
-// 출발 위치. 정문 좌표는 추정값이에요 → ?debug=1 로 지도를 눌러 정확한 좌표를 찾아 바꿔 주세요.
+// 출발 위치. 정문 좌표는 맛집 데이터(data/restaurants.json gates)의 카카오맵 정문 위치와 같다 (장주연)
+// 예전 값(35.8893, 128.6157)은 동문 근처로 잘못 찍혀 있었다. 틀리면 ?debug=1 로 지도를 눌러 좌표를 찾아 바꾸기
 const GATES = {
-  main: { id: "gate-main", name: "정문", lat: 35.8893, lng: 128.6157 },
+  main: { id: "gate-main", name: "정문", lat: 35.885506, lng: 128.614497 },
   // north: { id: "gate-north", name: "북문", lat: 0, lng: 0 },   // 북문은 나중에 추가
 };
 
@@ -975,19 +976,20 @@ function _openMove(first) {
   let demoRunning = false, demoRaf = 0;   // 데모 걷기 중에는 실제 GPS를 무시
 
   // --- 실제 GPS ---
-  let watchId = null, gotFix = false;
+  let watchId = null, routedFromMe = false;
   if ("geolocation" in navigator) {
     watchId = navigator.geolocation.watchPosition((g) => {
       if (demoRunning) return;
       const p = { lat: g.coords.latitude, lng: g.coords.longitude, accuracy: g.coords.accuracy };
       if (p.accuracy > geo.MAX_ACCURACY) return;
-      if (!gotFix) {
-        gotFix = true;
-        // 학교 근처(3km 이내)일 때만 내 위치에서 경로를 다시 받는다 (집에서 시연할 땐 무시)
-        if (geo.distanceM(p, zone) < 3000 && geo.distanceM(p, prev) > 60) loadRoute(p);
-        if (geo.distanceM(p, zone) >= 3000) { $(".tm-dist span").textContent = DEMO ? "학교 밖이에요. 데모로 걷기를 눌러 보세요" : "학교 밖이에요. 캠퍼스에 오면 길 안내가 시작돼요"; return; }
+      // 학교 근처(3km 이내)가 아니면 안내만 (집에서 켜 둔 채 학교로 와도, 처음 학교 근처에 들어온 순간부터 시작)
+      if (geo.distanceM(p, zone) >= 3000) {
+        $(".tm-dist span").textContent = DEMO ? "학교 밖이에요. 데모로 걷기를 눌러 보세요" : "학교 밖이에요. 캠퍼스에 오면 길 안내가 시작돼요";
+        return;
       }
-      if (geo.distanceM(p, zone) < 3000) onPos(p);
+      // 학교 근처에서 처음 위치를 잡으면, 출발점(정문·이전 장소)과 60m 넘게 떨어져 있을 때 내 위치에서 길을 다시 찾는다
+      if (!routedFromMe) { routedFromMe = true; if (geo.distanceM(p, prev) > 60) loadRoute(p); }
+      onPos(p);
     }, () => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
   }
 
