@@ -26,7 +26,8 @@ function injectStyle() {
   .hc-food .hc-title{font-family:var(--font);font-size:17px;font-weight:800;line-height:1.3;letter-spacing:-.02em;color:var(--ink)}   /* 아래 작은 글씨와 같은 기본 글꼴, 굵게 */
   .hc-food .hc-sub{margin-top:2px;font-size:13px;color:var(--sub);word-break:keep-all}
   .hc-food .hc-go{flex:none;white-space:nowrap;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800;
-    background:var(--primary);color:#fff;box-shadow:0 4px 10px -4px rgba(212,18,26,.5)}
+    background:var(--primary-weak);color:var(--primary-dark)}   /* 보조 버튼: 홈의 빨간 꽉 찬 버튼은 "미션 하러 가기" 하나만 */
+  @media (prefers-color-scheme:dark){ .hc-food .hc-go{color:#ffb3b7} }
   @media (prefers-color-scheme:dark){ .card.hc-food{background:linear-gradient(160deg,rgba(42,45,52,.78),rgba(42,45,52,.6));border-color:rgba(255,255,255,.09)} }
   #hc-sheet{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
   #hc-sheet .hs{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#241c16);border-radius:22px 22px 0 0;

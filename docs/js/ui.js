@@ -156,8 +156,16 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
       <div class="sum-label">🎉 오늘만 열리는 특별 미션</div>
       <div class="sum-big" style="font-size:18px">${esc(sp.emoji || "✨")} ${esc(sp.title)}</div>
       <p class="sum-foot" style="margin:6px 0 12px">${esc(sp.desc || "")}</p>
-      <button class="btn cta-glow" data-special="${esc(sp.id)}">사진 올리고 +${sp.points} XP</button>
+      <button class="btn soft" data-special="${esc(sp.id)}">사진 올리고 +${sp.points} XP</button>
     </div>`).join("")}
+    ${hidden ? `
+    <div class="card hidden-mission-card">
+      <div class="sum-label">✨ 히든미션</div>
+      <div class="sum-big" style="font-size:18px">${esc(hidden.emoji)} ${esc(hidden.title)}</div>
+      <p class="sum-foot" style="margin:6px 0 12px">${esc(hidden.desc)}</p>
+      <button id="btn-hidden-mission" class="btn soft">만나러 가기</button>
+    </div>` : ""}
+    <!-- 빨간 꽉 찬 버튼(cta-glow)은 화면에 하나만: 아래 "미션 하러 가기". 나머지 카드는 연한 버튼(.btn.soft) -->
     <div class="card card-hero quest-map-card hero-${["cherry", "midterm"].includes(theme?.id) ? theme.id : "march"}">
       ${theme?.id === "cherry" ? `<img class="hero-petal" src="img/hobanu/petal.png" alt="">` : ""}
       ${theme ? `<div class="theme-badge"><span>${esc(theme.emoji || "")} ${esc(theme.name)}</span>${period ? `<small>${esc(period)}</small>` : ""}</div>` : ""}
@@ -167,14 +175,7 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
     <div id="home-tour-slot"></div>
     <div id="home-festival-slot"></div>   <!-- 축제 응원 연습 (관리자가 켰을 때만) -->   <!-- 투어 진행 중일 때만 "이어서 하기" (미션 하러 가기 바로 아래, 맛집 위) -->
     <div id="home-food-slot"></div>
-    <div id="daily-section"></div>
-    ${hidden ? `
-    <div class="card hidden-mission-card">
-      <div class="sum-label">✨ 히든미션</div>
-      <div class="sum-big" style="font-size:18px">${esc(hidden.emoji)} ${esc(hidden.title)}</div>
-      <p class="sum-foot" style="margin:6px 0 12px">${esc(hidden.desc)}</p>
-      <button id="btn-hidden-mission" class="btn cta-glow">만나러 가기</button>
-    </div>` : ""}`;
+    <div id="daily-section"></div>`;
   $("btn-go-quest").onclick = onGoExplore;
   if (hidden) $("btn-hidden-mission").onclick = onHidden;
   document.querySelectorAll("#view-home [data-special]").forEach((b) => {

@@ -91,6 +91,13 @@ body[data-view="zone"] main { padding-bottom: calc(40px + env(safe-area-inset-bo
   50% { box-shadow: 0 12px 28px -6px rgba(212, 18, 26, .55); }
 }
 .btn.cta-glow { animation: ctaGlow 2.4s ease-in-out infinite; }
+/* 보조 버튼 — 홈의 특별 미션·히든미션처럼 메인 CTA 말고 다른 카드에 쓴다 (빨간 꽉 찬 버튼은 화면당 하나) */
+.btn.soft { background: var(--primary-weak); color: var(--primary-dark); box-shadow: none; }
+.btn.soft:active { background: color-mix(in srgb, var(--primary-weak) 80%, var(--primary)); box-shadow: none; }
+.special-card .btn.soft { background: var(--card); }   /* 카드 배경이 이미 연한 빨강이라 버튼은 흰색으로 구분 */
+@media (prefers-color-scheme: dark) {
+  .btn.soft { color: #ffb3b7; }   /* 어두운 배경에선 진한 빨강 글씨가 안 보여서 밝은 분홍으로 */
+}
 .btn.alt { background: var(--cream-weak); color: var(--sub); margin-top: 8px; }
 .icon-btn { width: 40px; height: 40px; margin-left: -10px; display: grid; place-items: center; border-radius: 12px; }
 .icon-btn svg { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2;
@@ -527,7 +534,6 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 
 /* 홈 화면 히든미션 카드 */
 .hidden-mission-card {
-  margin-top: 14px;
   border: 2px dashed var(--primary);
   background: linear-gradient(135deg, rgba(49,130,246,.07), transparent 70%);
   position: relative;

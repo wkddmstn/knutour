@@ -5,7 +5,8 @@
 // 그래서 이 파일에 문제가 생겨도 기존 앱(구역 채팅·미션·AR)은 그대로 동작한다.
 import * as geo from "./geo.js";
 import { MASCOTS, setHobanuPaneExtra, startAR, openPhotoStudio } from "./ar.js";
-import * as bgm from "./tour-bgm.js";   // 안내 음성이 없을 때 깔리는 배경 음악 (말할 땐 작아짐)
+import * as bgm from "./tour-bgm.js";
+import { icon } from "./icons.js";   // 코스 고르기 시트: 장소 목록과 같은 젤리 아이콘   // 안내 음성이 없을 때 깔리는 배경 음악 (말할 땐 작아짐)
 import { currentTheme } from "./themes.js";
 import { CampusMap, campusDataReady } from "./campusmap.js";   // 미션 화면과 같은 지도
 
@@ -24,11 +25,11 @@ const GATES = {
 };
 
 const COURSES = [
-  { id: "godsaeng", name: "갓생 코스", emoji: "📚", badge: "갓생 새내기", img: "img/mascot/exam.png", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
+  { id: "godsaeng", name: "갓생 코스", emoji: "📚", badge: "갓생 새내기", img: "img/mascot/exam.png", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙", icon: "library",
     stops: ["centralpark", "bokji", "loveroad", "ilcheongdam", "library"] },   // 정문 바로 옆 센팍부터 (장주연)
-  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", img: "img/mascot/no-plastic.png", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
+  { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", img: "img/mascot/no-plastic.png", desc: "맛있는 학식 먹고 산책하며 쉬어 가기", icon: "cherryroad",
     stops: ["loveroad", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
-  { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", img: "img/mascot/badge-campus.png", desc: "캠퍼스 한 바퀴 완주",
+  { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", img: "img/mascot/badge-campus.png", desc: "캠퍼스 한 바퀴 완주", icon: "pin",
     stops: ["centralpark", "bokji", "loveroad", "library", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
 ];
 
@@ -444,16 +445,31 @@ function injectStyle() {
     padding:20px 18px calc(18px + env(safe-area-inset-bottom));font-family:inherit}
   #tour-sheet h3{margin:0 0 4px;font-size:19px}
   #tour-sheet .ts-sub{margin:0 0 14px;color:var(--sub,#4e5968);font-size:13px}
-  #tour-sheet .ts-gates{display:flex;gap:8px;margin-bottom:14px}
-  #tour-sheet .ts-gates button{width:auto;flex:1;margin:0;padding:10px;border-radius:12px;border:2px solid var(--line,#e5e8eb);background:none;color:inherit;font-weight:700;font-family:inherit}
-  #tour-sheet .ts-gates button.on{border-color:var(--primary,#d4121a);color:var(--primary,#d4121a)}
-  #tour-sheet .ts-gates button:disabled{opacity:.45}
-  .ts-course{width:100%;margin:0 0 10px;text-align:left;border:2px solid var(--line,#e5e8eb);border-radius:16px;padding:14px;background:none;color:inherit;font-family:inherit;display:block}
-  .ts-course:active{border-color:var(--primary,#d4121a)}
-  .ts-course .t{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:800}
-  .ts-course .t em{font-style:normal;font-size:12.5px;font-weight:800;color:var(--primary,#d4121a);background:var(--primary-weak,#fbe7e5);padding:4px 9px;border-radius:999px}
-  .ts-course .d{font-size:12.5px;color:var(--sub,#4e5968);margin:4px 0 8px}
-  .ts-course .r{font-size:12.5px;line-height:1.7;color:var(--ink,#191f28)}
+  /* 코스 고르기 시트: 앱의 다른 화면과 같은 부품(.seg 탭, 장소 목록 같은 줄 카드)으로 맞춘다 */
+  #tour-sheet .ts-grab{width:40px;height:4px;margin:-8px auto 14px;border-radius:2px;background:var(--line,#e5e8eb)}
+  #tour-sheet .ts-head{display:flex;align-items:flex-start;gap:8px}
+  #tour-sheet .ts-head h3{flex:1;margin:0 0 4px}
+  #tour-sheet .ts-x{flex:none;width:36px;height:36px;margin:-6px -6px 0 0;display:grid;place-items:center;border-radius:50%;
+    background:var(--cream-weak,#f2f4f6);color:var(--sub,#4e5968)}
+  #tour-sheet .ts-x svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+  #tour-sheet .ts-sub{word-break:keep-all;line-height:1.5}
+  #tour-sheet .seg{margin-bottom:12px}
+  #tour-sheet .seg button:disabled{color:var(--mute,#8b95a1);cursor:default}
+  #tour-sheet .seg button small{font-size:12px;font-weight:500}
+  .ts-course{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 8px;padding:14px 14px 14px 16px;text-align:left;
+    background:var(--card,#fff);border:1px solid var(--line,#e5e8eb);border-radius:16px;box-shadow:var(--shadow-card);
+    color:inherit;font-family:inherit;transition:transform .15s var(--ease-toss)}
+  .ts-course:active{transform:scale(.985)}
+  .ts-course .ic{flex:none;width:44px;height:44px}
+  .ts-course .bd{flex:1;min-width:0}
+  .ts-course .t{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:800}
+  .ts-course .t em{font-style:normal;font-size:12px;font-weight:700;color:var(--sub,#4e5968);background:var(--cream-weak,#f2f4f6);padding:2px 8px;border-radius:999px}
+  .ts-course .d{display:block;font-size:13px;color:var(--sub,#4e5968);margin:2px 0 8px;word-break:keep-all}
+  .ts-course .r{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;font-size:12px;color:var(--sub,#4e5968);line-height:1.4}
+  .ts-course .r span{white-space:nowrap}
+  .ts-course .r span:not(:last-child)::after{content:"";display:inline-block;width:3px;height:3px;margin:0 6px 2px;border-radius:50%;background:var(--mute,#8b95a1);vertical-align:middle}
+  .ts-course .r .st{color:var(--primary,#d4121a);font-weight:700}
+  .ts-course .go{flex:none;color:var(--mute,#8b95a1);font-size:20px}
   .ts-close{width:100%;margin:4px 0 0;padding:12px;border:none;border-radius:12px;background:var(--line,#e5e8eb);color:inherit;font-weight:700;font-family:inherit}
   #tour-move{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--ink,#191f28);display:flex;flex-direction:column;font-family:inherit}
   #tour-move .tm-head{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
@@ -616,20 +632,31 @@ function openCourseSheet() {
   injectStyle();
   const el = document.createElement("div");
   el.id = "tour-sheet";
-  el.innerHTML = `<div class="ts">
-    <h3>호반우와 캠퍼스 투어</h3>
+  el.innerHTML = `<div class="ts" role="dialog" aria-label="투어 코스 고르기">
+    <div class="ts-grab" aria-hidden="true"></div>
+    <div class="ts-head">
+      <h3>호반우와 캠퍼스 투어</h3>
+      <button class="ts-x" type="button" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
     <p class="ts-sub">호반우가 길을 안내하고 장소를 소개해 줘요. 걸으면서 사진도 찍고 호반우도 쓰다듬어 봐요!</p>
-    <div class="ts-gates"><button class="on">정문</button><button disabled>북문 (준비 중)</button></div>
+    <div class="seg" role="tablist" aria-label="출발 문">
+      <button type="button" class="on" aria-selected="true">정문에서 출발</button>
+      <button type="button" disabled>북문 <small>준비 중</small></button>
+    </div>
     ${COURSES.map((c) => `
-      <button class="ts-course" data-c="${c.id}">
-        <div class="t"><span>${c.emoji} ${c.name}</span></div>
-        <div class="d">${c.desc}</div>
-        <div class="r">정문 → ${c.stops.map((id) => zoneById(id)?.name || id).join(" → ")}</div>
+      <button class="ts-course" type="button" data-c="${c.id}">
+        <span class="ic" aria-hidden="true">${icon(c.icon)}</span>
+        <span class="bd">
+          <span class="t">${c.name}<em>${c.stops.length}곳</em></span>
+          <span class="d">${c.desc}</span>
+          <span class="r"><span class="st">정문</span>${c.stops.map((id) => `<span>${zoneById(id)?.name || id}</span>`).join("")}</span>
+        </span>
+        <span class="go" aria-hidden="true">›</span>
       </button>`).join("")}
-    <button class="ts-close">닫기</button></div>`;
+  </div>`;
   document.body.appendChild(el);
   el.onclick = (e) => { if (e.target === el) el.remove(); };
-  el.querySelector(".ts-close").onclick = () => el.remove();
+  el.querySelector(".ts-x").onclick = () => el.remove();
   el.querySelectorAll(".ts-voice [data-v]").forEach((b) => (b.onclick = () => {
     unlockAudio();
     setVoicePick(b.dataset.v);
