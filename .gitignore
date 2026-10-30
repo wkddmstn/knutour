@@ -1,0 +1,4 @@
+# API 키 같은 비밀 파일은 깃허브에 올리지 않는다
+tools/typecast_key.txt
+*.key
+.env
