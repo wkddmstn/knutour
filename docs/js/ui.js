@@ -316,9 +316,9 @@ export function showDailyQuiz(q, onAnswer) {
       <h2 style="font-size:19px">오늘의 퀴즈</h2>
       <p style="font-weight:600;margin:14px 0 18px;line-height:1.5">${esc(q.q)}</p>
       <div id="quiz-modal-opts" style="display:flex;flex-direction:column;gap:8px;text-align:left">
-        ${q.options.map((opt, i) => `<button class="chip" data-i="${i}">${esc(opt)}</button>`).join("")}
+        ${q.options.map((opt, i) => `<button class="chip quiz-opt" data-i="${i}">${esc(opt)}</button>`).join("")}
       </div>
-      <p id="quiz-modal-result" class="sum-foot" style="margin-top:12px"></p>
+      <div id="quiz-modal-result" class="quiz-result" aria-live="polite"></div>
       <button id="quiz-modal-close" class="btn alt hidden" style="margin-top:12px">닫기</button>
     </div>`;
   const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
@@ -327,9 +327,16 @@ export function showDailyQuiz(q, onAnswer) {
       const i = Number(btn.dataset.i);
       m.querySelectorAll("#quiz-modal-opts [data-i]").forEach((b) => (b.disabled = true));
       const correct = onAnswer(i);
-      $("quiz-modal-result").textContent = correct
-        ? "정답이에요! +15 XP 획득했어요."
-        : `아쉬워요! 정답은 "${q.options[q.answer]}"였어요.`;
+      // 정답 보기는 초록, 나머지 보기는 모두 빨강. 내가 고른 보기에는 표시를 단다
+      m.querySelectorAll("#quiz-modal-opts [data-i]").forEach((b) => {
+        const k = Number(b.dataset.i);
+        b.classList.add(k === q.answer ? "correct" : "wrong");
+        if (k === i) b.insertAdjacentHTML("beforeend", `<span class="quiz-mine">내 선택</span>`);
+      });
+      $("quiz-modal-result").innerHTML = `
+        <b class="quiz-verdict ${correct ? "ok" : "no"}">${correct ? "정답이에요!" : "아쉬워요!"}</b>
+        ${correct ? `<span class="quiz-xp">+15 XP</span>` : `<span class="quiz-ans">정답은 "${esc(q.options[q.answer])}"</span>`}
+        ${q.exp ? `<p class="quiz-exp">💡 ${esc(q.exp)}</p>` : ""}`;
       $("quiz-modal-close").classList.remove("hidden");
     };
   });
