@@ -17,6 +17,12 @@ function injectStyle() {
   .hc-card span{display:block;font-size:12.5px;color:var(--sub,#6b5f52);margin-top:2px;word-break:keep-all}
   .hc-card em{flex:none;font-style:normal;font-weight:800;font-size:13px;padding:8px 12px;border-radius:12px;background:var(--primary-weak,#fbe7e5);color:var(--primary,#d4121a)}
   .hc-ar{background:linear-gradient(135deg,#fff7e8,#ffeef3)}
+  .hc-food{display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px 18px}
+  .hc-food img{width:52px;height:52px;object-fit:contain;flex:none}
+  .hc-food .hc-body{flex:1;min-width:0}
+  .hc-food .sum-big{font-size:19px}
+  .hc-food .sum-foot{word-break:keep-all}
+  .hc-food .chip{white-space:nowrap;flex:none}
   #hc-sheet{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
   #hc-sheet .hs{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#241c16);border-radius:22px 22px 0 0;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
@@ -36,11 +42,14 @@ function injectStyle() {
 export function renderFoodCard(slot, onOpen) {
   if (!slot) return;
   injectStyle();
-  slot.innerHTML = `<button type="button" class="hc-card hc-food">
+  // 바로 아래 "오늘의 퀴즈" 카드와 같은 .card 모양 (유리 카드·테두리) + 오른쪽 작은 빨간 버튼
+  slot.innerHTML = `<div class="card hc-food" role="button" tabindex="0" aria-label="학교 근처 맛집 보기">
     <img src="img/mascot/eating.png" alt="">
-    <div class="hc-body"><b>학교 근처 맛집</b><span>선배 꿀팁 맛집이랑 문 주변 밥집·카페·술집 모음</span></div>
-    <em>보기</em></button>`;
-  slot.querySelector("button").onclick = onOpen;
+    <div class="hc-body"><div class="sum-big">배는 항상 고파</div><div class="sum-foot">선배들이 추천하는 맛집 한 번 볼래요?</div></div>
+    <button type="button" class="chip primary">맛집 보기</button></div>`;
+  const card = slot.firstElementChild;
+  card.onclick = onOpen;
+  card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 }
 
 export function renderArCard(slot, { zones = [], meet } = {}) {

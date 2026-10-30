@@ -2,7 +2,10 @@
 // 음악 파일 없이 브라우저(WebAudio)로 잔잔한 산책 음악을 그때그때 만들어 튼다 → 저작권 걱정 없음, 용량 0
 // 호반우가 말할 땐 duck(true)로 소리를 줄이고, 말이 끝나면 duck(false)로 되돌린다.
 const PREF = "knu-tour-bgm";
-const VOL = 0.13, DUCK = 0.025;
+const MAXVOL = 0.26;                      // 소리 크기 100%일 때
+const VKEY = "knu-tour-bgm-vol";
+let level = (() => { try { const v = parseFloat(localStorage.getItem(VKEY)); return isFinite(v) ? v : 0.5; } catch { return 0.5; } })();
+const VOL = () => MAXVOL * level, DUCK = () => VOL() * 0.2;
 const BPM = 92, STEP = 60 / BPM / 2;          // 8분음표 길이(초)
 // C - Am - F - G (한 마디씩). 숫자는 MIDI 음 번호
 const CHORDS = [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]];
@@ -54,7 +57,7 @@ export function start() {
     if (!master) { master = ctx.createGain(); master.connect(ctx.destination); }
     master.gain.cancelScheduledValues(ctx.currentTime);
     master.gain.setValueAtTime(0, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(ducked ? DUCK : VOL, ctx.currentTime + 1.5);
+    master.gain.linearRampToValueAtTime(ducked ? DUCK() : VOL(), ctx.currentTime + 1.5);
     ctx.resume?.().catch(() => {});
     nextT = ctx.currentTime + 0.1;
     step = 0;
@@ -73,6 +76,14 @@ export function stop() {
     master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
   } catch {}
 }
+// 소리 크기 0~1 (설정 창 슬라이더)
+export const getVolume = () => level;
+export function setVolume(v) {
+  level = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem(VKEY, String(level)); } catch {}
+  if (!running || !master) return;
+  try { const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(ducked ? DUCK() : VOL(), t); } catch {}
+}
 export function resume() { try { if (ctx?.state === "suspended") ctx.resume(); } catch {} }
 // 말하는 동안 작게
 export function duck(on) {
@@ -82,6 +93,6 @@ export function duck(on) {
     const t = ctx.currentTime;
     master.gain.cancelScheduledValues(t);
     master.gain.setValueAtTime(master.gain.value, t);
-    master.gain.linearRampToValueAtTime(on ? DUCK : VOL, t + (on ? 0.25 : 1.2));
+    master.gain.linearRampToValueAtTime(on ? DUCK() : VOL(), t + (on ? 0.25 : 1.2));
   } catch {}
 }

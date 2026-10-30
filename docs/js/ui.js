@@ -158,7 +158,6 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
     <div id="home-food-slot"></div>
     <div id="daily-section"></div>
     <div id="home-tour-slot"></div>
-    <div id="home-ar-slot"></div>
     ${hidden ? `
     <div class="card hidden-mission-card">
       <div class="sum-label">✨ 히든미션</div>
@@ -270,7 +269,7 @@ export function renderZoneList(zones, isDone, justCleared = new Set(), locked = 
     .sort((a, b) => (!a.zone.missions.length - !b.zone.missions.length) || Number(a.done) - Number(b.done));   // 미션 있는 장소 먼저 (장주연)
 
   el.innerHTML = rows.map(({ zone: z, done, doneCnt }) => `
-    <button type="button" class="zone-row ${done ? "cleared" : ""} ${justCleared.has(z.id) ? "just-cleared" : ""}" data-zone="${z.id}">
+    <button type="button" class="zone-row ${done ? "cleared" : ""} ${!done && z.missions.length ? "has-mission" : ""} ${justCleared.has(z.id) ? "just-cleared" : ""}" data-zone="${z.id}">
       <span class="zr-emoji">${zoneIcon(z)}</span>
       <span class="zr-body">
         <strong>${esc(z.name)}</strong>
@@ -540,19 +539,21 @@ export function renderCommunityHome(zones, posts) {
 // myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
 // 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
 // tag: 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자 (위에 "#일청담 · N개" 칩이 뜨고 ✕로 해제)
-export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null } = {}, myId = null) {
+export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null, tagRow = [], placeTag = true } = {}, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
   const q = board === "question";
   const count = posts.length;
   $("view-board").innerHTML = `
     ${subHeader(q ? "질문" : "자유게시판")}
     ${tag
-      ? `<button type="button" class="filter-chip tag-chip" data-f="all"><b>#${esc(tag)}</b> 방문 기록 ${count}개 <span aria-hidden="true">✕</span><span class="sr-only">해시태그 모아 보기 끄기</span></button>`
+      ? `<button type="button" class="filter-chip tag-chip" data-f="all"><b>#${esc(tag)}</b> ${placeTag ? "방문 기록" : "글"} ${count}개 <span aria-hidden="true">✕</span><span class="sr-only">해시태그 모아 보기 끄기</span></button>`
       : filter === "mine"
       ? `<button type="button" class="filter-chip" data-f="all">${q ? "내 질문" : "내가 쓴 글"}만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">전체 보기</span></button>`
       : `<p class="map-guide">${q
         ? "궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변이 돼요."
-        : "#장소 태그를 누르면 그곳의 방문 기록만 모아 볼 수 있어요."}</p>`}
+        : "#태그를 누르면 그 태그가 달린 글만 모아 볼 수 있어요. #인기글은 좋아요 5개·댓글 2개 이상 받은 글이에요."}</p>`}
+    ${!q && filter !== "mine" && tagRow.length ? `<div class="tag-row" role="list" aria-label="해시태그로 모아 보기">${tagRow.map((t) =>
+      `<button type="button" role="listitem" class="tag-pill ${t === tag ? "on" : ""} ${t === "인기글" ? "hot" : ""}" data-tag="${esc(t)}" aria-pressed="${t === tag}">#${esc(t)}</button>`).join("")}</div>` : ""}
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
         <div class="card" style="text-align:center;margin:0">
@@ -560,6 +561,7 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
             : filter === "mine"
             ? (q ? "아직 올린 질문이 없어요" : "아직 올린 글이 없어요")
             : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
+          ${tag === "인기글" ? `<p style="color:var(--mute);margin:6px 0 0;font-size:12.5px">좋아요 5개 이상, 댓글 2개 이상 받은 글이 여기 모여요</p>` : ""}
         </div>`}
     </div>`;
 

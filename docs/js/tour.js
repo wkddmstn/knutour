@@ -7,6 +7,7 @@ import * as geo from "./geo.js";
 import { MASCOTS, setHobanuPaneExtra, startAR, openPhotoStudio } from "./ar.js";
 import * as bgm from "./tour-bgm.js";   // 안내 음성이 없을 때 깔리는 배경 음악 (말할 땐 작아짐)
 import { currentTheme } from "./themes.js";
+import { CampusMap, campusDataReady } from "./campusmap.js";   // 미션 화면과 같은 지도
 
 export const TOUR_ON = true;          // false로 바꾸면 투어 카드/버튼이 전부 사라진다
 const DEMO_WALK = true;               // 시연용 "데모로 걸어가기" 버튼 (실제 운영 때는 false)
@@ -208,6 +209,58 @@ const VOICES = { gaenari: { name: "개나리", dir: "audio/tour/" }, mongsil: { 
 const PICK_KEY = "knu-tour-voice-pick";
 const voicePick = () => { try { const v = localStorage.getItem(PICK_KEY); return VOICES[v] ? v : "gaenari"; } catch { return "gaenari"; } };
 const setVoicePick = (v) => { try { localStorage.setItem(PICK_KEY, v); } catch {} };
+// 안내 멘트 소리 크기 (0~1). 아이폰 Safari는 웹에서 소리 크기를 못 바꿔서 기기 볼륨 버튼으로만 조절돼요
+const VOL_KEY = "knu-tour-voice-vol";
+const voiceVol = () => { try { const v = parseFloat(localStorage.getItem(VOL_KEY)); return isFinite(v) ? v : 1; } catch { return 1; } };
+const setVoiceVol = (v) => { try { localStorage.setItem(VOL_KEY, String(v)); } catch {} if (voiceEl) voiceEl.volume = v; };
+
+// 소리 설정 창 (이동 화면 위쪽 "음성" 버튼)
+function openSoundPanel(host, onChange) {
+  const el = document.createElement("div");
+  el.id = "tm-sound";
+  const choice = () => (voiceOn() ? voicePick() : "off");
+  el.innerHTML = `<div class="sd">
+    <h3>🔊 소리 설정</h3>
+    <div class="sd-row">
+      <h4>호반우 안내 멘트 <small data-vv></small></h4>
+      <div class="sd-seg" data-g="voice">
+        <button data-v="gaenari">사투리 (개나리)</button><button data-v="mongsil">표준어 (몽실이)</button><button data-v="off">끄기</button>
+      </div>
+      <input type="range" min="0" max="100" step="5" data-r="voice" aria-label="안내 멘트 크기">
+    </div>
+    <div class="sd-row">
+      <h4>배경 음악 <small data-bv></small></h4>
+      <div class="sd-seg" data-g="bgm"><button data-v="on">켜기</button><button data-v="off">끄기</button></div>
+      <input type="range" min="0" max="100" step="5" data-r="bgm" aria-label="배경 음악 크기">
+    </div>
+    <button class="sd-close">닫기</button></div>`;
+  (host || document.body).appendChild(el);
+  const q = (s) => el.querySelector(s);
+  const paint = () => {
+    el.querySelectorAll('[data-g="voice"] button').forEach((b) => b.classList.toggle("on", b.dataset.v === choice()));
+    el.querySelectorAll('[data-g="bgm"] button').forEach((b) => b.classList.toggle("on", (b.dataset.v === "on") === bgm.isOn()));
+    q('[data-r="voice"]').value = Math.round(voiceVol() * 100);
+    q('[data-r="voice"]').disabled = !voiceOn();
+    q('[data-r="bgm"]').value = Math.round(bgm.getVolume() * 100);
+    q('[data-r="bgm"]').disabled = !bgm.isOn();
+    q("[data-vv]").textContent = voiceOn() ? `${Math.round(voiceVol() * 100)}%` : "꺼짐";
+    q("[data-bv]").textContent = bgm.isOn() ? `${Math.round(bgm.getVolume() * 100)}%` : "꺼짐";
+    onChange?.();
+  };
+  paint();
+  el.querySelectorAll('[data-g="voice"] button').forEach((b) => (b.onclick = () => {
+    if (b.dataset.v === "off") { setVoice(false); stopVoice(); }
+    else { setVoice(true); setVoicePick(b.dataset.v); playKey("near", SCRIPT.near); }   // 미리 듣기
+    paint();
+  }));
+  el.querySelectorAll('[data-g="bgm"] button').forEach((b) => (b.onclick = () => { bgm.setOn(b.dataset.v === "on"); bgm.resume(); paint(); }));
+  q('[data-r="voice"]').oninput = (e) => { setVoiceVol(e.target.value / 100); paint(); };
+  q('[data-r="voice"]').onchange = () => playKey("near", SCRIPT.near);
+  q('[data-r="bgm"]').oninput = (e) => { bgm.setVolume(e.target.value / 100); paint(); };
+  const close = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) close(); };
+  q(".sd-close").onclick = close;
+}
 let voiceEl = null;   // 하나의 오디오를 돌려 쓴다 (아이폰은 처음 버튼 누를 때 한 번 풀어 줘야 함)
 const getVoiceEl = () => (voiceEl = voiceEl || new Audio());
 // 키에 맞는 녹음을 재생. 파일이 없거나 재생이 막히면 글자를 TTS로 읽는다
@@ -226,6 +279,7 @@ function playKey(key, fallbackText, { mode = "interrupt", onStart } = {}) {
   try { speechSynthesis.cancel(); } catch {}
   const a = getVoiceEl();
   try { a.pause(); } catch {}
+  a.volume = voiceVol();
   playing = true;
   bgm.duck(true);
   a.onended = done;
@@ -256,7 +310,7 @@ function speak(text, { interrupt = false } = {}) {
   try {
     if (interrupt) speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(t);
-    u.lang = "ko-KR"; u.rate = 1.05; u.pitch = 1.1;
+    u.lang = "ko-KR"; u.rate = 1.05; u.pitch = 1.1; u.volume = voiceVol();
     if (koVoice) u.voice = koVoice;
     u.onstart = () => bgm.duck(true);
     u.onend = u.onerror = () => { if (!playing) bgm.duck(false); };
@@ -320,7 +374,21 @@ function injectStyle() {
   #tour-move .tm-steps i{flex:1;height:5px;border-radius:3px;background:var(--line,#e5e8eb)}
   #tour-move .tm-steps i.done{background:var(--primary,#d4121a)}
   #tour-move .tm-steps i.now{background:linear-gradient(90deg,var(--primary,#d4121a) var(--p,0%),var(--line,#e5e8eb) var(--p,0%))}
-  #tour-map{flex:1;min-height:180px;margin:0 14px;border-radius:18px;overflow:hidden;background:#e5e8eb}
+  #tour-map{flex:1;min-height:180px;margin:0 14px;border-radius:18px;overflow:hidden;background:var(--map-bg,#eef1f4)}
+  #tour-map .cm-mark.tm-from span{display:block;padding:2px 8px;border-radius:999px;background:var(--card,#fff);color:var(--ink,#191f28);border:2px solid var(--ink,#191f28);font-size:11px;font-weight:800;white-space:nowrap}
+  /* 소리 설정 창 */
+  #tm-sound{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center}
+  #tm-sound .sd{width:min(480px,100%);background:var(--card,#fff);color:var(--ink,#191f28);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+  #tm-sound h3{margin:0 0 14px;font-size:17px}
+  #tm-sound h4{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+  #tm-sound h4 small{font-weight:600;color:var(--sub,#4e5968);font-size:12px}
+  #tm-sound .sd-row{margin-bottom:18px}
+  #tm-sound .sd-seg{display:flex;gap:6px;margin-bottom:10px}
+  #tm-sound .sd-seg button{flex:1;width:auto;margin:0;padding:10px 4px;border-radius:12px;border:2px solid var(--line,#e5e8eb);background:none;color:inherit;font-weight:700;font-size:13.5px;font-family:inherit}
+  #tm-sound .sd-seg button.on{border-color:var(--primary,#d4121a);color:var(--primary,#d4121a);background:var(--primary-weak,#fbe7e5)}
+  #tm-sound input[type=range]{width:100%;accent-color:var(--primary,#d4121a)}
+  #tm-sound input[type=range]:disabled{opacity:.35}
+  #tm-sound .sd-close{width:100%;margin:0;padding:13px;border:none;border-radius:14px;background:var(--line,#e5e8eb);color:inherit;font-weight:800;font-family:inherit}
   #tour-move .tm-next{display:flex;align-items:center;gap:12px;padding:12px 16px 4px}
   #tour-move .tm-arrow{width:64px;height:64px;flex:none;border-radius:50%;background:var(--primary-weak,#fbe7e5);display:flex;align-items:center;justify-content:center}
   #tour-move .tm-arrow svg{width:40px;height:40px;transition:transform .25s ease-out}
@@ -407,10 +475,10 @@ export function renderQuestCard(container) {
     ? `<img src="img/hobanu/react-hi.png" alt=""><div class="tc-body"><b>${c.emoji} ${c.name} 진행 중</b>
          <span>${Math.min(st.idx + 1, c.stops.length)} / ${c.stops.length} · ${here ? `지금: ${curZone?.name || ""}` : `다음: ${curZone?.name || ""}`}</span></div>
        <div class="tc-btns">${here
-         ? `<button data-a="next">${nextZone ? "다음 장소로 →" : "🏁 완주하기"}</button><button class="ghost" data-a="zone">${curZone?.name || ""} 미션</button>`
+         ? `<button data-a="next">${nextZone ? "다음 장소로 →" : "🏁 완주하기"}</button>`
          : `<button data-a="go">이어서 하기</button>`}<button class="ghost" data-a="stop">그만하기</button></div>`
     : `<img src="img/hobanu/react-hi.png" alt=""><div class="tc-body"><b>호반우와 캠퍼스 투어</b>
-         <span>정문에서 출발해 길 안내·장소 소개·미션까지 한 번에!</span></div>
+         <span>정문에서 출발해 호반우가 길 안내·장소 소개를 해 줘요!</span></div>
        <div class="tc-btns"><button data-a="pick">코스 고르기</button></div>`;
   container.prepend(card);
   card.querySelector('[data-a="pick"]')?.addEventListener("click", openCourseSheet);
@@ -428,7 +496,7 @@ function openCourseSheet() {
   el.id = "tour-sheet";
   el.innerHTML = `<div class="ts">
     <h3>🐮 호반우와 캠퍼스 투어</h3>
-    <p class="ts-sub">호반우가 길을 안내하고 장소를 소개해 줘요. 도착하면 그곳의 미션을 할 수 있어요.</p>
+    <p class="ts-sub">호반우가 길을 안내하고 장소를 소개해 줘요. 걸으면서 사진도 찍고 호반우도 쓰다듬어 봐요!</p>
     <div class="ts-gates"><button class="on">🚩 정문에서 출발</button><button disabled>북문 (준비 중)</button></div>
     <p class="ts-sub" style="margin:0 0 6px;font-weight:700">🔊 호반우 목소리 (누르면 미리 들어 봐요)</p>
     <div class="ts-gates ts-voice">${Object.entries(VOICES).map(([id, v]) => `<button data-v="${id}" class="${voicePick() === id ? "on" : ""}">${v.name}${id === "mongsil" ? " (표준어)" : " (사투리)"}</button>`).join("")}</div>
@@ -541,7 +609,7 @@ function _openMove(first) {
     </div>
     <div class="tm-steps">${c.stops.map((_, i) => `<i class="${i < st.idx ? "done" : i === st.idx ? "now" : ""}"></i>`).join("")}</div>
     <div id="tour-map"></div>
-    <div class="tm-legend"><span><i style="background:#2f6fed"></i>내 위치</span><span><i style="background:#d4121a"></i>도착 지점 (빨간 영역에 들어오면 도착)</span><span>점선: 걸어갈 길</span><span style="margin-left:auto">음성: 타입캐스트</span></div>
+    <div class="tm-legend"><span><i style="background:#3182f6"></i>내 위치</span><span><i style="background:var(--primary,#d4121a)"></i>도착 지점 (빨간 점선 안에 들어오면 도착)</span><span>점선: 걸어갈 길</span><span style="margin-left:auto">음성: 타입캐스트</span></div>
     <div class="tm-side">
       <div class="tm-next">
         <div class="tm-arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L33 34 L20 27 L7 34 Z" fill="var(--primary,#d4121a)"/></svg></div>
@@ -557,9 +625,8 @@ function _openMove(first) {
       </div>
       <div class="tm-log" aria-live="polite"></div>
       <div class="tm-tools">
-        <button data-t="photo">📸 사진</button>
-        <button data-t="pet">🤚 쓰다듬기</button>
-        <button data-t="bgm"></button>
+        <button data-t="photo">사진</button>
+        <button data-t="pet">쓰다듬기</button>
       </div>
       <div class="tm-btns"></div>
     </div>`;
@@ -592,76 +659,69 @@ function _openMove(first) {
   };
   const moveTimer = setInterval(() => { if (!arrived) setMoving(demoRunning || Date.now() - lastMoveAt < 6000); }, 1000);
 
-  // --- 도구: 사진 · 쓰다듬기 · 배경 음악 ---
-  const bgmBtn = $('[data-t="bgm"]');
-  const paintBgm = () => { bgmBtn.textContent = bgm.isOn() ? "🎵 음악 켬" : "🎵 음악 끔"; bgmBtn.classList.toggle("off", !bgm.isOn()); };
-  paintBgm();
+  // --- 도구: 사진 · 쓰다듬기 (배경 음악은 위쪽 "음성" 설정 창에서) ---
   bgm.start();
-  bgmBtn.onclick = () => { bgm.setOn(!bgm.isOn()); paintBgm(); };
   root.addEventListener("pointerdown", () => bgm.resume(), { passive: true });   // 휴대폰이 소리를 막아 두면 화면을 누를 때 다시 켠다
+  // 사진·쓰다듬기 화면에 가 있는 동안에도 위치는 계속 기록한다 (말은 잠깐 멈춤).
+  // 돌아왔을 때 많이 움직였으면 지금 위치에서 길을 다시 찾고, 그사이 도착했으면 도착 처리
+  let away = false, awayFrom = null, pendingArrive = false;
+  const goAway = () => { away = true; awayFrom = lastPos; stopVoice(); bgm.duck(true); };
+  const comeBack = () => {
+    away = false;
+    bgm.duck(false);
+    if (pendingArrive) { pendingArrive = false; arrive(); return; }
+    if (lastPos && awayFrom && geo.distanceM(lastPos, awayFrom) > 30) {
+      addLog("그사이 꽤 걸었네! 지금 위치에서 길을 다시 찾아볼게.");
+      if (geo.distanceM(lastPos, zone) < 3000) loadRoute(lastPos);
+    }
+  };
   $('[data-t="photo"]').onclick = async () => {
-    stopVoice();
-    bgm.duck(true);
+    goAway();
     try { await openPhotoStudio({ start: "basic", place: arrived ? zone.name : `${zone.name} 가는 길`, zoneId: arrived ? zone.id : null, record: true }); }
     catch (e) { console.warn("[투어] 사진", e); }
-    bgm.duck(false);
+    comeBack();
   };
   $('[data-t="pet"]').onclick = async () => {
-    stopVoice();
-    bgm.duck(true);
+    goAway();
     try {
       const r = await startAR({ id: "", name: "캠퍼스 투어", mascot: { name: "호반우", img: "img/hobanu/react-hi.png", lines: ["같이 걸으니까 좋다!", "조금만 더 가면 도착이야!", "쓰다듬어 줘서 힘이 나!"] } },
         { mission: { id: "tour-pet", ar: "pet", title: "호반우 쓰다듬기" } });
       if (r?.done) addLog("쓰다듬어 줘서 힘이 났어! 다시 출발하자!");
     } catch (e) { console.warn("[투어] 쓰다듬기", e); }
-    bgm.duck(false);
+    comeBack();
   };
   const vBtn = $('[data-a="voice"]');
-  // 🔊 버튼: 개나리 → 몽실이 → 음성 끄기 → 개나리 … 순서로 바뀐다
-  const paintVoice = () => (vBtn.textContent = voiceOn() ? `🔊 ${VOICES[voicePick()].name}` : "🔇 음성 끔");
+  // "음성" 버튼 → 소리 설정 창: 안내 멘트(사투리·표준어·끄기 + 크기), 배경 음악(켜기·끄기 + 크기)
+  const paintVoice = () => (vBtn.textContent = voiceOn() || bgm.isOn() ? "🔊 음성" : "🔇 음성");
   paintVoice();
-  vBtn.onclick = () => {
-    const ids = Object.keys(VOICES);
-    if (!voiceOn()) { setVoice(true); setVoicePick(ids[0]); }
-    else if (voicePick() === ids[ids.length - 1]) setVoice(false);
-    else setVoicePick(ids[ids.indexOf(voicePick()) + 1]);
-    paintVoice();
-    if (voiceOn()) playKey("near", SCRIPT.near);   // 바뀐 목소리 미리 듣기
-  };
+  vBtn.onclick = () => openSoundPanel(root, paintVoice);
   $('[data-a="out"]').onclick = () => { stopVoice(); closeMove(); try { app.goTab("home"); } catch {} };
 
-  // --- 지도 ---
-  let map = null, routeLine = null, meMk = null;
-  const L = window.L;
-  if (L) {
-    map = L.map("tour-map", { zoomControl: false, attributionControl: false }).setView([zone.lat, zone.lng], 17);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, subdomains: "abc" }).addTo(map);
-    // 도착 지점 = 빨간 핀(그 장소 이모지), 주황색 영역 = 이 안에 들어오면 도착으로 인정되는 구역
-    if (zone.polygon?.length >= 3) L.polygon(zone.polygon.map((q) => [q.lat, q.lng]), { color: "#d4121a", weight: 2, fillOpacity: .14 }).addTo(map);
-    else L.circle([zone.lat, zone.lng], { radius: zone.radius || 40, color: "#d4121a", weight: 2, fillOpacity: .12 }).addTo(map);
-    L.marker([zone.lat, zone.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-pin">${zone.emoji || "📍"}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 400 })
-      .addTo(map).bindTooltip(`도착: ${zone.name}`, { permanent: true, direction: "top", offset: [0, -18], className: "tour-tip" });
-    L.marker([prev.lat, prev.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-from">출발</div>`, iconSize: [40, 22], iconAnchor: [20, 11] }) }).addTo(map);
-    POIS.forEach((p) => L.circleMarker([p.lat, p.lng], { radius: 5, color: "#e8590c", weight: 2, fillOpacity: .6 }).addTo(map).bindTooltip(p.name));
-    if (DEBUG) map.on("click", (e) => {
-      const t = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-      navigator.clipboard?.writeText(t).catch(() => {});
-      app?.ui?.toast?.(`좌표 복사: ${t}`);
+  // --- 지도: 미션 화면과 같은 캠퍼스 일러스트 지도 (campusmap.js) (장주연) ---
+  let map = null, lastPos = null;
+  if (campusDataReady()) {
+    map = new CampusMap($("#tour-map"), {
+      labelAt: { big: 0.5, all: 1.0, zone: 0.4 },
+      onMapClick: DEBUG ? (q) => {
+        const t = `${q.lat.toFixed(6)}, ${q.lng.toFixed(6)}`;
+        navigator.clipboard?.writeText(t).catch(() => {});
+        app?.ui?.toast?.(`좌표 복사: ${t}`);
+      } : null,
     });
+    map.setArea(zone);   // 빨간 점선 영역 = 이 안에 들어오면 도착
+    map.setZones([zone], { status: () => "next" });
+    map.setMarks([{ lat: prev.lat, lng: prev.lng, cls: "tm-from", html: "<span>출발</span>" }]);
   } else {
-    $("#tour-map").innerHTML = `<div style="padding:20px;text-align:center;color:#4e5968">지도를 불러오지 못했어요. 화살표와 거리를 보고 이동해 주세요.</div>`;
+    $("#tour-map").innerHTML = `<div style="padding:20px;text-align:center;color:var(--sub,#4e5968)">지도를 불러오지 못했어요. 화살표와 거리를 보고 이동해 주세요.</div>`;
   }
   function drawRoute(pts) {
     if (!map) return;
-    routeLine?.remove();
-    routeLine = L.polyline(pts.map((p) => [p.lat, p.lng]), { color: "#d4121a", weight: 5, opacity: .85, lineCap: "round", dashArray: "1 10" }).addTo(map);
-    map.fitBounds(routeLine.getBounds(), { padding: [36, 36], maxZoom: 18 });
+    map.setRoute(pts);
+    map.fit(pts, 40);
   }
   function setMe(p) {
-    if (!map) return;
-    if (!meMk) meMk = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="tour-me"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 500 })
-      .addTo(map).bindTooltip("나", { permanent: true, direction: "bottom", offset: [0, 10], className: "tour-tip me" });
-    else meMk.setLatLng([p.lat, p.lng]);
+    lastPos = p;
+    map?.setMe(p);
   }
   let route = [prev, zone].map((p) => ({ lat: p.lat, lng: p.lng }));
   drawRoute(route);
@@ -717,6 +777,7 @@ function _openMove(first) {
     // 실제로 걸을 때: 빨간 구역 안에 들어오거나 핀에서 25m 이내면 도착. 데모 걷기는 핀까지 끝까지 걸어간다
     const ev = geo.evaluate(p, zone);
     if ((!sim && ev.status === "inside") || d <= (sim ? 3 : 25)) return arrive();
+    if (away) return;   // 사진·쓰다듬기 중엔 위치만 기록하고 말은 안 한다
     // 가는 길 멘트: 길의 1/4쯤 왔을 때, 그 길에서 보이는 건물·꿀팁 (장주연)
     if (!said.way && SCRIPT[wayKey] && d0 > 60 && d <= d0 * 0.8) { said.way = true; say(wayKey, SCRIPT[wayKey], "queue"); return; }
     if (!said.half && d0 > 80 && d <= d0 * 0.55) { said.half = true; HALF[zone.id] ? say("half-" + zone.id, HALF[zone.id], "queue") : say("halfway", "벌써 반이나 왔어!", "queue"); return; }
@@ -772,6 +833,7 @@ function _openMove(first) {
   // --- 도착 ---
   function arrive() {
     if (arrived) return;
+    if (away) { pendingArrive = true; return; }   // 사진·쓰다듬기 화면에 있으면 돌아온 뒤에 도착 처리
     arrived = true;
     demoRunning = false;
     cancelAnimationFrame(demoRaf);
@@ -784,32 +846,30 @@ function _openMove(first) {
     waiting = [];   // 아직 못 한 가는 길·중간 멘트는 버리고 도착 소개를 바로 다음에
     say("intro-" + zone.id, `도착! ${INTRO[zone.id] || zone.name + "에 왔어!"}`, "queue");
     paintBtns();
-    if (map) map.flyTo([zone.lat, zone.lng], 18, { duration: .8 });
+    map?.fit([zone], (zone.radius || 40) + 50);
+    markVisited();
   }
   function markArrived() { const s = load(); if (s) { s.arrived = s.idx; save(s); } }
-  function goZone() {
+  // 투어로 도착했으니 그 장소 위치 인증은 끝난 것으로 처리 (나중에 장소 화면에 들어가면 바로 미션 메뉴)
+  function markVisited() {
     markArrived();
-    // 투어로 도착했으니 위치 인증은 끝난 것으로 처리 → 채팅에서 바로 미션 메뉴로
     try {
       if (!app.store.isVerified(zone.id)) {
         app.store.setVerified(zone.id);
         if (app.store.grantBonus("arrive:" + zone.id, 10)) app.ui.reward(10);
       }
     } catch {}
-    closeMove();
-    app.openZone(zone);
   }
   function paintBtns() {
     const box = $(".tm-btns");
     box.innerHTML = arrived
-      ? `<button data-a="skip">${st.idx + 1 < c.stops.length ? "다음 장소로 →" : "🏁 완주하기"}</button><button class="primary" data-a="zone">${zone.emoji || ""} ${zone.name} 미션 하러 가기</button>`
+      ? `<button class="primary" data-a="skip">${st.idx + 1 < c.stops.length ? "다음 장소로 →" : "🏁 완주하기"}</button>`
       : `${DEMO_WALK ? `<button data-a="demo">▶ 데모로 걷기</button>` : ""}<button data-a="here">도착했어요</button>`;
-    box.querySelector('[data-a="zone"]')?.addEventListener("click", goZone);
     box.querySelector('[data-a="skip"]')?.addEventListener("click", () => { markArrived(); closeMove(); next(zone); });   // 미션은 건너뛰고 투어 계속
     box.querySelector('[data-a="demo"]')?.addEventListener("click", (e) => { e.currentTarget.disabled = true; demoWalk(); });
     box.querySelector('[data-a="here"]')?.addEventListener("click", () => {
       // GPS가 부정확할 때를 위한 수동 도착 (100m 안이거나 위치를 모를 때만)
-      if (meMk && geo.distanceM(meMk.getLatLng(), zone) > 100) { say("far", "아직 좀 멀어! 화살표를 따라 조금만 더 가 줘!"); return; }
+      if (lastPos && geo.distanceM(lastPos, zone) > 100) { say("far", "아직 좀 멀어! 화살표를 따라 조금만 더 가 줘!"); return; }
       arrive();
     });
   }
@@ -827,7 +887,7 @@ function _openMove(first) {
       window.removeEventListener("deviceorientationabsolute", onOri);
       window.removeEventListener("deviceorientation", onOri);
       try { wake?.release(); } catch {}
-      try { map?.remove(); } catch {}   // 음성은 끊지 않는다 (도착 소개를 들으며 미션 화면으로 넘어가도 되게)
+      try { map?.destroy(); } catch {}   // 음성은 끊지 않는다 (도착 소개를 들으며 미션 화면으로 넘어가도 되게)
     },
   };
 
@@ -835,7 +895,6 @@ function _openMove(first) {
   const fromName = prev.name || "";
   if (first && zone.id === "loveroad") say("start-" + c.id, `안녕! 나는 호반우야. ${fromName}에서 출발해서 ${c.name}를 같이 돌아 보자! 첫 번째 장소는 ${iya(zone.name)}.`);
   else say("next-" + zone.id, `다음은 ${zone.name}! ${zone.desc ? zone.desc + "." : ""} 지도 따라 같이 가 보자`);
-  setTimeout(() => map?.invalidateSize(), 200);
 }
 
 /* ---------------- 완주 ---------------- */

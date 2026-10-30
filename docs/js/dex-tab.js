@@ -33,7 +33,10 @@ function injectStyle() {
   .dx-cta{width:100%;margin:4px 0 0;padding:14px;border:none;border-radius:16px;background:var(--primary,#d4121a);color:#fff;font-weight:800;font-size:15px;
     font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
   .dx-cta img{width:34px;height:34px;object-fit:contain}
-  .dx-badges .tb-section{margin:0;padding:0;background:none;box-shadow:none}
+  .dx-badges .tb-section{margin:0;padding:0;background:none;box-shadow:none;color:inherit}
+  .dx-badges .dex-head{justify-content:space-between;font-size:16px;margin-bottom:4px}
+  .dx-badges .dex-head span{font-size:13px;font-weight:800}
+  .dx-badges .dex-sub{margin:0 0 10px;font-size:12.5px}
   #dx-detail{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
   #dx-detail .dd{width:min(560px,100%);max-height:90vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#191f28);border-radius:22px 22px 0 0;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom));font-family:inherit}

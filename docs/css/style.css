@@ -541,6 +541,13 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 .zr-emoji { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--cream-weak);
             display: flex; align-items: center; justify-content: center; font-size: 19px; }
 .zone-row.cleared { opacity: .55; background: var(--cream-weak); }
+/* 이번 시즌 미션이 남은 장소 (장주연): 은은한 빨간 테두리로 눌러 보게 유도 */
+#zone-list .zone-row.has-mission { border-color: color-mix(in srgb, var(--primary) 42%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 9%, transparent), var(--shadow-card); }
+@media (prefers-reduced-motion: no-preference) {
+  #zone-list .zone-row.has-mission { animation: zrGlow 2.6s ease-in-out infinite; }
+}
+@keyframes zrGlow { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 13%, transparent), var(--shadow-card); } }
 .zone-row.cleared .zr-emoji { filter: grayscale(1); }
 .zr-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .zr-body strong { font-size: 15px; }
@@ -765,6 +772,13 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 .tag:hover { text-decoration: underline; text-underline-offset: 2px; }
 .post-meta .tag { font-size: 12px; }
 .tag-chip b { color: inherit; font-weight: 800; }
+/* 자유게시판 해시태그 줄 (장주연): 누르면 그 태그 글만 모아 보기. 가로로 밀어서 더 보기 */
+.tag-row { display: flex; gap: 6px; overflow-x: auto; margin: -4px -4px 12px; padding: 2px 4px 4px; scrollbar-width: none; }
+.tag-row::-webkit-scrollbar { display: none; }
+.tag-pill { flex: none; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+            color: var(--sub); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.tag-pill.hot { color: var(--primary); border-color: color-mix(in srgb, var(--primary) 35%, var(--line)); }
+.tag-pill.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 .cw-tag-hint { margin: 0 2px 10px; font-size: 12px; color: var(--mute); line-height: 1.5; }
 .cw-tag-lock { margin-bottom: 10px; font-size: 13px; color: var(--sub); }
 .filter-chip { display: inline-flex; align-items: center; gap: 6px; margin: 4px 4px 12px; padding: 7px 12px;
@@ -824,6 +838,20 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 }
 @keyframes cmBob { 0%, 100% { transform: translate(-50%, -100%); } 50% { transform: translate(-50%, calc(-100% - 5px)); } }
 .cm-pin:active .cm-pin-head { filter: brightness(.95); }
+/* 이번 시즌 미션이 열린 장소 (장주연): 핀 뒤로 퍼지는 빛 + 반짝이. 미션 없는 장소 핀은 한 톤 죽인다 */
+.cm-pin.mission { z-index: 1; }   /* 빛이 지도 뒤로 숨지 않게 */
+.cm-pin.mission::before { content: ""; position: absolute; left: 19px; top: 19px; width: 38px; height: 38px; margin: -19px 0 0 -19px;
+                          border-radius: 50%; background: var(--primary); opacity: 0; z-index: -1; pointer-events: none; }
+.cm-pin.mission::after { content: "✨"; position: absolute; right: -10px; top: -10px; font-size: 13px; line-height: 1; pointer-events: none; }
+.cm-pin.mission .cm-pin-head { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 12px rgba(212, 18, 26, .35); }
+.cm-pin.rest .cm-pin-head { border-color: var(--cream); box-shadow: 0 3px 8px rgba(25, 31, 40, .14); }
+.cm-pin.rest { opacity: .85; }
+@media (prefers-reduced-motion: no-preference) {
+  .cm-pin.mission::before { animation: cmGlow 1.8s ease-out infinite; }
+  .cm-pin.mission::after { animation: cmTwinkle 1.6s ease-in-out infinite; }
+}
+@keyframes cmGlow { 0% { transform: scale(.7); opacity: .45; } 100% { transform: scale(2.1); opacity: 0; } }
+@keyframes cmTwinkle { 0%, 100% { opacity: .35; transform: scale(.8) rotate(0); } 50% { opacity: 1; transform: scale(1.15) rotate(15deg); } }
 
 /* 핀을 누르면 뜨는 말풍선 */
 .cm-bubble { position: absolute; z-index: 2; transform: translate(-50%, calc(-100% - 54px)); background: var(--card);

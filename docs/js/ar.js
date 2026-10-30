@@ -169,18 +169,18 @@ function injectStyle() {
   .hob-photo-cta span{display:flex;flex-direction:column;gap:2px}
   .hob-photo-cta b{font-size:16px}
   .hob-photo-cta small{font-size:12px;opacity:.9}
-  .dex-inline{background:#fff;color:#191f28;border-radius:18px;padding:16px}
+  .dex-inline{background:var(--card,#fff);color:var(--ink,#191f28);border-radius:18px;padding:16px}
   #hob-dex{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
-  .dex-card{width:100%;max-width:480px;max-height:88vh;overflow:auto;background:#fff;color:#191f28;border-radius:22px 22px 0 0;
+  .dex-card{width:100%;max-width:480px;max-height:88vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#191f28);border-radius:22px 22px 0 0;
     padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
   .dex-head{display:flex;align-items:center;gap:8px;font-size:18px}
-  .dex-head span{color:#d4121a;font-weight:700}
-  .dex-x{display:block;padding:0;text-align:center;margin:0 0 0 auto;border:none;background:#f2f4f6;color:#191f28;border-radius:50%;width:32px;height:32px;font-size:15px}
-  .dex-bar{height:8px;background:#f2f4f6;border-radius:4px;margin:12px 0 6px;overflow:hidden}
+  .dex-head span{color:var(--primary,#d4121a);font-weight:700}
+  .dex-x{display:block;padding:0;text-align:center;margin:0 0 0 auto;border:none;background:var(--cream-weak,#f2f4f6);color:var(--ink,#191f28);border-radius:50%;width:32px;height:32px;font-size:15px}
+  .dex-bar{height:8px;background:var(--cream-weak,#f2f4f6);border-radius:4px;margin:12px 0 6px;overflow:hidden}
   .dex-bar i{display:block;height:100%;background:#d4121a;border-radius:4px}
-  .dex-sub{margin:4px 0 12px;font-size:13px;color:#6b7684}
+  .dex-sub{margin:4px 0 12px;font-size:13px;color:var(--sub,#6b7684)}
   .dex-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-  .dex-item{background:#f7f8fa;border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+  .dex-item{background:var(--cream-weak,#f7f8fa);border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
   .dex-item img{width:100%;height:110px;object-fit:contain}
   .dex-item b{font-size:14px}
   .dex-item small{font-size:12px;color:#6b7684;min-height:16px}

@@ -67,6 +67,7 @@ let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도�
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
 let exploreMode = "zones";    // 캠퍼스 탐험 화면: "zones"(미션 장소) | "food"(맛집)
 const food = { data: null, theme: "all", tipOnly: false, selId: null };   // 맛집 화면 상태
+const HOT_TAG = "인기글", HOT_LIKES = 5, HOT_COMMENTS = 2;   // #인기글 기준 (장주연)
 let communityTag = null;      // 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자
 let communityFilter = "all";   // "all" | "mine" (내 정보 > 내가 쓴 글에서 들어오면 "mine")
 
@@ -323,18 +324,11 @@ async function goTab(tab, opts = {}) {
     ui.showView("home");
     renderDailySection();
     try { tour?.renderQuestCard($("home-tour-slot")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
-    // (장주연) 홈 카드: 맛집(스위치), AR 호반우 만나기 (투어 카드 아래)
+    // (장주연) 홈 카드: 맛집 (FOOD_ON_HOME 스위치)
     import("./home-cards.js").then((hc) => {
       if (document.body.dataset.view !== "home") return;
       if (FOOD_ON_HOME) hc.renderFoodCard($("home-food-slot"), () => goTab("explore", { food: true }));
-      hc.renderArCard($("home-ar-slot"), {
-        zones: allZones,
-        meet: async (zone) => {
-          const r = await startAR(zone);
-          if (r?.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
-          ui.updateHud();
-        },
-      });
+      // "AR 호반우 만나기" 카드는 뺐다 (호반우는 도감에서 만남). 다시 넣으려면 hc.renderArCard($("home-ar-slot"), …)
     }).catch((e) => console.warn("[홈 카드]", e));
     refreshBellBadge();
   } else if (tab === "explore") {
@@ -449,14 +443,19 @@ async function renderCommunityTab() {
   const isQuestion = communityBoard === "question";
   // 태그가 장소 이름이면 그 장소(zone_id)로 올린 글도 함께 찾는다
   const tagZone = communityTag ? allZones.find((z) => toTag(z.name) === communityTag) : null;
-  const posts = await listPosts({
+  // #인기글은 해시태그가 아니라 반응으로 모은다: 좋아요 5개 이상 + 댓글 2개 이상 (장주연)
+  const hot = communityTag === HOT_TAG;
+  let posts = await listPosts({
     kind: communityBoard,
     onlyMine: communityFilter === "mine",
-    tag: communityTag ? { tag: communityTag, zoneId: tagZone?.id || null } : null,
+    tag: communityTag && !hot ? { tag: communityTag, zoneId: tagZone?.id || null } : null,
   });
+  if (hot) posts = posts.filter((p) => p.like_count >= HOT_LIKES && p.comment_count >= HOT_COMMENTS);
+  // 안내 문구 아래 해시태그 줄: #인기글 #자유글 #질문글 + 장소 태그
+  const tagRow = [HOT_TAG, "자유글", "질문글", ...allZones.map((z) => toTag(z.name))];
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
-  ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag }, myId);
+  ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag, tagRow, placeTag: !!tagZone }, myId);
   $("view-board").querySelector("[data-back]")?.addEventListener("click", () => goTab("community"));
   document.querySelectorAll("#view-board .filter-chip").forEach((b) => {
     b.onclick = () => { communityFilter = "all"; communityTag = null; renderCommunityTab(); };
@@ -508,7 +507,8 @@ async function renderCommunityTab() {
     // #해시태그를 누르면 그 태그(장소)의 방문 기록만 모아 본다
     const tagEl = e.target.closest("[data-tag]");
     if (tagEl) {
-      communityTag = tagEl.dataset.tag;
+      // 위쪽 해시태그 줄에서 이미 고른 태그를 다시 누르면 해제
+      communityTag = tagEl.closest(".tag-row") && communityTag === tagEl.dataset.tag ? null : tagEl.dataset.tag;
       communityFilter = "all";
       await renderCommunityTab();
       document.querySelector("#view-board .filter-chip")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -967,7 +967,9 @@ function initCampusMap(onSelect) {
   const next = zones.find((z) => z.missions.length && !zoneCleared(z));
   // 지금 테마 장소 + 다른 테마 장소(잠금 핀, 누르면 "○○에 열려요")
   campusMap.setZones([...zones, ...lockedZones], {
-    status: (z) => (z.openTheme !== undefined ? "locked" : zoneCleared(z) ? "cleared" : z === next ? "next" : ""),
+    // 이번 시즌 미션이 남은 장소는 반짝이(mission), 미션 없는 장소는 한 톤 죽임(rest) (장주연)
+    status: (z) => (z.openTheme !== undefined ? "locked" : zoneCleared(z) ? "cleared"
+      : !z.missions.length ? "rest" : z === next ? "next mission" : "mission"),
     lockNote: (z) => (z.openTheme ? `'${z.openTheme.name}' 테마에 열려요` : "다른 테마에서 열려요"),
     onSelect,
   });
