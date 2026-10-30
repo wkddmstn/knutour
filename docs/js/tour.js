@@ -511,11 +511,11 @@ function injectStyle() {
   #tour-move .tm-walk .tm-sweat{position:absolute;left:calc(42% + 34px);bottom:92px;z-index:4;font-size:15px;animation:tmSweat .9s ease-out infinite}
   #tour-move .tm-walk .tm-sweat.s2{left:calc(42% - 46px);bottom:84px;animation-delay:.45s;font-size:12px}
   #tour-move .tm-walk .tm-goal{position:absolute;right:14px;bottom:10px;z-index:3;width:84px;height:84px;object-fit:contain;opacity:0;transition:opacity .4s}
-  #tour-move .tm-say{position:absolute;left:12px;right:12px;bottom:112px;z-index:6;margin:0;padding:11px 14px 9px;text-align:center;
+  #tour-move .tm-say{position:absolute;left:12px;right:12px;bottom:140px;z-index:6;margin:0;padding:7px 14px;text-align:center;
     background:rgba(255,255,255,.96);color:#191f28;border-radius:18px;box-shadow:0 4px 14px rgba(25,31,40,.14);cursor:pointer;overflow:hidden}
-  #tour-move .tm-line{display:block;font-size:16px;font-weight:700;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:tmLineIn .35s ease-out}
+  #tour-move .tm-line{display:block;font-size:15.5px;font-weight:700;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:tmLineIn .35s ease-out}
   @keyframes tmLineIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  #tour-move .tm-say-tail{position:absolute;z-index:6;bottom:101px;left:calc(42% - 6px);width:16px;height:12px;background:rgba(255,255,255,.95);clip-path:polygon(0 0,100% 0,30% 100%)}
+  #tour-move .tm-say-tail{position:absolute;z-index:6;bottom:129px;left:calc(42% - 6px);width:16px;height:12px;background:rgba(255,255,255,.95);clip-path:polygon(0 0,100% 0,30% 100%)}
   #tour-move .tm-say small{display:block;margin-top:3px;font-size:10.5px;color:#8b95a1;font-weight:700}
   #tour-move .tm-walk.arrived .tm-say-tail{left:calc(60% - 6px)}
   @keyframes tmScrollB{to{transform:translateX(-600px)}}
@@ -788,7 +788,7 @@ function _openMove(first) {
     for (let i = 0; i < live.parts.length; i++) { acc += live.parts[i].length; if (frac * total < acc) { idx = i; break; } }
     if (idx === liveIdx) return;
     liveIdx = idx;
-    sayBox.innerHTML = `<span class="tm-line" key="${idx}">${escT(live.parts[idx])}</span>${live.parts.length > 1 ? `<small>${idx + 1} / ${live.parts.length}</small>` : ""}`;
+    sayBox.innerHTML = `<span class="tm-line">${escT(live.parts[idx])}</span>`;
   };
   const lineTimer = setInterval(tickLine, 150);
   sayBox.onclick = () => openLogSheet(tourLog);
@@ -837,9 +837,17 @@ function _openMove(first) {
   };
   const doPhoto = async () => {
     goAway();
-    try { await openPhotoStudio({ start: "basic", place: arrived ? zone.name : `${zone.name} 가는 길`, zoneId: arrived ? zone.id : null, record: true }); }
+    let took = false;
+    const atPlace = arrived;   // 도착한 뒤에 찍은 사진만 도착 미션(+10 XP)
+    try { await openPhotoStudio({ start: "basic", place: arrived ? zone.name : `${zone.name} 가는 길`, zoneId: arrived ? zone.id : null, record: true, onShot: () => (took = true) }); }
     catch (e) { console.warn("[투어] 사진", e); }
     comeBack();
+    if (atPlace && took && !tourDone(zone.id).photo) {
+      setTourDone(zone.id, "photo");
+      if (app.store.grantBonus("tourphoto:" + zone.id, 10)) app.ui.reward(10);
+      addLog("사진 예쁘게 나왔다! 추억 하나 추가!");
+      paintBtns();
+    }
   };
   // 도착 미션 ① 쓰다듬기: 이 장소의 호반우가 AR로 나온다 (처음 만나면 도감 등록, 친밀도도 오른다)
   const doPet = async () => {
@@ -1024,7 +1032,7 @@ function _openMove(first) {
     paintBtns();
     map?.fit([zone], (zone.radius || 40) + 50);
     markVisited();
-    addAfterVoice(`여기서 ${zone.name} 호반우 쓰다듬기랑 퀴즈 한 문제 풀어 볼래?`);   // 도착 소개를 다 들은 뒤에
+    addAfterVoice(`여기서 ${zone.name} 호반우랑 친해지고, 퀴즈도 풀고, 사진도 남겨 볼래?`);   // 도착 소개를 다 들은 뒤에
   }
   function markArrived() { const s = load(); if (s) { s.arrived = s.idx; save(s); } }
   // 투어로 도착했으니 그 장소 위치 인증은 끝난 것으로 처리 (나중에 장소 화면에 들어가면 바로 미션 메뉴)
@@ -1044,9 +1052,9 @@ function _openMove(first) {
     box.classList.toggle("arrived", arrived);
     box.innerHTML = arrived
       ? `<div class="tm-missions">
-          <button class="tm-ms ${dn.pet ? "done" : ""}" data-t="pet"><b>${dn.pet ? "✓ " : ""}쓰다듬기</b><span>${dn.pet ? "친해졌어요" : "친해지기 +10"}</span></button>
-          ${QUIZ[zone.id] ? `<button class="tm-ms ${dn.quiz ? "done" : ""}" data-t="quiz"><b>${dn.quiz ? "✓ " : ""}퀴즈</b><span>${dn.quiz ? "정답!" : "한 문제 +15"}</span></button>` : ""}
-          <button class="tm-ms" data-t="photo"><b>사진</b><span>기념 사진</span></button>
+          <button class="tm-ms ${dn.pet ? "done" : ""}" data-t="pet"><b>${dn.pet ? "✓ " : ""}친해지기</b><span>${dn.pet ? "완료" : "+10 XP"}</span></button>
+          ${QUIZ[zone.id] ? `<button class="tm-ms ${dn.quiz ? "done" : ""}" data-t="quiz"><b>${dn.quiz ? "✓ " : ""}퀴즈</b><span>${dn.quiz ? "완료" : "+15 XP"}</span></button>` : ""}
+          <button class="tm-ms ${dn.photo ? "done" : ""}" data-t="photo"><b>${dn.photo ? "✓ " : ""}사진</b><span>${dn.photo ? "완료" : "+10 XP"}</span></button>
         </div>
         <button class="primary" data-a="skip">${st.idx + 1 < c.stops.length ? "다음 장소로 →" : "완주하기"}</button>`
       : `<button class="sub" data-t="photo">사진 찍기</button><button class="primary" data-a="here">도착했어요</button>`;

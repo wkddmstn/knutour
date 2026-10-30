@@ -727,7 +727,7 @@ const RATIOS = [
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 
-export function openPhotoStudio({ items, start, submit = false, place = "", zoneId = null } = {}) {
+export function openPhotoStudio({ items, start, submit = false, place = "", zoneId = null, onShot = null } = {}) {   // onShot: 사진을 찍을 때마다 부름 (투어 XP용, 장주연)
   injectStyle();
   items = items || collectedItems();
   // (장주연) 모은 호반우가 없어도 기본 호반우 + 기본 프레임으로 바로 찍을 수 있게
@@ -1105,6 +1105,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
       f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
       navigator.vibrate?.(50);
       lastShot = c.toDataURL("image/jpeg", 0.92);
+      try { onShot?.(); } catch {}
       recorded = null;   // 새로 찍었으니 아직 도감에 기록 안 됨
       $("ps-thumb").style.backgroundImage = `url(${lastShot})`;
       $("ps-thumb").classList.remove("empty");
