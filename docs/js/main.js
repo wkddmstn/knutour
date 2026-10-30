@@ -197,7 +197,7 @@ async function init() {
       console.warn("[테마] 불러오지 못해서 모든 장소를 엽니다", e);
     }
     DEMO_MODE = await loadDemo().catch(() => true);
-    applyThemeBg(themes.currentTheme());   // 테마를 못 정했으면 기본(3월 첫 주) 배경
+    applyThemeBg(themes.currentTheme());   // 테마를 못 정했으면 기본(3월) 배경
     // 지도 모양 데이터 (탐험·장소 화면 지도에서 씀). 못 불러와도 지도만 빠지고 앱은 계속 동작한다
     await loadCampusData().catch((e) => console.warn("[지도] 캠퍼스 지도 데이터를 불러오지 못했어요", e));
     // 이미 깨놓은 구역들을 기준점으로 잡아둬서, 첫 화면에서 "방금 깼다" 효과가 잘못 뜨지 않게 한다
