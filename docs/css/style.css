@@ -1350,3 +1350,6 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
 .post-foot:empty { display: none; }
 .post { padding-bottom: 8px; }
 .post-text.below { padding: 0 16px 4px; }
+
+/* 링크 방문 미션 버튼 (missions.js visit): <a>도 다른 선택 버튼과 같은 모양으로 */
+.widget-card a.chip { display: block; text-align: center; text-decoration: none; }

@@ -9,7 +9,7 @@
       "desc": "새 학기, 캠퍼스와 친해지기",
       "start": "2027-03-02",
       "end": "2027-03-08",
-      "missions": ["m-gongstaurant-photo", "m-gongstaurant-ar", "m-bokji-quiz", "m-bokji-ar", "m-stadium-together"]
+      "missions": ["m-gongstaurant-photo", "m-gongstaurant-ar", "m-bokji-quiz", "m-bokji-ar", "m-stadium-together", "m-gongstaurant-insta"]
     },
     {
       "id": "cherry",
@@ -18,7 +18,7 @@
       "desc": "벚꽃 핀 캠퍼스에서 봄 즐기기",
       "start": "2027-03-30",
       "end": "2027-04-11",
-      "missions": ["m-centralpark-photo", "m-centralpark-ar", "m-cherryroad-ar", "m-loveroad-together"],
+      "missions": ["m-centralpark-photo", "m-centralpark-ar", "m-cherryroad-ar", "m-loveroad-together", "m-gongstaurant-insta"],
       "special": [
         {
           "id": "m-aprilfools-uniform",
@@ -39,7 +39,7 @@
       "desc": "시험 기간, 도서관과 일청담에서 버티기",
       "start": "2027-04-12",
       "end": "2027-04-25",
-      "missions": ["m-library-photo", "m-library-ar", "m-ilcheongdam-photo"]
+      "missions": ["m-library-photo", "m-library-ar", "m-ilcheongdam-photo", "m-gongstaurant-insta"]
     }
   ]
 }

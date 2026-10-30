@@ -11,7 +11,7 @@ import { postCommunity } from "./community.js";
 import { verifyMissionPhoto } from "./verify.js";
 import { computeAHash, hammingDistance } from "./phash.js";
 
-const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝", ar: "✨" };
+const ICON = { photo: "📸", voice: "🎤", quiz: "🧠", code: "🔎", together: "🤝", ar: "✨", visit: "📲" };
 export const icon = (type) => ICON[type] || "⭐";
 
 const FIRST_TRY_BONUS = 20;
@@ -34,6 +34,7 @@ export async function runMission(m, zone, ctx = {}) {
   else if (m.type === "voice") await voice(m);
   else if (m.type === "quiz") bonus = await quiz(m);
   else if (m.type === "code") bonus = await code(m);
+  else if (m.type === "visit") await visit(m);
 
   if (again) { await chat.bot("새 사진으로 바꿨어! 📸"); return; }
 
@@ -433,6 +434,38 @@ async function quiz(m) {
     wrong.add(pick);
     await chat.bot(m.hint ? `아깝다! 힌트 줄게: ${m.hint}` : "아깝다! 다시 골라볼래?");
   }
+}
+
+/* ---------- 링크 방문 (예: 공식당 인스타그램) ---------- */
+// zones.json { type: "visit", url, button } — 버튼을 누르면 새 탭으로 열리고, 앱을 잠깐(3초 이상) 떠났다가
+// 돌아오면 다녀온 것으로 본다. 돌아온 걸 알아채지 못하는 경우(PC 등)를 위해 5초 뒤 "다녀왔어요" 버튼도 띄운다.
+async function visit(m) {
+  await chat.ask((card, done) => {
+    card.innerHTML = `
+      <a class="chip primary visit-go" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.button || "방문하기")} ↗</a>
+      <p class="sum-foot visit-hint" style="margin:8px 2px 0">둘러보고 이 화면으로 돌아오면 XP를 받아요.</p>
+      <button class="chip hidden visit-back" style="margin-top:8px">다녀왔어요</button>`;
+    let leftAt = 0, opened = false, finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      document.removeEventListener("visibilitychange", onVis);
+      done(true);
+    };
+    const onVis = () => {
+      if (document.hidden) { leftAt = Date.now(); return; }
+      if (opened && leftAt && Date.now() - leftAt >= 3000) finish();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    chat.onClear(() => document.removeEventListener("visibilitychange", onVis));   // 장소를 나가면 정리
+    card.querySelector(".visit-go").addEventListener("click", () => {
+      opened = true;
+      card.querySelector(".visit-hint").textContent = "다 보고 돌아오면 미션이 완료돼요!";
+      setTimeout(() => card.querySelector(".visit-back")?.classList.remove("hidden"), 5000);
+    });
+    card.querySelector(".visit-back").onclick = finish;
+  });
+  await chat.bot(m.doneText || "잘 다녀왔어? 👍");
 }
 
 /* ---------- 텍스트 정답(안내판 숫자 등) ---------- */
