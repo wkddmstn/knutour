@@ -919,6 +919,7 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
                   box-shadow: 0 3px 10px rgba(25, 31, 40, .18); border: 1px solid var(--line); }
 .cm-ctrl button:active { transform: scale(.94); }
 .cm-ctrl svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.cm-ctrl [data-z="fit"] svg { stroke: #3182f6; }   /* 처음 보기로: 파란 조준선 */
 /* 장소 화면의 작은 지도(150px)에선 버튼을 작게 가로로 */
 #map .cm-ctrl { flex-direction: row; bottom: 8px; right: 8px; gap: 4px; }
 #map .cm-ctrl button { width: 30px; height: 30px; border-radius: 10px; }

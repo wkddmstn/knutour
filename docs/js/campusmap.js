@@ -105,7 +105,7 @@ function buildBase() {
 
 const ICON_PLUS = `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>`;
 const ICON_MINUS = `<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>`;
-const ICON_FIT = `<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
+const ICON_FIT = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg>`;
 
 export class CampusMap {
   // labelAt: 이름표가 나타나는 확대 기준을 바꿀 때 { big, all, zone } (작은 지도에선 더 일찍 보이게)
