@@ -73,14 +73,54 @@ function row(cls, html) {
   return d;
 }
 
-// 가이드(봇) 말풍선. "입력 중..." 표시 후 나타남
+// 말풍선 하나에 여러 문장을 한꺼번에 쏟아내지 않도록 문장 단위로 나눈다.
+// <br>에서 먼저 나누고, 그 안에서는 문장부호(. ! ? …) 뒤 공백에서 나눈다. <b>처럼 글 안에 들어간 태그가
+// 열려 있는 동안은 자르지 않는다. 사진·버튼 같은 덩어리 HTML이 들어 있으면 나누지 않고 통째로 둔다.
+const textLen = (html) => html.replace(/<[^>]*>/g, "").length;
+function splitSentences(html) {
+  if (/<(img|audio|video|button|div|ul|ol|table|a|label|input)\b/i.test(html)) return [html];
+  const out = [];
+  for (const part of html.split(/<br\s*\/?>/i)) {
+    let depth = 0, start = 0;
+    for (let i = 0; i < part.length; i++) {
+      if (part[i] === "<") {
+        const end = part.indexOf(">", i);
+        if (end < 0) break;
+        const tag = part.slice(i, end + 1);
+        if (!/^<\//.test(tag) && !/\/>$/.test(tag)) depth++;
+        else if (/^<\//.test(tag)) depth = Math.max(0, depth - 1);
+        i = end;
+        continue;
+      }
+      if (depth === 0 && /[.!?…~]/.test(part[i]) && /\s/.test(part[i + 1] || "") && !/\d/.test(part[i - 1] || "")) {
+        out.push(part.slice(start, i + 1));
+        start = i + 1;
+      }
+    }
+    out.push(part.slice(start));
+  }
+  // 이모지만 남은 조각(예: "…해볼까? 😊")은 앞 문장에 붙인다
+  return out.map((p) => p.trim()).filter(Boolean).reduce((acc, p) => {
+    if (acc.length && !/[0-9A-Za-z가-힣]/.test(p.replace(/<[^>]*>/g, ""))) acc[acc.length - 1] += " " + p;
+    else acc.push(p);
+    return acc;
+  }, []);
+}
+
+// 가이드(봇) 말풍선. 문장마다 "입력 중..." 표시 후 한 말풍선씩 나타난다.
+// 다음 문장은 앞 문장을 읽을 시간(글자 수에 비례, 최대 약 2초)만큼 기다렸다가 보여 준다.
 export async function bot(html) {
   const s = session;
-  const typing = row("bot", `<div class="bubble typing"><i></i><i></i><i></i></div>`);
-  await sleep(350 + Math.min(html.length * 8, 700));
-  if (s !== session) return forever();
-  typing.remove();
-  row("bot", `<div class="bubble">${html}</div>`);
+  const parts = splitSentences(html);
+  for (let i = 0; i < parts.length; i++) {
+    const typing = row("bot", `<div class="bubble typing"><i></i><i></i><i></i></div>`);
+    await sleep(i === 0
+      ? 350 + Math.min(textLen(parts[0]) * 8, 700)
+      : 600 + Math.min(textLen(parts[i - 1]) * 30, 1400));
+    if (s !== session) return forever();
+    typing.remove();
+    row("bot", `<div class="bubble">${parts[i]}</div>`);
+  }
 }
 
 // 내 말풍선
