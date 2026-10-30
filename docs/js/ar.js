@@ -231,11 +231,33 @@ function injectStyle() {
   .ps-empty button{pointer-events:auto;width:auto;margin:0;padding:12px 22px;border:none;border-radius:999px;background:#fff;color:#191f28;font-weight:800;font-size:15px;font-family:inherit}
   #ps-review{position:absolute;inset:0;z-index:5;background:#000;display:flex;align-items:center;justify-content:center}
   #ps-review img{max-width:100%;max-height:100%;object-fit:contain;-webkit-touch-callout:default;user-select:auto;-webkit-user-select:auto}
-  .ps-rv-top{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px}
+  .ps-rv-top{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;right:14px;display:flex;justify-content:space-between}
+  .ps-rv-icons{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:380px;padding:0 6px}
+  .ps-ib{width:58px;height:58px;margin:0;padding:0;border:none;border-radius:50%;display:grid;place-items:center;color:#fff;
+    background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .12s,background .2s}
+  .ps-ib svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ps-ib:active{transform:scale(.9)}
+  .ps-ib.accent{background:#fff;color:#191f28}
+  .ps-ib.done{background:#22a35a}
+  .ps-rv-btn.ps-rv-submit{width:100%;max-width:380px;justify-content:center;padding:15px 18px}
+  /* 처음 쓸 때 안내: 화면을 어둡게 하고, 아래 버튼들은 그대로 보이면서 반짝이게 */
+  .ps-guide{position:absolute;inset:0;z-index:6;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:20px}
+  #ps-review.guiding .ps-rv-bar{z-index:7;background:none}
+  #ps-review.guiding .ps-ib{box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 0 9px rgba(255,255,255,.18);animation:ps-glow 1.4s ease-in-out infinite}
+  @keyframes ps-glow{50%{box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 0 14px rgba(255,255,255,.05)}}
+  .ps-gcard{width:100%;max-width:340px;background:#fff;color:#191f28;border-radius:22px;padding:20px 18px 16px;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+  .ps-gcard h3{margin:0 0 4px;font-size:18px}
+  .ps-gcard p{margin:0 0 14px;font-size:13px;color:#6b7684}
+  .ps-grow{display:flex;align-items:center;gap:12px;padding:8px 0}
+  .ps-grow + .ps-grow{border-top:1px solid #f2f4f6}
+  .ps-grow i{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#191f28;color:#fff}
+  .ps-grow i.accent{background:#fff;color:#191f28;box-shadow:inset 0 0 0 2px #191f28}
+  .ps-grow i svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ps-grow b{display:block;font-size:15px}
+  .ps-grow span{display:block;font-size:12.5px;color:#6b7684;line-height:1.4;word-break:keep-all}
+  .ps-gok{width:100%;margin:14px 0 0;padding:13px;border:none;border-radius:14px;background:#191f28;color:#fff;font-size:15px;font-weight:800;font-family:inherit}
   .ps-rv-bar{position:absolute;left:0;right:0;bottom:0;padding:24px 16px max(20px,env(safe-area-inset-bottom));
     background:linear-gradient(transparent,rgba(0,0,0,.75));display:flex;flex-direction:column;align-items:center;gap:10px}
-  .ps-rv-row{display:flex;gap:10px;justify-content:center}
-  .ps-rv-row + .ps-rv-row{margin-top:8px}
   .ps-rv-btn{width:auto;display:flex;align-items:center;gap:6px;border:none;border-radius:999px;padding:12px 18px;font-size:15px;font-weight:700;
     color:#fff;white-space:nowrap}
   .ps-rv-btn.primary{background:#fff;color:#191f28}
@@ -724,6 +746,24 @@ const RATIOS = [
   { label: "1:1", w: 1, h: 1 },
   { label: "4:3 가로", w: 4, h: 3 },
 ];
+// 사진 확인 화면 아래 아이콘 버튼 (일반 카메라 앱처럼 아이콘만). 처음 쓸 때는 안내 카드로 뜻을 알려 준다.
+const RV_ICON = {
+  retake: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>`,
+  save: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>`,
+  record: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7h6"/></svg>`,
+  share: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.5A8.4 8.4 0 1 1 21 11.5z"/><path d="M12 8v7"/><path d="m8.8 11 3.2-3.2 3.2 3.2"/></svg>`,
+  done: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>`,
+};
+const RV_TIPS = {
+  retake: ["다시 찍기", "마음에 안 들면 카메라로 돌아가 다시 찍어요"],
+  save: ["저장", "휴대폰에 사진을 저장해요"],
+  record: ["도감에 기록", "카메라 탭 도감의 '호반우와 사진' 앨범에 모아 둬요"],
+  share: ["커뮤니티에 공유", "찍은 장소 #태그와 함께 커뮤니티에 올려요"],
+};
+const RV_GUIDE_KEY = "oncampus-photo-buttons-guide";   // 한 번 본 뒤로는 자동으로 안 뜸 (? 버튼으로 다시 보기)
+const rvBtn = (id, key, extra = "") =>
+  `<button class="ps-ib ${extra}" id="${id}" data-tip="${key}" aria-label="${RV_TIPS[key][0]}" title="${RV_TIPS[key][0]}">${RV_ICON[key]}</button>`;
+
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 
@@ -775,19 +815,22 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
       </div>
       <div id="ps-review" class="ar-hidden">
         <img id="ps-photo" alt="찍은 사진">
-        <div class="ps-rv-top"><button class="ps-round ps-glass" id="ps-back" aria-label="카메라로 돌아가기">✕</button></div>
-        <div class="ps-rv-bar">
-          <div class="ps-rv-row">
-            <button class="ps-rv-btn ps-glass" id="ps-retake">↺ 다시 찍기</button>
-            ${submit ? `<button class="ps-rv-btn primary" id="ps-submit">✅ 이 사진으로 제출</button>` : ""}
-            <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-save">⬇ 저장</button>
-          </div>
-          <div class="ps-rv-row">
-            <button class="ps-rv-btn ${submit ? "ps-glass" : "primary"}" id="ps-record">📒 도감에 기록</button>
-            ${submit ? "" : `<button class="ps-rv-btn ps-glass" id="ps-community">💬 커뮤니티에 공유</button>`}
-          </div>
-          <p class="ps-rv-hint" id="ps-hint"></p>
+        <div class="ps-rv-top">
+          <button class="ps-round ps-glass" id="ps-back" aria-label="카메라로 돌아가기">✕</button>
+          <button class="ps-round ps-glass" id="ps-help" aria-label="버튼 사용법 보기">?</button>
         </div>
+        <div class="ps-rv-bar">
+          <p class="ps-rv-hint" id="ps-hint"></p>
+          ${submit ? `<button class="ps-rv-btn primary ps-rv-submit" id="ps-submit">✅ 이 사진으로 제출</button>` : ""}
+          <!-- 일반 카메라 앱처럼: 왼쪽 다시 찍기 … 오른쪽 끝이 다음 단계(커뮤니티 공유) -->
+          <div class="ps-rv-icons">
+            ${rvBtn("ps-retake", "retake")}
+            ${rvBtn("ps-save", "save")}
+            ${rvBtn("ps-record", "record")}
+            ${submit ? "" : rvBtn("ps-community", "share", "accent")}
+          </div>
+        </div>
+        <div id="ps-guide" class="ps-guide ar-hidden" role="dialog" aria-label="버튼 사용법"></div>
       </div>`;
     document.body.appendChild(root);
     const $ = (x) => root.querySelector("#" + x);
@@ -1126,7 +1169,39 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
           ? "⬇ 저장하면 갤러리(다운로드 폴더)에서 볼 수 있어요."
           : "⬇ 저장하면 다운로드 폴더에 저장돼요.";
       $("ps-review").classList.remove("ar-hidden");
+      if (!recorded) {   // 새로 찍은 사진이면 '기록됨' 체크를 원래 아이콘으로 되돌린다
+        const rb = $("ps-record");
+        rb.innerHTML = RV_ICON.record; rb.classList.remove("done");
+        rb.setAttribute("aria-label", RV_TIPS.record[0]); rb.title = RV_TIPS.record[0];
+      }
+      // 처음 한 번만 버튼 사용법 안내 (그 뒤로는 오른쪽 위 ? 버튼으로)
+      let seen = false;
+      try { seen = !!localStorage.getItem(RV_GUIDE_KEY); } catch {}
+      if (!seen) showGuide();
     }
+    function showGuide() {
+      const keys = [...$("ps-review").querySelectorAll(".ps-ib")].map((b) => b.dataset.tip);
+      const g = $("ps-guide");
+      g.innerHTML = `
+        <div class="ps-gcard">
+          <h3>📸 사진을 찍었어요!</h3>
+          <p>아래 버튼으로 이렇게 할 수 있어요${submit ? ". 미션은 위의 '이 사진으로 제출'을 눌러요" : ""}</p>
+          ${keys.map((k) => `
+            <div class="ps-grow"><i class="${k === "share" ? "accent" : ""}">${RV_ICON[k]}</i>
+              <div><b>${RV_TIPS[k][0]}</b><span>${RV_TIPS[k][1]}</span></div></div>`).join("")}
+          <button class="ps-gok" type="button">알겠어요</button>
+        </div>`;
+      g.classList.remove("ar-hidden");
+      $("ps-review").classList.add("guiding");
+      const done = () => {
+        g.classList.add("ar-hidden");
+        $("ps-review").classList.remove("guiding");
+        try { localStorage.setItem(RV_GUIDE_KEY, "1"); } catch {}
+      };
+      g.querySelector(".ps-gok").onclick = done;
+      g.onclick = (e) => { if (e.target === g) done(); };
+    }
+    $("ps-help").onclick = showGuide;
     const back = () => $("ps-review").classList.add("ar-hidden");
     $("ps-back").onclick = back;
     $("ps-retake").onclick = back;
@@ -1147,7 +1222,11 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
         const m = await import("./album.js");
         recorded = await m.recordPhoto({ dataUrl: lastShot, zoneId, place, mascotId: current.id, mascotName: current.name });
         if (!silent) toast("📒 도감에 기록했어요! (도감 > 호반우와 사진)");
-        $("ps-record").textContent = "✅ 기록됨";
+        const rb = $("ps-record");   // 기록했으면 초록 체크로
+        rb.innerHTML = RV_ICON.done;
+        rb.classList.add("done");
+        rb.setAttribute("aria-label", "도감에 기록됨");
+        rb.title = "도감에 기록됨";
       } catch (e) { console.warn(e); if (!silent) toast("기록하지 못했어요"); }
       return recorded;
     }
