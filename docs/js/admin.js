@@ -281,30 +281,48 @@ async function loadThemes() {
 
 /* ---------- ✨ 히든미션 on/off ---------- */
 // id -> 관리자 페이지에 보여줄 이름. main.js의 HIDDEN_MISSIONS와 같은 id를 쓴다.
-const HIDDEN_MISSION_LABELS = { "otter-sincheon": "🦦 신천 수달" };
+const HIDDEN_MISSION_LABELS = { "otter-sincheon": "🦦 신천 수달", "festival-cheer": "🎉 축제 응원 연습 (대운동장 AR 휴대폰 흔들기)" };
+// 이름 옆에 붙는 안내 (장주연)
+const HIDDEN_MISSION_NOTES = { "festival-cheer": "축제 2~3주 전부터 켜 주세요. 켜면 홈에 축제 카드가 뜨고, 끄면 바로 사라져요. (설정 줄이 없으면 꺼짐)" };
 
 async function loadHiddenMissions() {
   let { data, error } = await client.from("hidden_mission_settings").select("*");
   data = (data || []).filter((h) => h.id !== DEMO_ID);   // 데모 모드 줄은 아래 "데모 모드" 칸에서 따로
   const list = $("hidden-list");
-  if (error || !data?.length) {
+  if (error) {
     list.innerHTML = `<p style="color:var(--mute);font-size:13px">히든미션 설정이 아직 없어요. ranking-sync-setup.sql / admin-extra-setup.sql을 실행했는지 확인해 주세요.</p>`;
     return;
   }
+  // 앱이 아는 히든미션은 설정 줄이 아직 없어도 보여 준다 (꺼짐으로 표시)
+  Object.keys(HIDDEN_MISSION_LABELS).forEach((id) => { if (!data.some((h) => h.id === id)) data.push({ id, enabled: false, missing: true }); });
+  const sqlFor = (id) => `insert into hidden_mission_settings (id, enabled) values ('${id}', false) on conflict (id) do nothing;`;
   list.innerHTML = data.map((h) => `
-    <div class="hidden-row">
-      <span>${esc(HIDDEN_MISSION_LABELS[h.id] || h.id)}</span>
+    <div class="hidden-row" style="flex-wrap:wrap;gap:6px">
+      <span style="flex:1;min-width:0">${esc(HIDDEN_MISSION_LABELS[h.id] || h.id)}
+        ${HIDDEN_MISSION_NOTES[h.id] ? `<br><small style="color:var(--mute)">${esc(HIDDEN_MISSION_NOTES[h.id])}</small>` : ""}</span>
       <label class="switch">
         <input type="checkbox" data-hidden-toggle="${h.id}" ${h.enabled ? "checked" : ""}>
         <span class="slider"></span>
       </label>
+      ${h.missing ? `<div data-missing="${h.id}" style="display:none;width:100%;font-size:12px;color:var(--mute);line-height:1.6">
+        켜지지 않으면 설정 줄이 아직 없는 거예요. Supabase 관리자가 SQL Editor에서 아래 한 줄을 한 번 실행하면 이 스위치가 동작해요.
+        <code style="display:block;white-space:pre-wrap;background:var(--line);padding:6px 8px;border-radius:8px;margin-top:4px;user-select:all">${esc(sqlFor(h.id))}</code></div>` : ""}
     </div>`).join("");
   list.querySelectorAll("[data-hidden-toggle]").forEach((cb) => {
     cb.onchange = async () => {
+      const id = cb.dataset.hiddenToggle;
       const { error } = await client.rpc("admin_set_hidden_mission", {
-        p_password: password, p_id: cb.dataset.hiddenToggle, p_enabled: cb.checked,
+        p_password: password, p_id: id, p_enabled: cb.checked,
       });
-      if (error) { alert("변경 실패: " + error.message); cb.checked = !cb.checked; }
+      if (error) { alert("변경 실패: " + error.message); cb.checked = !cb.checked; return; }
+      // 실제로 저장됐는지 다시 읽어 확인 (설정 줄이 없으면 저장이 안 될 수 있음)
+      const { data: row } = await client.from("hidden_mission_settings").select("enabled").eq("id", id).maybeSingle();
+      if (!row || !!row.enabled !== cb.checked) {
+        cb.checked = !!row?.enabled;
+        const box = list.querySelector(`[data-missing="${id}"]`);
+        if (box) box.style.display = "block";
+        else alert("저장이 확인되지 않았어요. 잠시 뒤 새로고침해 보세요.");
+      }
     };
   });
 }

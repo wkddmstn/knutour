@@ -57,6 +57,64 @@ export function renderFoodCard(slot, onOpen) {
   card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 }
 
+// 🎉 축제 응원 연습 카드 (관리자가 켰을 때만 홈에): 밤 무대 조명 + 마이크 든 호반우 (장주연)
+export function renderFestivalCard(slot, { doneToday = false, reward = 100, onStart } = {}) {
+  if (!slot) return;
+  injectStyle();
+  injectFestStyle();
+  const bars = Array.from({ length: 14 }, (_, i) => `<i style="animation-delay:-${(i * 0.17) % 1}s;animation-duration:${0.7 + (i % 5) * 0.12}s"></i>`).join("");
+  const dots = Array.from({ length: 12 }, (_, i) => `<b style="left:${(i * 37) % 100}%;top:${(i * 53) % 70}%;animation-delay:-${(i * 0.4) % 2}s"></b>`).join("");
+  slot.innerHTML = `<div class="fest-card" role="button" tabindex="0" aria-label="축제 응원 연습 시작">
+    <div class="fest-beam b1"></div><div class="fest-beam b2"></div><div class="fest-beam b3"></div>
+    <div class="fest-dots" aria-hidden="true">${dots}</div>
+    <div class="fest-body">
+      <span class="fest-tag">축제 시즌 한정</span>
+      <div class="fest-title">축제 응원 연습</div>
+      <div class="fest-sub">응원단장 호반우와 휴대폰을 흔들어 응원 게이지를 채워 봐요!</div>
+      <button type="button" class="fest-go">${doneToday ? "한 번 더 응원하기" : "응원하러 가기"}${reward ? ` · +${reward} XP` : ""}</button>
+      ${doneToday ? `<span class="fest-done">오늘 응원 완료 ✓</span>` : ""}
+    </div>
+    <img class="fest-hob" src="img/mascot/festival.png" alt="마이크를 든 호반우">
+    <div class="fest-eq" aria-hidden="true">${bars}</div>
+  </div>`;
+  const card = slot.firstElementChild;
+  card.onclick = () => onStart?.();
+  card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onStart?.(); } };
+}
+let festStyled = false;
+function injectFestStyle() {
+  if (festStyled) return;
+  festStyled = true;
+  const s = document.createElement("style");
+  s.textContent = `
+  .fest-card{position:relative;overflow:hidden;margin:4px 0 14px;padding:20px 18px 34px;border-radius:24px;cursor:pointer;color:#fff;isolation:isolate;
+    background:radial-gradient(120% 90% at 85% 110%,#ff3d7f 0%,transparent 55%),radial-gradient(90% 80% at 0% 0%,#6a3cff 0%,transparent 60%),linear-gradient(160deg,#170f3a,#2b0f4a 55%,#3d0b3a);
+    box-shadow:0 16px 32px -14px rgba(106,60,255,.65),inset 0 1px 0 rgba(255,255,255,.15)}
+  .fest-beam{position:absolute;top:-40%;width:42%;height:160%;z-index:-1;transform-origin:50% 0;mix-blend-mode:screen;opacity:.55;filter:blur(2px);
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 75%);clip-path:polygon(45% 0,55% 0,100% 100%,0 100%)}
+  .fest-beam.b1{left:-6%;background:linear-gradient(180deg,rgba(255,214,90,.75),transparent 75%);animation:festSwing 3.2s ease-in-out infinite}
+  .fest-beam.b2{left:30%;background:linear-gradient(180deg,rgba(120,200,255,.6),transparent 75%);animation:festSwing 4s ease-in-out infinite reverse}
+  .fest-beam.b3{right:-8%;background:linear-gradient(180deg,rgba(255,110,180,.7),transparent 75%);animation:festSwing 3.6s ease-in-out infinite -1s}
+  @keyframes festSwing{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(18deg)}}
+  .fest-dots b{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;opacity:.2;animation:festTw 2s ease-in-out infinite;z-index:-1}
+  @keyframes festTw{50%{opacity:.9;transform:scale(1.6)}}
+  .fest-body{position:relative;max-width:62%}
+  .fest-tag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:#2b0f4a;
+    background:linear-gradient(90deg,#ffe066,#ffb3d9);box-shadow:0 0 14px rgba(255,224,102,.6)}
+  .fest-title{margin-top:8px;font-size:22px;font-weight:900;line-height:1.25;text-shadow:0 0 18px rgba(255,120,200,.75),0 2px 0 rgba(0,0,0,.25)}
+  .fest-sub{margin-top:6px;font-size:13px;line-height:1.5;color:rgba(255,255,255,.85);word-break:keep-all}
+  .fest-go{margin-top:12px;padding:9px 14px;border-radius:999px;font-size:13.5px;font-weight:900;color:#2b0f4a;white-space:nowrap;
+    background:linear-gradient(90deg,#ffe066,#ff8fc7);box-shadow:0 6px 16px -4px rgba(255,120,200,.7)}
+  .fest-done{display:block;margin-top:8px;font-size:12px;font-weight:800;color:#9dffcf}
+  .fest-hob{position:absolute;right:-6px;bottom:18px;width:44%;max-width:190px;filter:drop-shadow(0 0 18px rgba(255,140,210,.55));animation:festBop .6s ease-in-out infinite alternate}
+  @keyframes festBop{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-6px) rotate(2deg)}}
+  .fest-eq{position:absolute;left:0;right:0;bottom:0;height:26px;display:flex;align-items:flex-end;gap:3px;padding:0 10px;opacity:.75}
+  .fest-eq i{flex:1;height:30%;border-radius:3px 3px 0 0;background:linear-gradient(0deg,#ff3d7f,#ffe066);animation:festEq .8s ease-in-out infinite alternate}
+  @keyframes festEq{from{height:15%}to{height:95%}}
+  @media (prefers-reduced-motion:reduce){.fest-card *{animation:none!important}}`;
+  document.head.appendChild(s);
+}
+
 export function renderArCard(slot, { zones = [], meet } = {}) {
   if (!slot) return;
   injectStyle();

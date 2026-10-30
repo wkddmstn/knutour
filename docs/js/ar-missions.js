@@ -74,6 +74,16 @@ function injectStyle() {
   /* 응원 게이지 */
   .arm-gauge{width:100%;height:16px;border-radius:8px;background:#f2f4f6;overflow:hidden}
   .arm-gauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb703,#d4121a);border-radius:8px;transition:width .15s}
+  .arm-fest{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+  .arm-fest .fb{position:absolute;top:-30%;width:46%;height:150%;transform-origin:50% 0;mix-blend-mode:screen;opacity:.45;clip-path:polygon(44% 0,56% 0,100% 100%,0 100%)}
+  .arm-fest .f1{left:-10%;background:linear-gradient(180deg,rgba(255,214,90,.9),transparent 70%);animation:armSwing 3s ease-in-out infinite}
+  .arm-fest .f2{left:28%;background:linear-gradient(180deg,rgba(120,200,255,.8),transparent 70%);animation:armSwing 3.8s ease-in-out infinite reverse}
+  .arm-fest .f3{right:-10%;background:linear-gradient(180deg,rgba(255,110,180,.9),transparent 70%);animation:armSwing 3.4s ease-in-out infinite -1s}
+  @keyframes armSwing{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
+  .arm-fest .fs-banner{position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top));transform:translateX(-50%);padding:6px 16px;border-radius:999px;
+    font-size:14px;font-weight:900;color:#2b0f4a;background:linear-gradient(90deg,#ffe066,#ff8fc7);box-shadow:0 0 20px rgba(255,140,210,.8);white-space:nowrap}
+  .arm-fest-tray .arm-gauge i{background:linear-gradient(90deg,#6a3cff,#ff3d7f,#ffe066)}
+  .arm-fest-tray .arm-btn.primary{background:linear-gradient(90deg,#ff3d7f,#ff8f3d)}
   .arm-confetti{position:absolute;top:-30px;font-size:26px;z-index:4;pointer-events:none;animation:arm-fall var(--dur) linear forwards}
   /* 하트 그리기 */
   .arm-draw{position:absolute;inset:0;width:100%;height:100%;z-index:3;touch-action:none;transition:opacity .5s}
@@ -511,7 +521,16 @@ function cheer(ctx) {
     </div>`;
   ctx.tray.classList.remove("ar-hidden");
   const bar = ctx.tray.querySelector(".arm-gauge i");
-  ctx.say("오늘 축제 무대 응원해 줄래? 📣");
+  // 축제 시즌 응원 연습(홈 카드에서 들어옴): 무대 조명·반짝이로 카메라 화면을 축제처럼 (장주연)
+  const fest = !!ctx.mission?.festival;
+  if (fest) {
+    const deco = el("div", "arm-fest");
+    deco.innerHTML = `<i class="fb f1"></i><i class="fb f2"></i><i class="fb f3"></i><div class="fs-banner">KNU 축제 응원 연습</div>`;
+    ctx.root.appendChild(deco);
+    ctx.tray.classList.add("arm-fest-tray");
+    ctx.tray.querySelector(".t").textContent = "🎤 응원단장 호반우와 함께! 휴대폰을 흔들어 게이지를 채워 줘!";
+  }
+  ctx.say(fest ? "축제가 코앞이야! 응원 연습 가자! 📣" : "오늘 축제 무대 응원해 줄래? 📣");
   ctx.info("휴대폰을 흔들거나 응원하기를 연타해!");
 
   const add = (n) => {
@@ -551,7 +570,7 @@ function cheer(ctx) {
     ctx.info("응원 성공! 🎉");
     for (let i = 0; i < 24; i++) {
       const c = el("div", "arm-confetti");
-      c.textContent = ["🎉", "🎊", "✨", "📣"][i % 4];
+      c.textContent = (fest ? ["🎉", "🎊", "✨", "🎤", "💖", "🌟"] : ["🎉", "🎊", "✨", "📣"])[i % (fest ? 6 : 4)];
       c.style.left = Math.random() * 100 + "vw";
       c.style.setProperty("--dur", 2 + Math.random() * 2 + "s");
       c.style.setProperty("--dx", (Math.random() * 80 - 40) + "px");

@@ -425,6 +425,7 @@ async function showTab(tab, opts = {}) {
     ui.showView("home");
     renderDailySection();
     try { tour?.renderQuestCard($("home-tour-slot")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
+    renderFestivalSlot();   // 축제 응원 연습 (관리자가 켰을 때만, 장주연)
     // (장주연) 홈 카드: 맛집 (FOOD_ON_HOME 스위치)
     import("./home-cards.js").then((hc) => {
       if (document.body.dataset.view !== "home") return;
@@ -522,6 +523,35 @@ function startSpecial(sp) {
       goTab("home");
     },
   });
+}
+
+/* ================= 🎉 축제 응원 연습 (홈 화면, 장주연) ================= */
+// 관리자 페이지 "히든미션 관리"의 "축제 응원 연습"을 켜면 홈에 나타난다 (축제 2~3주 전부터 켜는 용도).
+// 설정 줄이 없으면 꺼짐. 대운동장 AR 응원(휴대폰 흔들기)을 어디서나 연습할 수 있고, 처음 성공하면 +100 XP.
+const FESTIVAL = { id: "festival-cheer", reward: 100 };
+async function renderFestivalSlot() {
+  const slot = $("home-festival-slot");
+  if (!slot) return;
+  if (!(await isHiddenMissionEnabled(FESTIVAL.id, false))) { slot.innerHTML = ""; return; }
+  if (document.body.dataset.view !== "home") return;
+  const hc = await import("./home-cards.js");
+  hc.renderFestivalCard(slot, {
+    doneToday: !store.isHiddenMissionAvailable(FESTIVAL.id),             // 오늘 이미 응원했는지
+    reward: store.getState().bonus?.["hidden:" + FESTIVAL.id] ? 0 : FESTIVAL.reward,   // 보너스는 처음 한 번만
+    onStart: startFestival,
+  });
+}
+async function startFestival() {
+  const base = allZones.find((z) => z.id === "stadium") || { id: "stadium", name: "대운동장", lat: 0, lng: 0 };
+  const m = base.missions?.find((x) => x.ar === "cheer") || { id: "m-stadium-ar", ar: "cheer", title: "축제 응원 흔들기" };
+  // 응원단장 호반우(깃발 든 호반우)로 등장
+  const zone = { ...base, mascot: { name: "응원단장 호반우", img: "img/mascot/cheer.png", lines: ["축제가 코앞이야! 같이 응원 연습하자!", "더 크게! 더 신나게!"] } };
+  const r = await startAR(zone, { mission: { ...m, festival: true, title: "축제 응원 연습" } });
+  if (r?.done) {
+    store.claimHiddenMission(FESTIVAL.id);
+    if (store.grantBonus("hidden:" + FESTIVAL.id, FESTIVAL.reward)) { ui.reward(FESTIVAL.reward); ui.toast(`🎉 응원 연습 완료! 보너스 ${FESTIVAL.reward} XP`); }
+  }
+  await goTab("home");
 }
 
 /* ================= 히든미션 (홈 화면) ================= */
