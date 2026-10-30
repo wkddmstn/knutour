@@ -3,6 +3,8 @@ import {
   listAnnouncements, unreadAnnouncementCount, markAnnouncementsSeenNow,
 } from "./notifications.js";
 import { confirmFriendRequest } from "./friend.js";
+import { getCachedProfile } from "./supa.js";
+const myDept = () => getCachedProfile()?.dept || null;   // 내 단과대 대상 전체 알림도 받기
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -16,7 +18,7 @@ function timeAgo(iso) {
 }
 
 export async function refreshBellBadge() {
-  const [a, b] = await Promise.all([unreadCount(), unreadAnnouncementCount()]);
+  const [a, b] = await Promise.all([unreadCount(), unreadAnnouncementCount(myDept())]);
   const total = a + b;
   // 종은 홈 화면에만 있으니, 다른 탭에서도 새 알림을 알 수 있게 하단 "홈" 탭에 빨간 점을 찍는다
   document.querySelector('#tabbar [data-tab="home"]')?.classList.toggle("has-unread", total > 0);
@@ -42,7 +44,7 @@ export async function openNotifPanel() {
   document.addEventListener("pointerdown", onOutside);
   document.addEventListener("keydown", onEsc);
 
-  const [notifs, anns] = await Promise.all([listNotifications(), listAnnouncements()]);
+  const [notifs, anns] = await Promise.all([listNotifications(), listAnnouncements(myDept())]);   // 내 단과대 알림도 함께
   const items = [
     ...notifs.map((n) => ({ ...n, _kind: "personal" })),
     ...anns.map((a) => ({ ...a, _kind: "announcement", title: a.title, created_at: a.created_at })),

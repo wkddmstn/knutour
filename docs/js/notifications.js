@@ -39,11 +39,12 @@ export function subscribeNotifications(onNew) {
 
 const SEEN_KEY = "knu-quest-announcements-seen-at";
 
-// dept를 넘기면: 전체 공지(dept가 비어있는 글) + 그 학과 공지만 가져온다.
-// dept를 안 넘기면(예: 온보딩 전) 전체 공지만 가져온다.
+// 전체 알림(관리자 페이지 📢): dept를 넘기면 모든 사용자 알림(dept 없음) + 그 단과대 알림만,
+// 안 넘기면(예: 가입 전) 모든 사용자 알림만. 예전에 빈 글자("")로 저장된 것도 모든 사용자 알림으로 본다.
+const forDept = (q, dept) => (dept ? q.or(`dept.is.null,dept.eq.,dept.eq."${dept}"`) : q.or("dept.is.null,dept.eq."));
 export async function listAnnouncements(dept) {
   let q = client.from("announcements").select("*").order("created_at", { ascending: false }).limit(20);
-  q = dept ? q.or(`dept.is.null,dept.eq.${dept}`) : q.is("dept", null);
+  q = forDept(q, dept);
   const { data, error } = await q;
   if (error) return [];
   return data;
@@ -57,11 +58,12 @@ export function markAnnouncementsSeenNow() {
   localStorage.setItem(SEEN_KEY, new Date().toISOString());
 }
 
-export async function unreadAnnouncementCount() {
+// 안 읽은 전체 알림 수 (내 단과대 것 + 모든 사용자 것만)
+export async function unreadAnnouncementCount(dept) {
   const seenAt = getAnnouncementsSeenAt();
-  const { count } = await client
+  const { count } = await forDept(client
     .from("announcements")
     .select("id", { count: "exact", head: true })
-    .gt("created_at", seenAt);
+    .gt("created_at", seenAt), dept);
   return count || 0;
 }
