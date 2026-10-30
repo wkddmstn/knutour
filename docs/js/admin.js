@@ -270,20 +270,38 @@ async function loadDemoSetting() {
   const box = $("demo-setting");
   if (!box) return;
   const { data, error } = await client.from("hidden_mission_settings").select("*").eq("id", DEMO_ID).maybeSingle();
+  // 이 기기 설정 (서버 설정 없이 바로, 이 폰·PC에서만) — demo.html과 같은 저장 칸을 쓴다
+  const dev = (() => { try { return localStorage.getItem("knu-demo"); } catch { return null; } })();
+  const deviceRow = `
+    <div class="hidden-row">
+      <span><b>이 기기만</b> · ${dev === "0" ? "꺼짐 (실제 사용자 화면)" : dev === "1" ? "켜짐" : "모든 사용자 설정을 따름"}</span>
+      <span style="display:flex;gap:6px">
+        <button type="button" data-dev="0" style="padding:6px 10px">끄기</button>
+        <button type="button" data-dev="1" style="padding:6px 10px">켜기</button>
+        <button type="button" data-dev="" style="padding:6px 10px">기본</button>
+      </span>
+    </div>`;
+  const bindDevice = () => box.querySelectorAll("[data-dev]").forEach((b) => (b.onclick = () => {
+    try { b.dataset.dev ? localStorage.setItem("knu-demo", b.dataset.dev) : localStorage.removeItem("knu-demo"); } catch {}
+    loadDemoSetting();
+  }));
   if (error || !data) {
-    box.innerHTML = `<p style="color:var(--mute);font-size:13px;line-height:1.6">데모 모드 설정 줄이 아직 없어요 (지금 앱은 <b>켜짐</b>으로 동작).<br>
-      Supabase SQL Editor에서 아래 한 줄을 한 번만 실행한 뒤 새로고침해 주세요.</p>
+    box.innerHTML = deviceRow + `<p style="color:var(--mute);font-size:12.5px;line-height:1.6;margin-top:8px">
+      모든 사용자에게 한 번에 적용하는 스위치는 Supabase 설정 줄이 있어야 생겨요 (지금 서버 기본값은 <b>켜짐</b>).
+      Supabase 관리자가 SQL Editor에서 아래 한 줄을 한 번 실행하면 돼요.</p>
       <code style="display:block;white-space:pre-wrap;font-size:12px;background:var(--line);padding:8px 10px;border-radius:8px;user-select:all">${esc(DEMO_SQL)}</code>`;
+    bindDevice();
     return;
   }
-  box.innerHTML = `
+  box.innerHTML = deviceRow + `
     <div class="hidden-row">
-      <span><b>${data.enabled ? "켜짐" : "꺼짐"}</b> · ${data.enabled ? "시연용 버튼이 보여요" : "실제 사용자 화면이에요"}</span>
+      <span><b>모든 사용자</b> · ${data.enabled ? "켜짐 (시연용 버튼이 보여요)" : "꺼짐 (실제 사용자 화면)"}</span>
       <label class="switch">
         <input type="checkbox" id="demo-toggle" ${data.enabled ? "checked" : ""}>
         <span class="slider"></span>
       </label>
     </div>`;
+  bindDevice();
   $("demo-toggle").onchange = async (e) => {
     const on = e.target.checked;
     const { error: err } = await client.rpc("admin_set_hidden_mission", { p_password: password, p_id: DEMO_ID, p_enabled: on });

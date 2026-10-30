@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>데모 모드 (이 기기)</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <style>
+    :root { --bg:#f2f4f6; --card:#fff; --ink:#191f28; --sub:#4e5968; --line:#e5e8eb; --primary:#d4121a; --green:#0a9d63; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#1b1d22; --card:#2a2d34; --ink:#f2f4f6; --sub:#c2c8d0; --line:#3a3e46; --primary:#ef4149; --green:#35c689; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); display: grid; place-items: center; padding: 20px;
+           font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+    .box { width: min(420px, 100%); background: var(--card); border-radius: 22px; padding: 24px 20px; box-shadow: 0 10px 30px -12px rgba(0,0,0,.25); }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    p { margin: 0 0 14px; color: var(--sub); font-size: 14px; line-height: 1.6; }
+    .now { padding: 14px; border-radius: 14px; background: var(--bg); font-size: 15px; margin-bottom: 14px; text-align: center; }
+    .now b { font-size: 18px; }
+    .btns { display: grid; gap: 8px; }
+    button, a.go { display: block; width: 100%; padding: 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--ink);
+                   font: inherit; font-size: 15px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
+    button.on { border-color: var(--primary); color: var(--primary); }
+    a.go { background: var(--primary); border-color: var(--primary); color: #fff; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🎬 데모 모드 (이 기기만)</h1>
+    <p>이 폰(브라우저)에서만 바꿔요. 다른 사람 화면에는 영향이 없어요.<br>시연 영상을 찍을 땐 <b>끄기</b>를 누르고 앱을 여세요.</p>
+    <div class="now" id="now"></div>
+    <div class="btns">
+      <button data-v="0">끄기 · 실제 사용자 화면 (진짜 GPS)</button>
+      <button data-v="1">켜기 · 시연용 버튼 보이기</button>
+      <button data-v="">기본값으로 (관리자 설정 따르기)</button>
+    </div>
+    <a class="go" href="./">앱 열기 →</a>
+  </div>
+  <script>
+    const KEY = "knu-demo";
+    const get = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
+    const paint = () => {
+      const v = get();
+      document.getElementById("now").innerHTML = v === "0" ? "지금 이 기기: <b>꺼짐</b> (실제 사용자 화면)"
+        : v === "1" ? "지금 이 기기: <b>켜짐</b> (시연용 버튼 보임)" : "지금 이 기기: <b>기본값</b> (관리자 설정을 따름)";
+      document.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("on", (b.dataset.v || null) === v));
+    };
+    document.querySelectorAll("[data-v]").forEach((b) => (b.onclick = () => {
+      try { b.dataset.v ? localStorage.setItem(KEY, b.dataset.v) : localStorage.removeItem(KEY); } catch {}
+      paint();
+    }));
+    paint();
+  </script>
+</body>
+</html>
