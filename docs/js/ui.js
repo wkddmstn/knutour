@@ -300,9 +300,7 @@ export function renderDaily(checkin, quiz, { justStamped = false } = {}) {
         <div class="sum-big" style="font-size:19px">${quizStatus}</div>
         <div class="sum-foot">${quiz.done ? "내일 또 도전해보세요" : "정답 시 +15 XP"}</div>
       </div>
-      <button id="btn-daily-quiz" class="chip primary" style="white-space:nowrap" ${quiz.done ? "disabled" : ""}>
-        ${quiz.done ? "완료" : "퀴즈 풀기"}
-      </button>
+      ${quiz.done ? "" : `<button id="btn-daily-quiz" class="chip primary" style="white-space:nowrap">퀴즈 풀기</button>`}   <!-- 푼 뒤엔 버튼처럼 보이는 "완료" 없이 글로만 -->
     </div>`;
 }
 
