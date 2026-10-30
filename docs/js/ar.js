@@ -26,7 +26,8 @@ export const RARE = {
   otter: { name: "신천 수달", img: IMG + "otter.png", hint: "일청담에서 '호반우 만나기 (AR)'를 열면 가끔 나타난대요 (밤에 더 자주)" },
 };
 const DEFAULT = { name: "캠퍼스", img: IMG + "react-hi.png", lines: ["반가워! 나는 호반우야!"] };
-const REACT = { love: IMG + "react-love.png", hi: IMG + "react-hi.png", proud: IMG + "react-proud.png" };
+const REACT = { love: IMG + "react-love.png", hi: IMG + "react-hi.png", proud: IMG + "react-proud.png",
+  pet: IMG + "react-pet.png" };   // 쓰다듬을 때: 머리 쓰다듬는 손 + 하트 (호반우와 친해지기)
 // 공식당 특별 미션 메뉴 (직접 찍은 사진)
 const SNACKS = {
   gongstaurant: [
@@ -143,7 +144,7 @@ function injectStyle() {
   #ar-sudal{position:absolute;left:50%;bottom:calc(max(24px,env(safe-area-inset-bottom)) + 58px);
     width:min(92vw,420px,calc(38vh * 1.56));transform:translate(-50%,40px);opacity:0;z-index:3;pointer-events:none;
     transition:transform .5s cubic-bezier(.2,1.3,.4,1),opacity .35s}
-  #ar-sudal.up{transform:translate(-50%,0);opacity:1}
+  #ar-sudal.up{transform:translate(-50%,0);opacity:1;pointer-events:auto;touch-action:none;cursor:grab}   /* 올라와 있는 동안엔 수달이 터치를 받아서 뒤의 호반우로 새지 않게 */
   #ar-sudal img{display:block;width:100%;height:auto;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
   #ar-sudal p{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);margin:0;background:#fff;color:#5a3d00;padding:10px 16px;
     border-radius:16px;font-size:16px;font-weight:800;white-space:nowrap;
@@ -607,6 +608,11 @@ export function startAR(zone, opts = {}) {
           react("love", "수달이랑 친구가 됐다!", 2400);
           if (hiddenOtter) complete();
         }
+        keepBig();
+      };
+      // 큰 수달은 5초 뒤 내려가고 작은 수달로 돌아온다 (만지는 동안엔 계속 떠 있음)
+      function keepBig() {
+        clearTimeout(bigTimer);
         bigTimer = setTimeout(() => {
           big.classList.remove("up");
           setTimeout(() => {
@@ -617,7 +623,31 @@ export function startAR(zone, opts = {}) {
             bubble.classList.remove("ar-hidden");
           }, 550);
         }, 5000);
-      };
+      }
+      // 큰 수달이 앞에 나와 있을 때: 쓰다듬으면 수달에게 하트, 톡 누르면 다음 말 (뒤의 호반우는 반응하지 않음)
+      let bd = null, bDist = 0;
+      big.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        bd = { x: e.clientX, y: e.clientY, moved: 0 };
+        big.setPointerCapture?.(e.pointerId);
+      });
+      big.addEventListener("pointermove", (e) => {
+        if (!bd) return;
+        const d = Math.hypot(e.clientX - bd.x, e.clientY - bd.y);
+        bd.x = e.clientX; bd.y = e.clientY; bd.moved += d; bDist += d;
+        if (bDist > 70) { bDist = 0; spawnHeart(e.clientX, e.clientY); navigator.vibrate?.(15); keepBig(); }
+      });
+      big.addEventListener("pointerup", (e) => {
+        e.stopPropagation();
+        if (bd && bd.moved < 12) {
+          big.querySelector("p").textContent = LINES[lineN++ % LINES.length];
+          navigator.vibrate?.(30);
+        }
+        bd = null;
+        keepBig();
+      });
+      big.addEventListener("pointercancel", () => { bd = null; });
     }
 
     /* ---------- 터치(대사) & 쓰다듬기(문지르기) ---------- */
@@ -637,13 +667,13 @@ export function startAR(zone, opts = {}) {
         const before = getDex()[id]?.love || 0;
         const love = collectible ? addLove(id) : 0;
         renderLove();
-        if (collectible && love === LOVE_MAX && before < LOVE_MAX) react("love", "우리 이제 단짝이야! 💗", 2000);
-        else react("love", PET_LINES[(petCount / 8 - 1) % PET_LINES.length]);
+        if (collectible && love === LOVE_MAX && before < LOVE_MAX) react("pet", "우리 이제 단짝이야! 💗", 2000);
+        else react("pet", PET_LINES[(petCount / 8 - 1) % PET_LINES.length]);
         navigator.vibrate?.(40);
       }
       if (mtype === "pet" && !done) {
         info(`호반우를 손가락으로 쓰다듬어 줘! 💗 ${Math.min(petCount, PET_GOAL)}/${PET_GOAL}`);
-        if (petCount >= PET_GOAL) { react("love", "우리 완전 친해졌다! 💕", 2500); info("호반우와 친해졌어! 💕"); complete(); }
+        if (petCount >= PET_GOAL) { react("pet", "우리 완전 친해졌다! 💕", 2500); info("호반우와 친해졌어! 💕"); complete(); }
       }
     }
     let down = null;
