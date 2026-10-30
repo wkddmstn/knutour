@@ -1,7 +1,7 @@
 // js/theme-bg.js — 테마별 화면 배경 (모든 화면 맨 뒤에 깔리는 그림)
 //   march   (3월 첫 주, 기본): 활기찬 새 학기 — 가랜드 깃발, 색종이, 풍선, 새싹 언덕
 //   cherry  (벚꽃 기간)       : 벚꽃나무 한 그루 + 날리는 꽃잎 (홈 대표 카드 모서리에 꽃잎 하나가 내려앉음)
-//   midterm (중간고사)        : 달밤의 도서관 — 연보라 저녁 하늘, 별, 초승달, 불 켜진 도서관, 종이비행기
+//   midterm (중간고사)        : 공부 책상 — 줄 공책 바탕 + KNU 빨간 여백선, 포스트잇(D-7·A+), 연필, 알람시계, 책 더미, 종이비행기
 // 배경은 카드 사이 빈 공간에서 잘 보이고, 카드 위에서는 카드가 거의 가려서 글이 눈에 잘 들어오게 한다 (style.css).
 // 폰(좁은 화면)은 그림을 모서리에 작게, 노트북(넓은 화면)은 앱 양옆 빈 공간에 크게 둔다 (style.css의 @media).
 
@@ -41,38 +41,32 @@ const BALLOON = (c) => `<svg viewBox="0 0 60 110" aria-hidden="true"><path d="M3
   <ellipse cx="20" cy="22" rx="6" ry="9" fill="#fff" opacity=".45"/><path d="M27 70L33 70L30 76Z" fill="${c}"/>
   <path d="M30 76Q24 88 31 98T29 110" fill="none" stroke="#c9b8a8" stroke-width="1.5"/></svg>`;
 
-// 도서관 (창문 불빛이 은은하게 깜빡임)
-function library() {
-  let wins = "";
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) {
-    if ((r * 8 + c) % 5 === 2) continue;   // 몇 개는 불 꺼짐
-    wins += `<rect class="tb-win" x="${176 + c * 46}" y="${124 + r * 32}" width="22" height="18" rx="6" style="animation-delay:-${(r * 8 + c) % 7}s"/>`;
-  }
-  return `<svg class="tb-library" viewBox="0 0 700 260" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-    <path d="M0 260V214Q120 196 230 208T470 204T700 212V260Z" fill="#d6ccf5"/>
-    <rect x="150" y="104" width="400" height="140" rx="26" fill="#b3a5e3"/>
-    <path d="M140 110Q350 30 560 110Z" fill="#9d8dd6"/>
-    <circle cx="350" cy="78" r="15" fill="#fff6d6"/><path d="M350 70V78L356 82" stroke="#9d8dd6" stroke-width="3" stroke-linecap="round" fill="none"/>
-    ${wins}
-    <rect x="322" y="200" width="56" height="44" rx="24" fill="#8a79c8"/>
-    <rect x="300" y="240" width="100" height="8" rx="4" fill="#c7bcef"/>
-    <circle cx="86" cy="206" r="40" fill="#bfe6cf"/><circle cx="118" cy="214" r="28" fill="#cfeedb"/><rect x="82" y="226" width="10" height="24" rx="5" fill="#c9a88f"/>
-    <circle cx="616" cy="208" r="36" fill="#bfe6cf"/><circle cx="586" cy="218" r="24" fill="#cfeedb"/><rect x="612" y="228" width="10" height="22" rx="5" fill="#c9a88f"/>
-  </svg>`;
-}
-
-// 책 더미 + 김 나는 머그컵 (넓은 화면 오른쪽)
-const DESK = `<svg class="tb-desk wide" viewBox="0 0 260 220" aria-hidden="true">
-  <rect x="20" y="176" width="170" height="30" rx="10" fill="#9cc2ff"/><rect x="30" y="180" width="150" height="6" rx="3" fill="#fff" opacity=".6"/>
-  <rect x="34" y="142" width="150" height="34" rx="10" fill="#ff9fb2"/><rect x="44" y="147" width="130" height="6" rx="3" fill="#fff" opacity=".6"/>
-  <rect x="26" y="110" width="140" height="32" rx="10" fill="#b9aeff"/><rect x="36" y="115" width="120" height="6" rx="3" fill="#fff" opacity=".6"/>
-  <rect x="196" y="150" width="46" height="56" rx="14" fill="#fff"/><path d="M242 164Q258 164 258 178Q258 192 242 192" fill="none" stroke="#fff" stroke-width="7"/>
-  <rect x="196" y="150" width="46" height="12" rx="6" fill="#ffd9a8"/>
-  <path class="tb-steam" d="M210 140Q204 128 212 118Q220 108 214 96" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-  <path class="tb-steam" style="animation-delay:-1.2s" d="M228 140Q222 128 230 118Q238 108 232 96" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+// 시험 기간 소품 (남색·빨강·흰색: KNU 빨강과 어울리게)
+const NAVY = "#4a6fa5", NAVY_L = "#c9d7ee", RED = "#e2525a";
+const NOTE = (text, color, cls) => `<div class="tb-note ${cls}" style="background:${color}"><span>${text}</span></div>`;
+const PENCIL = `<svg class="tb-pencil" viewBox="0 0 200 40" aria-hidden="true">
+  <rect x="30" y="8" width="140" height="24" rx="4" fill="#ffd46b"/><rect x="30" y="8" width="140" height="8" rx="4" fill="#ffe39a"/>
+  <rect x="150" y="8" width="20" height="24" fill="#c9d1de"/><rect x="170" y="8" width="22" height="24" rx="8" fill="${RED}"/>
+  <path d="M30 8L4 20L30 32Z" fill="#f2d3b3"/><path d="M12 16L4 20L12 24Z" fill="#3b4252"/></svg>`;
+const CLOCK = `<svg class="tb-clock" viewBox="0 0 120 130" aria-hidden="true">
+  <circle cx="28" cy="22" r="16" fill="${RED}"/><circle cx="92" cy="22" r="16" fill="${RED}"/>
+  <path d="M30 116L20 128M90 116L100 128" stroke="${NAVY}" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="60" cy="70" r="50" fill="#fff" stroke="${NAVY}" stroke-width="7"/>
+  ${[0, 90, 180, 270].map((r) => `<rect x="58" y="28" width="4" height="9" rx="2" fill="${NAVY_L}" transform="rotate(${r} 60 70)"/>`).join("")}
+  <g class="tb-hand-m"><rect x="57.5" y="34" width="5" height="38" rx="2.5" fill="${NAVY}"/></g>
+  <g class="tb-hand-h"><rect x="57" y="48" width="6" height="24" rx="3" fill="${RED}"/></g>
+  <circle cx="60" cy="70" r="5" fill="${NAVY}"/></svg>`;
+const DESK = `<svg class="tb-desk" viewBox="0 0 260 220" aria-hidden="true">
+  <rect x="20" y="176" width="170" height="30" rx="10" fill="${NAVY}"/><rect x="30" y="180" width="150" height="6" rx="3" fill="#fff" opacity=".5"/>
+  <rect x="34" y="142" width="150" height="34" rx="10" fill="${RED}"/><rect x="44" y="147" width="130" height="6" rx="3" fill="#fff" opacity=".5"/>
+  <rect x="26" y="110" width="140" height="32" rx="10" fill="#ffffff" stroke="${NAVY_L}" stroke-width="3"/><rect x="36" y="117" width="120" height="5" rx="2.5" fill="${NAVY_L}"/>
+  <rect x="196" y="150" width="46" height="56" rx="14" fill="#fff" stroke="${NAVY_L}" stroke-width="3"/><path d="M242 164Q258 164 258 178Q258 192 242 192" fill="none" stroke="${NAVY_L}" stroke-width="7"/>
+  <text x="219" y="186" font-size="18" font-weight="900" fill="${RED}" text-anchor="middle" font-family="Pretendard,sans-serif">K</text>
+  <path class="tb-steam" d="M210 140Q204 128 212 118Q220 108 214 96" fill="none" stroke="${NAVY_L}" stroke-width="4" stroke-linecap="round"/>
+  <path class="tb-steam" style="animation-delay:-1.2s" d="M228 140Q222 128 230 118Q238 108 232 96" fill="none" stroke="${NAVY_L}" stroke-width="4" stroke-linecap="round"/>
 </svg>`;
 
-const PLANE = `<svg viewBox="0 0 48 30" aria-hidden="true"><path d="M2 14L46 2L30 28L22 18Z" fill="#fff"/><path d="M22 18L46 2L26 22Z" fill="#e3dcff"/><path d="M22 18L24 27L26 22Z" fill="#c9bdf5"/></svg>`;
+const PLANE = `<svg viewBox="0 0 48 30" aria-hidden="true"><path d="M2 14L46 2L30 28L22 18Z" fill="#fff" stroke="#c9d7ee" stroke-width="1.5" stroke-linejoin="round"/><path d="M22 18L46 2L26 22Z" fill="#dbe5f5"/><path d="M22 18L24 27L26 22Z" fill="#c9d7ee"/></svg>`;
 
 function sceneHtml(id) {
   if (id === "cherry") {
@@ -82,14 +76,15 @@ function sceneHtml(id) {
       ${fallers("petal")}`;
   }
   if (id === "midterm") {
-    const stars = [[8, 10], [18, 26], [27, 8], [36, 18], [62, 12], [71, 30], [80, 9], [90, 22], [95, 40], [5, 44], [46, 6], [54, 34]]
-      .map(([x, y], i) => `<span class="tb-star${i % 2 ? " wide" : ""}" style="left:${x}%;top:${y}%;animation-delay:-${i * 0.7}s">✦</span>`).join("");
     return `
-      <div class="tb-moon"></div>
-      ${stars}
+      <div class="tb-margin"></div>
+      ${NOTE("D-7", "#ffe1e3", "tb-note-a")}
+      ${NOTE("A+", "#dfe9fb", "tb-note-b wide")}
+      ${NOTE("화이팅!", "#e2f5ea", "tb-note-c wide")}
+      ${PENCIL}
+      ${CLOCK}
       <div class="tb-plane tb-plane-a">${PLANE}</div>
       <div class="tb-plane tb-plane-b wide">${PLANE}</div>
-      ${library()}
       ${DESK}`;
   }
   // march (기본)

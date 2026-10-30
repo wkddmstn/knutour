@@ -994,10 +994,10 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
   --hx-far3: #e8eeff; --hx-far4: #e4f4ea; --hx-win: #fff; --hx-wall: #fff; --hx-roof: #ff8a93; --hx-roof2: #ffd1d9; --hx-accent: #ff5a5f;
   --hx-win2: #ffd1d9; --hx-win3: #e3ecff; --hx-door: #ffb3bc; --hx-tree1: #ffc2d1; --hx-tree2: #ffd6e0; --hx-tree3: #c9ecd9; --hx-tree4: #dff3e8;
   --hx-trunk: #e8b9a0; --hx-pool: #cfe6ff; --hx-jet: #a8d4ff; --hx-sun: #ffd6a5; }
-.hx-midterm { --hx-sky1: #ece8ff; --hx-sky2: #f7f3ff; --hx-hill: #efeaff; --hx-hill2: #e4ddff; --hx-far1: #dcd4ff; --hx-far2: #d2c8ff;
-  --hx-far3: #d9e4ff; --hx-far4: #e0d9ff; --hx-win: #fff3c4; --hx-wall: #fff; --hx-roof: #a99bff; --hx-roof2: #dcd4ff; --hx-accent: #ff5a5f;
-  --hx-win2: #ffe9a8; --hx-win3: #ffe9a8; --hx-door: #b9aeff; --hx-tree1: #c4e8d2; --hx-tree2: #d9f1e2; --hx-tree3: #c4e8d2; --hx-tree4: #d9f1e2;
-  --hx-trunk: #d9b89a; --hx-pool: #d9e4ff; --hx-jet: #b9cbff; --hx-sun: #fff1b8; }
+.hx-midterm { --hx-sky1: #e6eefa; --hx-sky2: #f6f9fe; --hx-hill: #e9f0fa; --hx-hill2: #dbe6f6; --hx-far1: #d3e0f3; --hx-far2: #c9d7ee;
+  --hx-far3: #dde6f5; --hx-far4: #d6e8de; --hx-win: #fff3c4; --hx-wall: #fff; --hx-roof: #6f8fc2; --hx-roof2: #c9d7ee; --hx-accent: #e2525a;
+  --hx-win2: #ffe9a8; --hx-win3: #ffe9a8; --hx-door: #8aa6d3; --hx-tree1: #c4e8d2; --hx-tree2: #d9f1e2; --hx-tree3: #c4e8d2; --hx-tree4: #d9f1e2;
+  --hx-trunk: #d9b89a; --hx-pool: #d9e4f5; --hx-jet: #a9c1e6; --hx-sun: #fff1b8; }
 .hx-layer { position: absolute; left: 0; bottom: 0; height: 100%; width: 1200px; display: flex; }
 .hx-layer svg { flex: none; width: 600px; height: 100%; }
 .hx-far { opacity: .6; animation: hxScroll 60s linear infinite; }
@@ -1090,13 +1090,13 @@ body[data-view="zone"] #theme-bg, body[data-view="onboard"] #theme-bg { display:
 body[data-theme-bg]:not([data-view="zone"]):not([data-view="onboard"]) { background: transparent; }
 /* 카드: iOS처럼 살짝 비치는 유리 (뒤 배경이 흐리게 비침 + 위쪽 가장자리에 얇은 빛) */
 body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-row, .menu-card, .dx-card) {
-  background-color: color-mix(in srgb, var(--card) 82%, transparent);
+  background-color: color-mix(in srgb, var(--card) 66%, transparent);
   -webkit-backdrop-filter: blur(18px) saturate(170%); backdrop-filter: blur(18px) saturate(170%);
   border-color: rgba(255, 255, 255, .6);
   box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, .75); }
 @media (prefers-color-scheme: dark) {
   body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-row, .menu-card, .dx-card) {
-    background-color: color-mix(in srgb, var(--card) 76%, transparent);
+    background-color: color-mix(in srgb, var(--card) 62%, transparent);
     border-color: rgba(255, 255, 255, .09);
     box-shadow: 0 10px 26px -12px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .07); }
 }
@@ -1125,40 +1125,48 @@ body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-
 /* 벚꽃 기간: 벚꽃나무 + 꽃잎 */
 .tb-cherry { background: linear-gradient(180deg, #fff6f8 0%, #fffcfc 60%, #fff5f7 100%); }
 .tb-tree { position: absolute; }
-.tb-tree-a { right: -110px; top: -30px; width: 280px; opacity: .45; }
+.tb-tree-a { right: -110px; top: -30px; width: 280px; opacity: .3; }
 .tb-tree-b { display: none; }
 .tb-cherry .tb-fall { width: 14px; }
 .hero-petal { position: absolute; top: -11px; left: 34%; width: 28px; z-index: 2; transform: rotate(-28deg);
   filter: drop-shadow(0 2px 2px rgba(212, 18, 26, .15)); pointer-events: none; }
 
-/* 중간고사: 달밤의 도서관 */
-.tb-midterm { background: linear-gradient(180deg, #eeeafd 0%, #f7f5ff 50%, #fcfbff 100%); }
-.tb-moon { position: absolute; top: 64px; right: 9%; width: 54px; height: 54px; border-radius: 50%;
-  box-shadow: inset -14px -6px 0 0 #fff3c4; transform: rotate(-20deg); filter: drop-shadow(0 0 14px rgba(255, 238, 170, .8)); }
-.tb-star { position: absolute; color: #b4a4ff; font-size: 12px; animation: tbTw 3s ease-in-out infinite; }
-@keyframes tbTw { 50% { opacity: .2; transform: scale(.6); } }
-.tb-plane { position: absolute; left: 0; width: 34px; opacity: .8; animation: tbFly 28s linear infinite; }
+/* 중간고사: 공부 책상 — 줄 공책 바탕 + 빨간 여백선 */
+.tb-midterm { background-color: #fbfcfe;
+  background-image: repeating-linear-gradient(180deg, transparent 0 31px, rgba(74, 111, 165, .12) 31px 32px); }
+.tb-margin { position: absolute; top: 0; bottom: 0; left: 22px; width: 2px; background: rgba(226, 82, 90, .35); }
+.tb-note { position: absolute; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 6px;
+  box-shadow: 0 6px 14px -6px rgba(25, 31, 40, .25); font: 900 15px/1 "Jua", var(--font); color: #4a6fa5; animation: tbNote 6s ease-in-out infinite; }
+.tb-note::before { content: ""; position: absolute; top: -7px; left: 50%; width: 26px; height: 12px; margin-left: -13px; border-radius: 3px;
+  background: rgba(255, 255, 255, .7); transform: rotate(-3deg); }
+.tb-note-a { top: 70px; right: 10px; transform: rotate(6deg); color: #e2525a; }
+.tb-note-b { transform: rotate(-7deg); }
+.tb-note-c { transform: rotate(5deg); font-size: 13px; color: #2f8a5b; }
+@keyframes tbNote { 50% { translate: 0 -4px; } }
+.tb-pencil { position: absolute; left: -40px; bottom: 32%; width: 130px; transform: rotate(-24deg); opacity: .85; }
+.tb-clock { position: absolute; display: none; width: 96px; }
+.tb-hand-m { transform-origin: 60px 70px; animation: tbTick 60s steps(60) infinite; }
+.tb-hand-h { transform-origin: 60px 70px; transform: rotate(120deg); }
+@keyframes tbTick { to { transform: rotate(360deg); } }
+.tb-plane { position: absolute; left: 0; width: 34px; opacity: .85; animation: tbFly 28s linear infinite; }
 .tb-plane svg { display: block; width: 100%; }
 .tb-plane-a { top: 30%; }
 .tb-plane-b { top: 58%; animation-duration: 36s; animation-delay: -14s; }
 @keyframes tbFly { 0% { transform: translate(-60px, 0) rotate(-6deg); } 50% { transform: translate(50vw, -30px) rotate(4deg); }
   100% { transform: translate(calc(100vw + 60px), 10px) rotate(-4deg); } }
-.tb-library { position: absolute; left: 50%; bottom: 0; width: 100%; max-width: 700px; transform: translateX(-50%); opacity: .55; }
-.tb-library .tb-win { fill: #ffe08a; animation: tbWin 6s ease-in-out infinite; }
-.tb-desk { position: absolute; bottom: 0; right: calc(50% - 240px - 330px); width: 260px; opacity: .85; }
+.tb-desk { position: absolute; bottom: 0; right: -30px; width: 150px; opacity: .8; }
 .tb-steam { animation: tbSteam 3s ease-in-out infinite; opacity: .7; }
 @keyframes tbSteam { 0%, 100% { opacity: .15; transform: translateY(4px); } 50% { opacity: .8; transform: translateY(-4px); } }
-@keyframes tbWin { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 
 /* 홈 대표 카드도 테마 색으로 */
 .quest-map-card { position: relative; }
-body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(255, 255, 255, .93) 0%, rgba(255, 246, 214, .93) 140%); }
-body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(255, 255, 255, .93) 0%, rgba(255, 222, 231, .93) 140%); }
-body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(255, 255, 255, .93) 0%, rgba(232, 224, 255, .93) 140%); }
+body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(255, 246, 214, .8) 140%); }
+body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(255, 222, 231, .8) 140%); }
+body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(220, 231, 248, .8) 140%); }
 @media (prefers-color-scheme: dark) {
-  body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(42, 45, 52, .82) 0%, rgba(74, 66, 38, .82) 140%); }
-  body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(42, 45, 52, .82) 0%, rgba(86, 44, 58, .82) 140%); }
-  body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(42, 45, 52, .82) 0%, rgba(62, 52, 104, .82) 140%); }
+  body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(74, 66, 38, .72) 140%); }
+  body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(86, 44, 58, .72) 140%); }
+  body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(40, 60, 96, .72) 140%); }
 }
 
 /* 노트북처럼 넓은 화면: 앱 양옆 빈 공간에 그림을 크게 */
@@ -1172,27 +1180,35 @@ body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(1
   .tb-balloon-c { left: 18%; bottom: 52%; }
   .tb-balloon-d { right: 19%; bottom: 20%; }
   .tb-hills { height: 200px; }
-  .tb-tree-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .9; }
-  .tb-tree-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .75; transform: scaleX(-1); }
+  .tb-tree-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .6; }
+  .tb-tree-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .45; transform: scaleX(-1); }
   .tb-cherry .tb-fall { width: 20px; }
-  .tb-moon { top: 90px; right: 12%; width: 90px; height: 90px; box-shadow: inset -22px -10px 0 0 #fff3c4; }
-  .tb-star { font-size: 16px; }
+  .tb-margin { left: calc(50% - 240px - 60px); }
+  .tb-note { width: 96px; height: 96px; font-size: 26px; border-radius: 8px; }
+  .tb-note-c { font-size: 20px; }
+  .tb-note-a { top: 110px; right: calc(50% - 240px - 200px); }
+  .tb-note-b { top: 160px; left: calc(50% - 240px - 230px); }
+  .tb-note-c { top: 46%; right: calc(50% - 240px - 150px); }
+  .tb-pencil { left: calc(50% - 240px - 330px); bottom: 34%; width: 240px; }
+  .tb-clock { display: block; left: calc(50% - 240px - 200px); bottom: 12%; width: 130px; }
   .tb-plane { width: 52px; }
-  .tb-library { left: auto; right: calc(50% + 240px + 30px); max-width: none; width: min(560px, calc(50vw - 270px)); transform: none; opacity: .85; }
+  .tb-desk { right: calc(50% - 240px - 320px); width: 260px; }
 }
 @media (min-width: 760px) and (max-width: 1100px) {
   .tb-tree-a { left: -140px; width: 420px; }
   .tb-tree-b { right: -120px; width: 320px; }
   .tb-desk { right: 8px; width: 180px; }
+  .tb-clock { left: 20px; }
+  .tb-pencil { left: -60px; }
+  .tb-note-b { left: 40px; }
 }
 /* 다크 모드: 그림을 통째로 어둡게 누르지 않고, 바탕은 테마 색이 살짝 도는 밤하늘로, 그림은 은은하게 */
 @media (prefers-color-scheme: dark) {
   #theme-bg > * { opacity: .34; }
   .tb-march { background: linear-gradient(180deg, #1c2633 0%, #1d2026 55%, #1b2420 100%); }
   .tb-cherry { background: linear-gradient(180deg, #2b1f26 0%, #1f1d22 60%, #281d23 100%); }
-  .tb-midterm { background: linear-gradient(180deg, #241f3d 0%, #1f1d2b 55%, #1c1b24 100%); }
-  .tb-midterm .tb-star { color: #d9d0ff; }
-  .tb-moon { box-shadow: inset -14px -6px 0 0 #ffeeb0; }
+  .tb-midterm { background-color: #1c2230;
+    background-image: repeating-linear-gradient(180deg, transparent 0 31px, rgba(160, 185, 225, .08) 31px 32px); }
 }
 @media (prefers-reduced-motion: reduce) {
   #theme-bg *, #theme-bg *::before { animation: none !important; }
@@ -1200,7 +1216,7 @@ body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(1
 }
 /* 대표 카드(내 정보·내 순위)도 같은 유리 느낌으로 */
 body[data-theme-bg] .card-hero:not(.quest-map-card) {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--card) 82%, transparent) 0%, color-mix(in srgb, var(--primary-weak) 82%, transparent) 150%); }
+  background: linear-gradient(160deg, color-mix(in srgb, var(--card) 66%, transparent) 0%, color-mix(in srgb, var(--primary-weak) 66%, transparent) 150%); }
 @media (prefers-color-scheme: dark) {
   .att-empty { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .16); }   /* 출석 빈칸이 구멍처럼 까맣게 보이지 않게 */
 }

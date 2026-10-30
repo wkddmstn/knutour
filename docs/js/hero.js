@@ -3,7 +3,7 @@
 // 테마(themes.json의 id)마다 색·날리는 장식·말풍선·문구만 바꾼다.
 //   march   (3월 첫 주)  : 민트·하늘색, 새싹과 색종이
 //   cherry  (벚꽃 기간)  : 분홍, 벚꽃잎
-//   midterm (중간고사)   : 보랏빛 저녁, 책·연필·별
+//   midterm (중간고사)   : 남색 저녁 하늘, 날리는 책, 별
 // 다른 테마 id가 오면 march 모양을 쓴다.
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -75,7 +75,7 @@ function particles(kind) {
     const style = `left:${left}%;width:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s`;
     if (kind === "petal") return `<img class="hx-p" src="img/hobanu/petal.png" alt="" style="${style}">`;
     if (kind === "book") {
-      const c = ["#9c8cff", "#7fb3ff", "#ff9fb2", "#8fd9b0"][i % 4];
+      const c = ["#4a6fa5", "#e2525a", "#8aa6d3", "#8fd9b0"][i % 4];   // 남색·빨강 책 (KNU 빨강과 어울리게)
       return i % 3 === 2
         ? `<span class="hx-p hx-star" style="${style}">✦</span>`
         : `<span class="hx-p hx-book" style="${style}">${BOOK_SVG(c)}</span>`;
