@@ -495,6 +495,21 @@ export function renderCommunityHome(zones, posts) {
 // board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
 // myId: 내 프로필 id (내 글엔 신고 버튼을 숨긴다)
 // 버튼에는 data-act(like | comment | photo | report)가 붙어 있고, 클릭 처리는 main.js에서 위임으로 한다.
+// 글 하나가 화면의 2/3를 넘지 않게: 사진 높이는 CSS(.post-photo img)가 화면 높이에 맞춰 줄이고,
+// 긴 글은 CSS로 몇 줄만 보이게 자른 뒤, 실제로 잘린 글에만 "더 보기" 버튼을 달아 펼칠 수 있게 한다.
+// (화면에 보인 뒤에 재야 해서 다음 프레임에 확인)
+function clampPostTexts(root) {
+  requestAnimationFrame(() => root?.querySelectorAll(".post-text").forEach((el) => {
+    if (el.scrollHeight <= el.clientHeight + 2 || el.nextElementSibling?.classList.contains("post-more")) return;
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "post-more";
+    more.textContent = "더 보기";
+    more.onclick = (e) => { e.stopPropagation(); el.classList.add("open"); more.remove(); };
+    el.after(more);
+  }));
+}
+
 // tag: 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자 (위에 "#일청담 · N개" 칩이 뜨고 ✕로 해제)
 export function renderCommunity(zones, posts, { board = "post", filter = "all", tag = null, tagRow = [], placeTag = true } = {}, myId = null) {
   const zoneName = (id) => zones.find((z) => z.id === id)?.name || "";
@@ -520,6 +535,7 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
             : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
         </div>`}
     </div>`;
+  clampPostTexts($("view-board"));
 
   // 글쓰기 버튼은 오른쪽 아래에 떠 있는 동그란 버튼(FAB). .view는 등장 애니메이션에 transform을 써서
   // 그 안에 두면 position: fixed가 애니메이션 동안 흔들리므로 #app에 한 번만 만들어 두고,

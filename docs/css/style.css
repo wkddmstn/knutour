@@ -405,7 +405,9 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 
 .post-photo { position: relative; background: var(--cream-weak); cursor: pointer; user-select: none;
               -webkit-user-select: none; touch-action: manipulation; }
-.post-photo img { display: block; width: 100%; max-height: 520px; object-fit: cover; -webkit-user-drag: none; }
+/* 사진은 비율대로 보이되, 글 하나(작성자 줄·글 3줄·버튼·댓글 줄 약 270px 포함)가 화면 높이의 2/3를 넘지 않게 줄인다 */
+.post-photo img { display: block; width: 100%; max-height: min(520px, max(160px, calc(66.6vh - 270px))); object-fit: cover; -webkit-user-drag: none; }
+@supports (height: 1dvh) { .post-photo img { max-height: min(520px, max(160px, calc(66.6dvh - 270px))); } }
 .heart-burst { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; opacity: 0; }
 .heart-burst svg { width: 96px; height: 96px; fill: #fff; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .35)); }
 .heart-burst.go { animation: heartBurst .8s var(--ease-toss); }
@@ -413,6 +415,11 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 .post-text { margin: 0; padding: 12px 16px 0; font-size: 15px; line-height: 1.55; color: var(--ink);
              white-space: pre-wrap; word-break: break-word; }
 .post-text.solo { padding-top: 0; font-size: 16px; }
+/* 긴 글은 사진 글 3줄, 글만 있는 글 10줄까지만 보이고 '더 보기'로 펼침 (ui.js clampPostTexts) */
+.post-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.post-text.solo { -webkit-line-clamp: 10; }
+.post-text.open { display: block; -webkit-line-clamp: unset; }
+.post-more { display: block; margin: 2px 16px 0; padding: 2px 0; color: var(--mute); font-size: 13px; font-weight: 600; }
 
 .post-actions { display: flex; gap: 2px; padding: 6px 8px 0; }
 .act { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 8px; border-radius: 12px;
