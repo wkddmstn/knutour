@@ -194,6 +194,7 @@ function injectStyle() {
   #ps-frame.nocam{background:linear-gradient(#bfe3ff,#e9f6ff 60%,#cdeac0)}
   #ps-cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:center}
   #ps-hob{position:absolute;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))}
+  #ps-root.ps-plain :is(#ps-hob,#ps-carousel,#ps-name,#ps-bigger,#ps-smaller,#ps-reset,.ps-tip){display:none !important}
   #ps-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
   #ps-flash.on{animation:ps-flash .35s ease-out}
   .ps-glass{background:rgba(0,0,0,.38);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
@@ -797,7 +798,7 @@ const rvBtn = (id, key, extra = "") =>
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 
-export function openPhotoStudio({ items, start, submit = false, place = "", zoneId = null, onShot = null } = {}) {   // onShot: 사진을 찍을 때마다 부름 (투어 XP용, 장주연)
+export function openPhotoStudio({ items, start, submit = false, place = "", zoneId = null, onShot = null, plain = false } = {}) {   // plain: 호반우 없이 카메라만 (사진 미션 제출용). 카메라를 못 켜면 { nocam: true }로 닫힌다   // onShot: 사진을 찍을 때마다 부름 (투어 XP용, 장주연)
   injectStyle();
   items = items || collectedItems();
   // (장주연) 모은 호반우가 없어도 기본 호반우 + 기본 프레임으로 바로 찍을 수 있게
@@ -806,6 +807,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
   return new Promise((resolve) => {
     const root = el("div");
     root.id = "ps-root";
+    if (plain) root.classList.add("ps-plain");
     root.innerHTML = `
       <div id="ps-frame">
         <video id="ps-cam" autoplay playsinline muted></video>
@@ -1105,6 +1107,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
         $("ps-flip").classList.toggle("ar-hidden", cams.length < 2);
       } catch {
         stream = null; track = null; hwZoom = null;
+        if (plain) { close({ nocam: true }); return; }   // 미션 사진은 가짜 배경으로 찍히면 안 되니 파일 선택으로 넘긴다
         frame.classList.add("nocam");
         video.classList.add("ar-hidden");
         $("ps-flip").classList.add("ar-hidden");
@@ -1167,7 +1170,7 @@ export function openPhotoStudio({ items, start, submit = false, place = "", zone
         g.fillStyle = grd; g.fillRect(0, 0, FW, FH);
       }
       const fr = frame.getBoundingClientRect(), hr = hob.getBoundingClientRect();
-      g.drawImage(hob, hr.left - fr.left, hr.top - fr.top, hr.width, hr.height);
+      if (!plain) g.drawImage(hob, hr.left - fr.left, hr.top - fr.top, hr.width, hr.height);
       stickers.forEach((sk) => {                       // 붙인 스티커 (붙인 순서대로)
         const r = sk.el.getBoundingClientRect();
         try { g.drawImage(sk.el, r.left - fr.left, r.top - fr.top, r.width, r.height); } catch {}

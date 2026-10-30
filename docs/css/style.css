@@ -256,7 +256,7 @@ body[data-view="zone"] {
 }
 .row.bot:not(.row.bot + .row.bot) .row-avatar {
   display: block; position: absolute; left: 0; top: 0; width: 38px; height: 38px; border-radius: 50%;
-  object-fit: cover; background: var(--cream-weak, #fff6e5); border: 1px solid var(--line); pointer-events: none;
+  object-fit: cover; background: #fff; pointer-events: none;   /* 이미지에 빨간 테두리가 들어 있어서 따로 테두리를 두지 않는다 */
 }
 .bubble { max-width: 100%; padding: 12px 16px; font-size: 15px; line-height: 1.55; border-radius: 20px; }
 .bot .bubble { background: var(--card); border: 1px solid rgba(0, 0, 0, .04);

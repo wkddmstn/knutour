@@ -220,28 +220,8 @@ async function togetherRandom(m) {
 }
 
 /* ---------- 사진 ---------- */
-// 제출한 사진을 대화창에 보여줄 작은 미리보기(dataURL, 긴 변 480px). 실패하면 임시 주소로라도 보여준다
-async function shotThumb(file) {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = reject;
-      i.src = url;
-    });
-    const scale = Math.min(1, 480 / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement("canvas");
-    c.width = Math.round(img.naturalWidth * scale);
-    c.height = Math.round(img.naturalHeight * scale);
-    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-    URL.revokeObjectURL(url);
-    return c.toDataURL("image/jpeg", 0.72);
-  } catch {
-    return url;
-  }
-}
-
+// 사진 미션은 앱 안 카메라 화면(투어·카메라 탭과 같은 화면)으로 그 자리에서 찍은 사진만 받는다.
+// (앨범 사진 업로드는 없앴다. <input capture>는 카카오톡 같은 인앱 브라우저에서 앨범 선택이 먼저 뜨기도 해서)
 async function photo(m, zone) {
   // (장주연) 장소 미션에서는 AR 호반우 선택칸을 뺐다 (호반우는 홈 "AR 호반우 만나기"·도감에서). 다시 넣으려면 HOB_IN_PHOTO = true
   const HOB_IN_PHOTO = false;
@@ -250,36 +230,23 @@ async function photo(m, zone) {
     const file = await chat.ask((card, done) => {
       card.innerHTML = `
         ${withHob ? `<button class="chip primary hob-cam" style="margin-bottom:8px">🐾 호반우와 함께 찍기</button>` : ""}
-        <label class="btn-file">사진 찍기
-          <input type="file" accept="image/*" capture="environment" hidden>
-        </label>
-        <img class="preview hidden" alt="미리보기">
-        <button class="chip primary submit-shot hidden">이 사진으로 제출</button>`;
-      const input = card.querySelector("input");
-      const img = card.querySelector("img");
-      const send = card.querySelector(".submit-shot");
-      let picked = null;
-      input.onchange = () => {
-        picked = input.files[0];
-        if (!picked) return;
-        img.src = URL.createObjectURL(picked);
-        img.classList.remove("hidden");
-        send.classList.remove("hidden");
-      };
-      send.onclick = () => picked && done(picked);
+        <button class="btn-file cam-shot">사진 찍기</button>`;
       card.querySelector(".hob-cam")?.addEventListener("click", () => done("__hob"));
+      card.querySelector(".cam-shot")?.addEventListener("click", () => done("__cam"));
     });
 
-    let shot;   // 커뮤니티에 올릴 때 쓸 사진 (File 객체 또는 dataURL 문자열)
+    let shot;   // 커뮤니티에 올릴 때 쓸 사진 (dataURL 문자열)
     if (file === "__hob") {
       const studio = await openPhotoStudio({ items: photoItemsFor(zone.id), start: zone.id, submit: true, place: zone.name });
       if (!studio) continue;   // 사진을 안 고르고 닫았으면 다시 선택 화면으로
       shot = studio.dataUrl;
       chat.user(`<img class="shot" src="${studio.dataUrl}" alt="제출한 사진">`);
     } else {
-      shot = file;
-      // 대화 기록에 저장돼도 다시 볼 수 있게, 임시 주소(blob:) 대신 작은 미리보기 이미지로 넣는다
-      chat.user(`<img class="shot" src="${await shotThumb(file)}" alt="제출한 사진">`);
+      const studio = await openPhotoStudio({ start: "basic", submit: true, place: zone.name, zoneId: zone.id, plain: true });
+      if (studio?.nocam) { await chat.bot("카메라를 켤 수 없어. 브라우저 설정에서 카메라 권한을 허용하고 다시 눌러 줘!"); continue; }
+      if (!studio?.dataUrl) continue;   // 찍지 않고 닫았으면 다시 사진 찍기 버튼으로
+      shot = studio.dataUrl;
+      chat.user(`<img class="shot" src="${studio.dataUrl}" alt="제출한 사진">`);
     }
 
     // 1단계(무료): 이 사진이 이미 "다른" 미션에서 제출했던 사진이랑 거의 똑같은지 먼저 확인한다.
