@@ -212,14 +212,21 @@ async function init() {
   // 요소가 없어도(예: index.html이 구버전이라 특정 버튼이 빠져있어도) 전체가 멈추지 않도록
   // 모든 연결을 ?.(옵셔널 체이닝)으로 감쌉니다. 요소가 없으면 그 기능만 조용히 빠집니다.
   document.querySelectorAll("#tabbar button").forEach((b) => (b.onclick = () => goTab(b.dataset.tab)));
-  $("btn-back")?.addEventListener("click", () => goTab("explore"));
+  $("btn-back")?.addEventListener("click", () => goBack("explore"));
   window.addEventListener("notif:goto", (e) => goTab(e.detail));   // 알림 패널에서 "내 게시글" 알림을 눌렀을 때
   $("btn-map")?.addEventListener("click", toggleMap);
 
   if (store.hasProfile()) {
     await ensureProfile(store.getState().profile);   // Supabase 프로필 보장 (친구 코드 발급)
     setupNotifications();
-    goTab("home");
+    history.scrollRestoration = "manual";
+    const start = routeFromHash();
+    setEntry("home", {}, 0, ["home"], false);   // 뒤로 가기의 맨 아래는 늘 홈
+    if (start === "home") showTab("home");
+    else if (start.startsWith("zone:")) {
+      const z = zones.find((x) => x.id === start.slice(5));
+      z ? openZone(z) : showTab("home");
+    } else goTab(start);
   } else {
     showOnboard();     // 가입 화면을 먼저 뒤에 그려 두고
     ui.showSplash();   // 처음 가입 전에만 로고 스플래시를 1초 띄웠다가 걷어낸다
@@ -315,8 +322,83 @@ function showOnboard() {
 //               board(커뮤니티 > 자유게시판 / 질문 카드)
 // 상세 화면의 "‹" 버튼은 자기가 나온 탭으로 돌아간다.
 const BACK_TO = { explore: "home", rank: "community", board: "community" };
-async function goTab(tab, opts = {}) {
+
+/* ================= 주소(#)와 뒤로 가기 ================= */
+// 탭·상세 화면마다 주소를 붙여서 휴대폰·브라우저의 뒤로 가기가 동작하게 한다 (새로고침해도 보던 화면 유지).
+//   홈 = (주소 그대로) · 카메라 #camera · 커뮤니티 #community · 내 정보 #my
+//   상세: 캠퍼스 탐험 #explore · 랭킹 #rank · 게시판 #board · 장소 #zone/일청담id
+// 기록 쌓는 규칙: 홈이 맨 아래. 홈 → 탭은 쌓고, 탭 → 탭은 바꿔치기(그래서 탭에서 뒤로 가면 늘 홈),
+// 상세 화면은 그 위에 쌓는다. 이미 지나온 화면으로 가면(예: 장소 → "다른 장소 보기" → 탐험) 그만큼 뒤로 간다.
+// history.state = { nav, route, opts, depth(몇 번째 기록인지, 홈 0), stack(홈부터 지금까지 화면들) }
+const ROUTE_HASH = { dex: "camera", community: "community", me: "my", explore: "explore", rank: "rank", board: "board" };
+const TAB_ROOTS = new Set(["home", "dex", "community", "me"]);
+const routeUrl = (route) =>
+  route === "home" ? location.pathname + location.search
+  : route.startsWith("zone:") ? "#zone/" + encodeURIComponent(route.slice(5))
+  : "#" + ROUTE_HASH[route];
+function routeFromHash() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, ""));
+  if (h.startsWith("zone/")) return "zone:" + h.slice(5);
+  return Object.keys(ROUTE_HASH).find((k) => ROUTE_HASH[k] === h) || "home";
+}
+const navState = () => (history.state?.nav ? history.state : null);
+function setEntry(route, opts, depth, stack, push) {
+  history[push ? "pushState" : "replaceState"]({ nav: true, route, opts, depth, stack }, "", routeUrl(route));
+}
+let navPending = null;   // history.go()로 뒤로 간 뒤 popstate에서 마저 할 일
+// 기록을 정리하고, 지금 바로 화면을 그려야 하면 true (뒤로 가는 중이면 popstate가 그린다)
+function navigate(route, opts = {}) {
+  const { depth, stack } = navState() || { depth: 0, stack: ["home"] };
+  if (route === stack[depth]) { setEntry(route, opts, depth, stack, false); return true; }   // 같은 화면 다시 그리기
+  const back = stack.lastIndexOf(route, depth - 1);
+  if (back >= 0) { navPending = { route, opts }; history.go(back - depth); return false; }
+  if (TAB_ROOTS.has(route)) {
+    if (depth <= 1) { setEntry(route, opts, 1, ["home", route], depth === 0); return true; }
+    navPending = { route, opts, atTab: true };   // 상세 화면에서 다른 탭으로: 탭 자리(1번)까지 돌아가서 바꿔치기
+    history.go(1 - depth);
+    return false;
+  }
+  setEntry(route, opts, depth + 1, [...stack.slice(0, depth + 1), route], true);
+  return true;
+}
+function renderRoute(route, opts = {}) {
+  if (route.startsWith("zone:")) {
+    const z = zones.find((x) => x.id === route.slice(5));
+    return z ? showZone(z) : showTab("explore");
+  }
+  return showTab(route, opts);
+}
+window.addEventListener("popstate", (e) => {
+  $("modal")?.classList.add("hidden");   // 열려 있던 창(댓글·글쓰기 등)과 알림 패널은 닫고 화면을 바꾼다
+  closeNotifPanel();
+  if (!store.hasProfile()) return;
+  if (navPending) {
+    const p = navPending;
+    navPending = null;
+    const cur = navState() || { depth: 0, stack: ["home"] };
+    if (p.atTab) setEntry(p.route, p.opts, 1, ["home", p.route], false);
+    else setEntry(p.route, p.opts, cur.depth, cur.stack, false);
+    return renderRoute(p.route, p.opts);
+  }
+  if (!e.state?.nav) {   // 주소창에서 #을 직접 바꾼 경우
+    const route = routeFromHash();
+    setEntry(route, {}, route === "home" ? 0 : 1, route === "home" ? ["home"] : ["home", route], false);
+    return renderRoute(route);
+  }
+  renderRoute(e.state.route, e.state.opts || {});
+});
+// 화면 이동은 모두 여기로: 주소·기록을 맞추고 화면을 그린다
+function goTab(tab, opts = {}) {
   if (tab === "quest") tab = "explore";   // 예전 이름으로 불러도 동작하게
+  if (navigate(tab, opts)) return showTab(tab, opts);
+}
+// 화면 안의 "‹" 버튼: 앱 안에서 쌓인 기록이 있으면 뒤로, 없으면(주소로 바로 들어온 경우) 부모 화면으로
+function goBack(fallback) {
+  if ((navState()?.depth || 0) > 0) history.back();
+  else goTab(fallback);
+}
+
+async function showTab(tab, opts = {}) {
   leaveZone();
   ui.updateHud();
   clearCampusMap();
@@ -372,7 +454,7 @@ async function goTab(tab, opts = {}) {
   }
   // 상세 화면의 뒤로 버튼 연결
   // (게시판 화면은 글 목록을 다시 그릴 때마다 renderCommunityTab()이 직접 연결한다)
-  if (BACK_TO[tab] && tab !== "board") $("view-" + tab)?.querySelector("[data-back]")?.addEventListener("click", () => goTab(BACK_TO[tab]));
+  if (BACK_TO[tab] && tab !== "board") $("view-" + tab)?.querySelector("[data-back]")?.addEventListener("click", () => goBack(BACK_TO[tab]));
 }
 
 /* ================= 특별 미션 (홈 화면, 그날 하루만) ================= */
@@ -459,7 +541,7 @@ async function renderCommunityTab() {
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
   ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag, tagRow, placeTag: !!tagZone }, myId);
-  $("view-board").querySelector("[data-back]")?.addEventListener("click", () => goTab("community"));
+  $("view-board").querySelector("[data-back]")?.addEventListener("click", () => goBack("community"));
   // 글쓰기 방법 "?" — 처음 들어오면 한 번 자동으로 (장주연)
   $("view-board").querySelector("[data-help]")?.addEventListener("click", () => ui.showBoardHelp());
   if (communityBoard === "post") {
@@ -628,7 +710,13 @@ function setupZoneInfoBtn(zone) {
   }
 }
 
+// 장소 화면 열기: 주소(#zone/id)를 쌓고 그린다. 지금 테마에 없는 장소는 안내만 (주소는 그대로)
 function openZone(zone) {
+  if (!zones.some((z) => z.id === zone.id)) return showZone(zone);
+  if (navigate("zone:" + zone.id)) showZone(zone);
+}
+
+function showZone(zone) {
   // 지금 테마의 장소면 그 테마 미션만 담긴 장소로, 아니면 "○○에 열려요" 안내만 (투어 등에서 열 때)
   const opened = zones.find((z) => z.id === zone.id);
   if (!opened) {
