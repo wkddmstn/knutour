@@ -25,11 +25,11 @@ const GATES = {
 
 const COURSES = [
   { id: "godsaeng", name: "갓생 코스", emoji: "📚", badge: "갓생 새내기", img: "img/mascot/exam.png", desc: "공부·생활에 꼭 필요한 곳만 쏙쏙",
-    stops: ["loveroad", "ilcheongdam", "library", "bokji", "centralpark"] },
+    stops: ["centralpark", "bokji", "loveroad", "ilcheongdam", "library"] },   // 정문 바로 옆 센팍부터 (장주연)
   { id: "healing", name: "힐링 코스", emoji: "🌸", badge: "힐링 마스터", img: "img/mascot/no-plastic.png", desc: "맛있는 학식 먹고 산책하며 쉬어 가기",
     stops: ["loveroad", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
   { id: "full", name: "전체 코스", emoji: "🗺️", badge: "캠퍼스 정복자", img: "img/mascot/badge-campus.png", desc: "캠퍼스 한 바퀴 완주",
-    stops: ["loveroad", "centralpark", "bokji", "library", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
+    stops: ["centralpark", "bokji", "loveroad", "library", "ilcheongdam", "gongstaurant", "cherryroad", "stadium"] },
 ];
 
 // 도착했을 때 호반우가 읽어 주는 장소 소개 (zones.json 소개 문구 바탕)
@@ -107,9 +107,9 @@ function renderBadgeSection(slot) {
 // 대사를 바꾸면 tools/make_voice.py 의 LINES도 똑같이 바꾸고 다시 실행해서 mp3를 새로 만든다
 // 개나리: 경상도 사투리 대사
 const SCRIPT_DIALECT = {
-  "start-godsaeng": "안녕! 내는 경북대 마스코트 호반우다. 오늘은 정문에서 출발해가 갓생 코스 같이 돌 끼다. 공부하고 생활하는 데 꼭 필요한 데만 쏙쏙 골라 놨데이! 첫 번째는 러브로드다. 화살표 따라 퍼뜩 출발하자!",
+  "start-godsaeng": "안녕! 내는 경북대 마스코트 호반우다. 오늘은 정문에서 출발해가 갓생 코스 같이 돌 끼다. 공부하고 생활하는 데 꼭 필요한 데만 쏙쏙 골라 놨데이! 첫 번째는 정문 바로 옆 센트럴파크다. 화살표 따라 퍼뜩 출발하자!",
   "start-healing": "안녕! 내는 경북대 마스코트 호반우다. 오늘은 정문에서 출발해가 힐링 코스 같이 돌 끼다. 맛있는 학식 묵고, 벚꽃길 산책하믄서 쉬엄쉬엄 가는 코스데이! 첫 번째는 러브로드다. 화살표 따라 출발하자!",
-  "start-full": "안녕! 내는 경북대 마스코트 호반우다. 오늘은 정문에서 출발해가 전체 코스 같이 돌 끼다. 캠퍼스 여덟 군데를 한 바퀴 다 도는 기라 쫌 길데이. 물 한 병 챙깄나? 첫 번째는 러브로드다. 출발하자!",
+  "start-full": "안녕! 내는 경북대 마스코트 호반우다. 오늘은 정문에서 출발해가 전체 코스 같이 돌 끼다. 캠퍼스 여덟 군데를 한 바퀴 다 도는 기라 쫌 길데이. 물 한 병 챙깄나? 첫 번째는 정문 바로 옆 센트럴파크다. 출발하자!",
   "next-ilcheongdam": "다음은 일청담이다! 밤 되믄 호롱불 켜지는 억수로 예쁜 연못이데이. 경북대 오믄 다들 한 번씩 사진 찍고 가는 데 아이가. 지도 따라 같이 가 보자!",
   "next-library": "다음은 중앙도서관이다! 전국 대학 도서관 중에 두 번째로 책이 많은 데다. 시험 기간 되믄 여기가 니 두 번째 집 될 끼다. 같이 가 보자!",
   "next-bokji": "다음은 복지관이다! 서점, 은행, 우체국까지 학교생활에 필요한 기 다 모여 있데이. 교재 사고 택배 부칠 때 여기만 오믄 된다. 같이 가 보자!",
@@ -156,9 +156,9 @@ const SCRIPT_DIALECT = {
 };
 // 몽실이: 표준어 대사 (키는 위와 똑같음)
 const SCRIPT_STD = {
-  "start-godsaeng": "안녕! 나는 경북대 마스코트 호반우야. 오늘은 정문에서 출발해서 갓생 코스를 같이 돌 거야. 공부하고 생활하는 데 꼭 필요한 곳만 쏙쏙 골랐어! 첫 번째 장소는 러브로드야. 화살표 따라 출발하자!",
+  "start-godsaeng": "안녕! 나는 경북대 마스코트 호반우야. 오늘은 정문에서 출발해서 갓생 코스를 같이 돌 거야. 공부하고 생활하는 데 꼭 필요한 곳만 쏙쏙 골랐어! 첫 번째 장소는 정문 바로 옆 센트럴파크야. 화살표 따라 출발하자!",
   "start-healing": "안녕! 나는 경북대 마스코트 호반우야. 오늘은 정문에서 출발해서 힐링 코스를 같이 돌 거야. 맛있는 학식 먹고, 벚꽃길 산책하면서 쉬어 가는 코스야! 첫 번째 장소는 러브로드야. 화살표 따라 출발하자!",
-  "start-full": "안녕! 나는 경북대 마스코트 호반우야. 오늘은 정문에서 출발해서 전체 코스를 같이 돌 거야. 캠퍼스 여덟 곳을 한 바퀴 다 도는 코스라 조금 길어. 물 한 병 챙겼지? 첫 번째 장소는 러브로드야. 출발하자!",
+  "start-full": "안녕! 나는 경북대 마스코트 호반우야. 오늘은 정문에서 출발해서 전체 코스를 같이 돌 거야. 캠퍼스 여덟 곳을 한 바퀴 다 도는 코스라 조금 길어. 물 한 병 챙겼지? 첫 번째 장소는 정문 바로 옆 센트럴파크야. 출발하자!",
   "next-ilcheongdam": "다음은 일청담! 밤에 호롱불이 켜지는 예쁜 연못이야. 경북대에 오면 다들 한 번씩 사진 찍고 가는 곳이지. 지도 따라 같이 가 보자!",
   "next-library": "다음은 중앙도서관! 전국 대학 도서관 중에서 두 번째로 책이 많은 곳이야. 시험 기간엔 여기가 제2의 집이 될걸? 같이 가 보자!",
   "next-bokji": "다음은 복지관! 서점, 은행, 우체국까지 학교생활에 필요한 곳이 다 모여 있어. 교재 사고 택배 보낼 때 여기만 오면 돼. 같이 가 보자!",
@@ -728,7 +728,7 @@ function _openMove(first) {
     </div>
     <div class="tm-steps">${c.stops.map((_, i) => `<i class="${i < st.idx ? "done" : i === st.idx ? "now" : ""}"></i>`).join("")}</div>
     <div id="tour-map"></div>
-    <div class="tm-legend"><span><i style="background:#3182f6"></i>내 위치</span><span><i style="background:var(--primary,#d4121a)"></i>도착 지점 (빨간 점선 안에 들어오면 도착)</span><span>점선: 걸어갈 길</span></div>
+    <div class="tm-legend"><span><i style="background:#3182f6"></i>내 위치</span></div>
     <div class="tm-side">
       <div class="tm-next">
         <div class="tm-arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L33 34 L20 27 L7 34 Z" fill="var(--primary,#d4121a)"/></svg></div>
@@ -1019,7 +1019,6 @@ function _openMove(first) {
     paintBtns();
     map?.fit([zone], (zone.radius || 40) + 50);
     markVisited();
-    addAfterVoice(`여기서 ${zone.name} 호반우랑 친해지고, 퀴즈도 풀고, 사진도 남겨 볼래?`);   // 도착 소개를 다 들은 뒤에
   }
   function markArrived() { const s = load(); if (s) { s.arrived = s.idx; save(s); } }
   // 투어로 도착했으니 그 장소 위치 인증은 끝난 것으로 처리 (나중에 장소 화면에 들어가면 바로 미션 메뉴)
@@ -1084,7 +1083,7 @@ function _openMove(first) {
 
   // 출발 안내
   const fromName = prev.name || "";
-  if (first && zone.id === "loveroad") say("start-" + c.id, `안녕! 나는 호반우야. ${fromName}에서 출발해서 ${c.name}를 같이 돌아 보자! 첫 번째 장소는 ${iya(zone.name)}.`);
+  if (first) say("start-" + c.id, `안녕! 나는 호반우야. ${fromName}에서 출발해서 ${c.name}를 같이 돌아 보자! 첫 번째 장소는 ${iya(zone.name)}.`);
   else say("next-" + zone.id, `다음은 ${zone.name}! ${zone.desc ? zone.desc + "." : ""} 지도 따라 같이 가 보자`);
 }
 
