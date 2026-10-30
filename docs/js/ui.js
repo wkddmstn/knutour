@@ -155,9 +155,9 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
       ${heroHtml(theme, nextZone)}
       <button id="btn-go-quest" class="btn cta-glow">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
+    <div id="home-tour-slot"></div>   <!-- 투어 진행 중일 때만 "이어서 하기" (미션 하러 가기 바로 아래, 맛집 위) -->
     <div id="home-food-slot"></div>
     <div id="daily-section"></div>
-    <div id="home-tour-slot"></div>
     ${hidden ? `
     <div class="card hidden-mission-card">
       <div class="sum-label">✨ 히든미션</div>
