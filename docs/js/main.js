@@ -573,8 +573,8 @@ async function renderCommunityTab() {
     tag: communityTag && !hot ? { tag: communityTag, zoneId: tagZone?.id || null } : null,
   });
   if (hot) posts = posts.filter((p) => p.like_count >= HOT_LIKES && p.comment_count >= HOT_COMMENTS);
-  // 안내 문구 아래 해시태그 줄: #인기글 #자유글 #질문글 + 장소 태그
-  const tagRow = [HOT_TAG, "자유글", "질문글", ...allZones.map((z) => toTag(z.name))];
+  // 안내 문구 아래 해시태그 줄: #인기글 + 장소 태그
+  const tagRow = [HOT_TAG, ...allZones.map((z) => toTag(z.name))];
   const myId = getCachedProfile()?.id || null;
   const byId = new Map(posts.map((p) => [p.id, p]));
   ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag, tagRow, placeTag: !!tagZone }, myId);
