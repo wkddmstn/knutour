@@ -1280,4 +1280,6 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
               border: 3px solid var(--card); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 10px rgba(36, 28, 22, .25);
               cursor: pointer; transition: transform .15s var(--ease-toss); }
 .cm-cluster:active { transform: translate(-50%, -50%) scale(.92); }
+/* 확대·축소로 묶음 수가 줄면 남는 동그라미는 hidden으로 숨기는데, 위의 display: grid가 hidden을 덮어써서 예전 숫자가 그 자리에 남던 문제 */
+.cm-cluster[hidden] { display: none; }
 .campus-map.dragging .cm-cluster { pointer-events: none; }

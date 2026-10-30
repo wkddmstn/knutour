@@ -419,8 +419,9 @@ export class CampusMap {
         node.textContent = n;
         node.setAttribute("aria-label", `가게 ${n}곳 모여 있음, 눌러서 확대`);
         node.style.setProperty("--n", Math.min(n, 30));
-        node.style.left = (group.reduce((t, b) => t + b.x, 0) / n / this.el.clientWidth) * 100 + "%";
-        node.style.top = (group.reduce((t, b) => t + b.y, 0) / n / this.el.clientHeight) * 100 + "%";
+        // 핀과 같은 방식(지도 좌표 ÷ 보이는 영역)으로 위치를 잡아야 확대·축소·크기 변경 때 핀과 함께 움직인다
+        node.style.left = (group.reduce((t, b) => t + b.x, 0) / n / s / this.vb.w) * 100 + "%";
+        node.style.top = (group.reduce((t, b) => t + b.y, 0) / n / s / this.vb.h) * 100 + "%";
         const members = group.map((b) => ({ lat: b.p.lat, lng: b.p.lng }));
         node.onclick = (e) => { e.stopPropagation(); this.fit(members, 30); };
       }
