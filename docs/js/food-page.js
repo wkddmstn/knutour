@@ -159,10 +159,10 @@ function renderPane(all) {
     ${gateChips.length > 1 ? `
     <div class="food-filters gate-chips" role="group" aria-label="문별로 보기">
       <button type="button" data-gate="" class="${st.gate ? "" : "on"}">전체 <span>${all.length}</span></button>
-      ${gateChips.map(([g, n]) => `<button type="button" data-gate="${esc(g.id)}" class="${st.gate === g.id ? "on" : ""}">🚪 ${esc(g.name)} <span>${n}</span></button>`).join("")}
+      ${gateChips.map(([g, n]) => `<button type="button" data-gate="${esc(g.id)}" class="${st.gate === g.id ? "on" : ""}">${esc(g.name)} <span>${n}</span></button>`).join("")}
     </div>` : ""}
     ${groups.length ? groups.map(([g, rs]) => `
-      <h4 class="food-gate">🚪 ${esc(g)} <span>${rs.length}</span></h4>
+      <h4 class="food-gate">${esc(g)} <span>${rs.length}</span></h4>
       <div class="list-card">${rs.map(row).join("")}</div>`).join("")
       : `<div class="card" style="text-align:center"><p style="color:var(--mute);margin:0">조건에 맞는 가게가 없어요</p></div>`}
     <p class="food-src">가게 위치·정보: 카카오맵 (2026년 10월 기준). ⭐ 표시가 없는 가게는 카카오맵 검색 상위 가게예요.</p>
