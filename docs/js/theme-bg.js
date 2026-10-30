@@ -1,8 +1,10 @@
 // js/theme-bg.js — 테마별 화면 배경 (모든 화면 맨 뒤에 깔리는 그림)
 // 시선을 뺏지 않도록 아주 연하고 잔잔하게: 얇은 선으로 그린 일러스트 + 은은한 빛, 움직임은 느리고 적게.
-//   march   (3월 첫 주, 기본): 아침 등굣길 — 정문·시계탑 건물·도서관·가로등·나무가 이어지는 캠퍼스, 아침 햇살, 새
-//   cherry  (벚꽃 기간)       : 벚꽃나무 + 천천히 날리는 꽃잎 몇 장 (홈 대표 카드 모서리에 꽃잎 하나)
-//   midterm (중간고사)        : 늦은 밤 공부 책상 — 스탠드 불빛, 펼친 책·책 더미, 김 나는 머그컵, 화분, 희미한 공책 줄
+// 세 테마 모두 "감성 일러스트 한 장 + 꽃잎처럼 천천히 날리는 것" 구성
+//   march   (3월 첫 주, 기본): 아침 등굣길 그림(img/theme/march.webp: 정문·나무·가로등 길) + 바람에 날리는 연두 새잎
+//   cherry  (벚꽃 기간)       : 벚꽃나무 그림(img/hobanu/cherry-tree.webp) + 벚꽃잎 (홈 대표 카드 모서리에 꽃잎 하나)
+//   midterm (중간고사)        : 밤 책상 그림(img/theme/midterm.webp) + 천천히 떠오르는 따뜻한 불빛 알갱이
+// 그림 파일이 아직 없으면(불러오기 실패) 그 자리에 얇은 선 그림(캠퍼스·책상)을 대신 보여 준다.
 // 카드는 반투명 유리라 배경이 살짝만 비친다 (style.css).
 // 폰(좁은 화면)은 그림을 아래·가장자리에 작게, 노트북(넓은 화면)은 앱 양옆 빈 공간에 크게 둔다 (style.css의 @media).
 
@@ -16,6 +18,19 @@ function petals() {
   return PETALS.map(([left, dur, delay, size], i) =>
     `<img class="tb-fall${i % 2 ? " wide" : ""}" src="${PETAL}" alt="" style="left:${left}%;width:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s">`).join("");
 }
+// 3월: 바람에 날리는 연두 새잎 (CSS로 그린 부드러운 잎, 색을 조금씩 다르게)
+function leaves() {
+  return PETALS.map(([left, dur, delay, size], i) =>
+    `<i class="tb-fall tb-leaf${i % 3 === 2 ? " light" : ""}${i % 2 ? " wide" : ""}" style="left:${left}%;width:${size}px;animation-duration:${dur + 4}s;animation-delay:-${delay}s"></i>`).join("");
+}
+// 중간고사: 아래에서 천천히 떠오르는 따뜻한 불빛 알갱이
+const MOTES = [[10, 20, 3, 6], [22, 26, 12, 4], [35, 22, 7, 5], [52, 28, 16, 4], [66, 24, 2, 6], [78, 30, 10, 4], [88, 21, 5, 5], [95, 27, 14, 4]];
+function motes() {
+  return MOTES.map(([left, dur, delay, size], i) =>
+    `<i class="tb-mote${i % 2 ? " wide" : ""}" style="left:${left}%;width:${size}px;height:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s"></i>`).join("");
+}
+// 감성 일러스트 자리: 파일이 없으면 #theme-bg에 no-art를 붙여 선 그림이 대신 보이게
+const ART = (src, cls) => `<img class="tb-art ${cls}" src="${src}" alt="" onerror="this.closest('#theme-bg')?.classList.add('no-art');this.remove()">`;
 
 // 아침 캠퍼스 등굣길 (얇은 선): 가로등 · 정문 · 시계탑 건물 · 나무 · 도서관 · 가로등 · 나무 · 건물 · 나무
 const CAMPUS = `<svg class="tb-campus" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
@@ -63,16 +78,20 @@ function sceneHtml(id) {
   }
   if (id === "midterm") {
     return `
-      <div class="tb-lines"></div>
-      <div class="tb-desk-wrap">${DESK}</div>
-      <div class="tb-mug-wrap wide">${MUG}</div>`;
+      ${ART("img/theme/midterm.webp", "tb-art-a")}
+      ${ART("img/theme/midterm.webp", "tb-art-b")}
+      <div class="tb-fallback tb-lines"></div>
+      <div class="tb-fallback tb-desk-wrap">${DESK}</div>
+      <div class="tb-fallback tb-mug-wrap wide">${MUG}</div>
+      ${motes()}`;
   }
-  // march (기본): 아침 등굣길
+  // march (기본): 아침 등굣길 그림 + 연두 새잎 (그림이 없으면 등굣길 선 그림)
   return `
     <div class="tb-sunlight"></div>
-    <div class="tb-bird tb-bird-a">${BIRD}</div>
-    <div class="tb-bird tb-bird-b wide">${BIRD}</div>
-    <div class="tb-campus-wrap">${CAMPUS}</div>`;
+    ${ART("img/theme/march.webp", "tb-art-a")}
+    ${ART("img/theme/march.webp", "tb-art-b")}
+    <div class="tb-fallback tb-campus-wrap">${CAMPUS}</div>
+    ${leaves()}`;
 }
 
 let current = null;

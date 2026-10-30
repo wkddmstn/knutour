@@ -1117,6 +1117,26 @@ body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-
 .tb-bird-b { top: 26%; width: 16px; animation-duration: 52s; animation-delay: -20s; }
 @keyframes tbBird { 0% { transform: translate(-40px, 0); } 50% { transform: translate(50vw, -18px); } 100% { transform: translate(calc(100vw + 40px), 6px); } }
 
+/* 감성 일러스트 자리 (3월 목련·중간고사 책상). 파일이 없으면 .tb-fallback 선 그림이 대신 보인다 */
+.tb-art { position: absolute; }
+.tb-art-a { right: -100px; top: -20px; width: 270px; opacity: .5; }
+.tb-art-b { display: none; }
+.tb-fallback { display: none; }
+#theme-bg.no-art .tb-fallback { display: block; }
+.tb-midterm .tb-art-a { top: auto; bottom: 80px; right: -60px; width: 260px; }
+.tb-march .tb-art-a { top: auto; bottom: 70px; right: -50px; width: 300px; }   /* 등굣길 그림은 아래쪽에 */
+/* 3월: 바람에 날리는 연두 새잎 (가운데 잎맥 한 줄) */
+.tb-leaf { aspect-ratio: .62; border-radius: 0 100% 0 100%; background: linear-gradient(135deg, #e6f5d4 0%, #b5df9c 70%, #9fd486 100%);
+  box-shadow: 0 1px 3px rgba(90, 140, 80, .15); }
+.tb-leaf::after { content: ""; position: absolute; left: 50%; top: 12%; bottom: 12%; width: 1px; background: rgba(255, 255, 255, .7); transform: rotate(-38deg); }
+.tb-leaf.light { background: linear-gradient(135deg, #f2fae6 0%, #d2edbd 100%); }
+/* 중간고사: 천천히 떠오르는 따뜻한 불빛 */
+.tb-mote { position: absolute; bottom: -20px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #fff6d6 0%, #ffd98a 60%, rgba(255, 217, 138, 0) 100%);
+  box-shadow: 0 0 10px 4px rgba(255, 205, 110, .45); animation: tbRise linear infinite; }
+@keyframes tbRise { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: .75; } 50% { transform: translate(14px, -50vh); }
+  85% { opacity: .6; } 100% { transform: translate(-10px, -100vh); opacity: 0; } }
+
 /* 벚꽃 기간: 벚꽃나무 + 천천히 날리는 꽃잎 */
 .tb-cherry { background: linear-gradient(180deg, #fff7f9 0%, #fffcfc 60%, #fff8fa 100%); }
 .tb-tree { position: absolute; }
@@ -1159,12 +1179,18 @@ body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(1
   .tb-tree-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .42; }
   .tb-tree-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .32; transform: scaleX(-1); }
   .tb-cherry .tb-fall { width: 18px; }
+  .tb-art-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .42; }
+  .tb-art-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .32; transform: scaleX(-1); }
+  .tb-midterm .tb-art-a { left: max(16px, calc(50% - 240px - 560px)); right: auto; bottom: 0; width: min(520px, calc(50vw - 280px)); }
+  .tb-midterm .tb-art-b { display: none; }
   .tb-desk-wrap { right: auto; left: max(16px, calc(50% - 240px - 580px)); bottom: 20px; width: min(520px, calc(50vw - 280px)); }   /* 앱 왼쪽 빈 공간 안에 다 보이게 */
   .tb-mug-wrap { right: calc(50% - 240px - 200px); bottom: 70px; width: 96px; }
 }
 @media (min-width: 760px) and (max-width: 1100px) {
   .tb-tree-a { left: -140px; width: 420px; }
   .tb-tree-b { right: -120px; width: 320px; }
+  .tb-art-a { left: -140px; width: 420px; }
+  .tb-art-b { right: -120px; width: 320px; }
   .tb-desk-wrap { left: -60px; width: 400px; }
   .tb-mug-wrap { right: 30px; }
 }
@@ -1179,7 +1205,7 @@ body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(1
 }
 @media (prefers-reduced-motion: reduce) {
   #theme-bg *, #theme-bg *::before { animation: none !important; }
-  #theme-bg .tb-fall, #theme-bg .tb-bird { display: none; }
+  #theme-bg .tb-fall, #theme-bg .tb-bird, #theme-bg .tb-mote { display: none; }
 }
 /* 대표 카드(내 정보·내 순위)도 같은 유리 느낌으로 */
 body[data-theme-bg] .card-hero:not(.quest-map-card) {
