@@ -1266,7 +1266,8 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
 .fp-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .fp-actions .btn { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; text-decoration: none; }
 .fp-actions .fp-share-btn svg, .fp-actions .btn.alt svg { width: 18px; height: 18px; }
-.fp-app { display: block; margin-top: 18px; text-align: center; text-decoration: none; }
+.fp-app { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; text-decoration: none; }
+.fp-app img { width: 28px; height: 28px; flex: none; }
 .seg .seg-link { flex: 1; padding: 11px; border-radius: 11px; text-align: center; color: var(--sub); font-size: 14px; font-weight: 600; text-decoration: none; }
 /* 맛집 목록 위 문별로 보기 칩 (전체 · 🚪 북문 44 · …) */
 .gate-chips { margin: -2px 0 6px; }

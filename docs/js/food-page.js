@@ -166,7 +166,7 @@ function renderPane(all) {
       <div class="list-card">${rs.map(row).join("")}</div>`).join("")
       : `<div class="card" style="text-align:center"><p style="color:var(--mute);margin:0">조건에 맞는 가게가 없어요</p></div>`}
     <p class="food-src">가게 위치·정보: 카카오맵 (2026년 10월 기준). ⭐ 표시가 없는 가게는 카카오맵 검색 상위 가게예요.</p>
-    <a class="btn alt fp-app" href="./">🐮 OnCampus에서 캠퍼스 미션 하러 가기</a>`;
+    <a class="btn alt fp-app" href="./"><img src="img/logo.png" alt="" width="28" height="28">OnCampus에서 캠퍼스 미션 하러 가기</a>`;
 
   const pane = $("food-pane");
   pane.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { st.theme = b.dataset.theme; st.menu = null; update(); }));
