@@ -873,9 +873,8 @@ async function missionMenu(zone) {
           disabled: doneM && !again,
         };
       }),
-      ...(MASCOTS[zone.id] ? [{ label: "🐮 호반우 만나기 (AR)", value: "__ar", ghost: true }] : []),
       ...tourItem(zone),   // 투어 중이면 "다음 장소로 (투어)" (장주연)
-      { label: "장소 목록으로 돌아가기", value: "__home", ghost: true },
+      // "호반우 만나기 (AR)"·"장소 목록으로 돌아가기"는 뺐다: 호반우는 도감에서 만나고, 돌아가기는 위쪽 ‹ 버튼으로
     ]);
     if (pick === "__home") { goTab("explore"); return; }
     if (pick === "__tour") { tour?.next(zone); return; }
