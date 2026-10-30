@@ -415,11 +415,8 @@ const avatar = (name, cls = "") => `<span class="avatar ${cls}" aria-hidden="tru
 // 카드 아래쪽: 자유게시판은 "좋아요 N개 / 댓글 N개 모두 보기",
 // 질문글은 좋아요를 가장 많이 받은 답변(베스트 답변)을 펼쳐 보여줘서 글을 열지 않아도 답을 알 수 있게 한다.
 function postFootHtml(p) {
-  if (p.kind !== "question") {
-    return `
-      ${p.like_count ? `<b class="like-line">좋아요 ${p.like_count}개</b>` : ""}
-      <button class="comment-line" type="button" data-act="comment">${p.comment_count ? `댓글 ${p.comment_count}개 모두 보기` : "첫 댓글을 남겨보세요"}</button>`;
-  }
+  // 자유게시판: 좋아요·댓글 수는 아이콘 옆 숫자로만 보여 주고, 아래 줄 글씨("좋아요 n개", "댓글 n개 모두 보기")는 두지 않는다
+  if (p.kind !== "question") return "";
   // 질문: 베스트 답변 한 줄 미리보기 (누르면 답변 전체)
   if (p.best) {
     return `
@@ -439,6 +436,15 @@ const linkifyTags = (html) => html.replace(/(^|\s)#([0-9A-Za-z가-힣_]+)/g, (_,
 function postCardHtml(p, zoneName, myId) {
   const q = p.kind === "question";
   const place = p.zone_id ? toTag(zoneName(p.zone_id)) : "";
+  // 사진 글은 인스타그램처럼 사진 → 좋아요·댓글 아이콘 → 글 순서, 글만 있는 글(과 질문)은 글 → 아이콘 순서
+  const below = p.photo_url && !q;
+  const text = p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"} ${below ? "below" : ""}">${q ? `<span class="q-mark">Q.</span>` : ""}${linkifyTags(esc(p.message))}</p>` : "";
+  const actions = `
+      <div class="post-actions">
+        <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
+                aria-pressed="${p.liked}" aria-label="${q ? "나도 궁금해요" : "좋아요"}">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
+        <button class="act act-comment" type="button" data-act="comment" aria-label="${q ? "답변" : "댓글"}">${ICON_COMMENT}<span class="act-n">${p.comment_count || ""}</span></button>
+      </div>`;
   return `
     <article class="post ${q ? "q-post" : ""} ${p.guide ? "guide" : ""}" data-post="${esc(p.id)}">
       ${p.guide ? `<div class="guide-ribbon">📌 이렇게 질문해 보세요 · 예시</div>` : ""}
@@ -455,12 +461,7 @@ function postCardHtml(p, zoneName, myId) {
         <img src="${esc(p.photo_url)}" alt="${esc(p.nickname)}님이 올린 사진" loading="lazy">
         <span class="heart-burst" aria-hidden="true">${ICON_HEART}</span>
       </div>` : ""}
-      ${p.message ? `<p class="post-text ${p.photo_url ? "" : "solo"}">${q ? `<span class="q-mark">Q.</span>` : ""}${linkifyTags(esc(p.message))}</p>` : ""}
-      <div class="post-actions">
-        <button class="act act-like ${p.liked ? "on" : ""}" type="button" data-act="like"
-                aria-pressed="${p.liked}" aria-label="${q ? "나도 궁금해요" : "좋아요"}">${ICON_HEART}<span class="act-n">${p.like_count || ""}</span></button>
-        <button class="act act-comment" type="button" data-act="comment" aria-label="${q ? "답변" : "댓글"}">${ICON_COMMENT}<span class="act-n">${p.comment_count || ""}</span></button>
-      </div>
+      ${p.photo_url && !q ? actions + text : text + actions}
       <div class="post-foot">${postFootHtml(p)}</div>
     </article>`;
 }

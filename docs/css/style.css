@@ -1345,3 +1345,8 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
 #fb-send:disabled { background: var(--cream-weak); color: var(--mute); box-shadow: none; }
 .fb-notes { margin: 24px 4px 0; padding-left: 18px; color: var(--sub); font-size: 13.5px; line-height: 1.75; }
 .fb-notes a { color: var(--sub); text-decoration: underline; }
+
+/* 자유게시판 글: 아래 줄 글씨(좋아요 n개·댓글 n개 모두 보기)를 없애서 빈 줄이 남지 않게, 사진 글은 아이콘 아래에 글 */
+.post-foot:empty { display: none; }
+.post { padding-bottom: 8px; }
+.post-text.below { padding: 0 16px 4px; }
