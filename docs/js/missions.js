@@ -27,36 +27,36 @@ export async function runMission(m, zone, ctx = {}) {
 
   // 사진 미션은 끝낸 뒤에도 새 사진으로 다시 찍을 수 있다 (XP는 처음 한 번만)
   const again = m.type === "photo" && isDone(m.id);
-  await chat.bot(`<b>${m.title}</b><br>${again ? "새 사진으로 다시 찍어 볼까? (XP는 처음 한 번만 받아요)" : (m.desc || m.question || "")}`);
+  await chat.bot(`<b>${m.title}</b><br>${again ? "새 사진으로 다시 찍어 볼까? (XP는 처음 한 번만 받아요)" : (m.desc || m.question || "")}`, { whole: true });
 
-  let bonus = 0;
-  if (m.type === "photo") await photo(m, zone);
-  else if (m.type === "voice") await voice(m);
-  else if (m.type === "quiz") bonus = await quiz(m);
-  else if (m.type === "code") bonus = await code(m);
-  else if (m.type === "visit") await visit(m);
+  // 채팅은 간결하게: 미션 결과와 받은 XP를 말풍선 하나로 ("정답! +115 XP", "사진 통과! ✅ +100 XP")
+  let bonus = 0, done = "미션 완료!", shot = null;
+  if (m.type === "photo") ({ shot, done } = await photo(m, zone));
+  else if (m.type === "voice") { await voice(m); done = "녹음 완료!"; }
+  else if (m.type === "quiz") { bonus = await quiz(m); done = "정답!"; }
+  else if (m.type === "code") { bonus = await code(m); done = "정답!"; }
+  else if (m.type === "visit") { await visit(m); done = m.doneText || "다녀왔구나!"; }
 
-  if (again) { await chat.bot("새 사진으로 바꿨어! 📸"); return; }
+  if (again) { await chat.bot("새 사진으로 바꿨어! 📸"); await offerCommunityUpload(zone, shot); return; }
 
   const pts = m.points + bonus;
   completeMission(m.id, pts);
   reward(pts);
-  await chat.bot(
-    `미션 완료! <b>+${pts} XP</b>` + (bonus ? `<br>첫 시도 성공 보너스 ${bonus} XP까지 받았어.` : "")
-  );
+  await chat.bot(`${done} <b>+${pts} XP</b>${bonus ? ` <small>(첫 시도 보너스 포함)</small>` : ""}`, { whole: true });
+  if (m.type === "photo") await offerCommunityUpload(zone, shot);   // 사진은 커뮤니티에도 올릴지 물어본다
 }
 
 /* ---------- AR 미션 (장주연) ---------- */
 // zones.json의 { type: "ar", ar: "roulette" | "find" | "petals" | "cheer" | "snack" | "pet" } 미션
 async function arMission(m, zone) {
   const again = isDone(m.id);
-  await chat.bot(`<b>${m.title}</b><br>${m.desc || ""}`);
+  await chat.bot(`<b>${m.title}</b><br>${m.desc || ""}`, { whole: true });
   const r = await startAR(zone || { id: "", name: "" }, { mission: m });
   if (!r.done) { await chat.bot("괜찮아, 다음에 다시 도전해 보자!"); return; }
   if (again) { await chat.bot("또 성공했네! 🎉 (XP는 처음 한 번만 받아요)"); return; }
   completeMission(m.id, m.points);
   reward(m.points);
-  await chat.bot(`AR 미션 성공! <b>+${m.points} XP</b>`);
+  await chat.bot(`AR 미션 성공! <b>+${m.points} XP</b>`, { whole: true });
 }
 
 /* ---------- 함께하기 (친구 코드 상호 확인) ---------- */
@@ -315,9 +315,7 @@ async function photo(m, zone) {
 
     // 통과했다고 바로 알려준다 (예전엔 말없이 버튼만 떠서 멈춘 것처럼 보였음)
     // review: 사진 검사를 못 했지만(한도 도달·일시 오류) 막지 않고 받아 준 경우
-    await chat.bot(verdict.review ? "사진 잘 받았어! ✅" : "좋아, 미션이랑 딱 맞는 사진이야! ✅ 통과!");
-    await offerCommunityUpload(zone, shot);
-    return;
+    return { shot, done: verdict.review ? "사진 잘 받았어! ✅" : "사진 통과! ✅" };
   }
 }
 
@@ -427,10 +425,7 @@ async function quiz(m) {
       .map((label, i) => ({ label, value: i }))
       .filter((o) => !wrong.has(o.value));
     const pick = await chat.choices(opts);
-    if (pick === m.answer) {
-      await chat.bot("정답이야!");
-      return wrong.size === 0 ? FIRST_TRY_BONUS : 0;
-    }
+    if (pick === m.answer) return wrong.size === 0 ? FIRST_TRY_BONUS : 0;
     wrong.add(pick);
     await chat.bot(m.hint ? `아깝다! 힌트 줄게: ${m.hint}` : "아깝다! 다시 골라볼래?");
   }
@@ -465,7 +460,6 @@ async function visit(m) {
     });
     card.querySelector(".visit-back").onclick = finish;
   });
-  await chat.bot(m.doneText || "잘 다녀왔어? 👍");
 }
 
 /* ---------- 텍스트 정답(안내판 숫자 등) ---------- */
@@ -484,10 +478,7 @@ async function code(m) {
       input.onkeydown = (e) => { if (e.key === "Enter") go(); };
     });
     chat.user(esc(val));
-    if (norm(val) === norm(m.answer)) {
-      await chat.bot("정답이야!");
-      return tries === 0 ? FIRST_TRY_BONUS : 0;
-    }
+    if (norm(val) === norm(m.answer)) return tries === 0 ? FIRST_TRY_BONUS : 0;
     tries++;
     await chat.bot(m.hint ? `땡! 힌트 줄게: ${m.hint}` : "땡! 다시 한번 확인해볼래?");
   }

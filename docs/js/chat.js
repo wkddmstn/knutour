@@ -131,9 +131,10 @@ export function dedupeRepeats() {
 // 가이드(봇) 말풍선. 문장마다 "입력 중..." 표시 후 한 말풍선씩 나타난다.
 // 다음 문장은 앞 문장을 읽을 시간(글자 수에 비례, 최대 약 2초)만큼 기다렸다가 보여 준다.
 // 답장 없이 방금 한 말과 똑같은 말이면 다시 말하지 않는다.
-export async function bot(html) {
+// whole: true면 나누지 않고 한 말풍선에 (예: "정답! +115 XP"처럼 결과와 XP를 한 번에 보여 줄 때)
+export async function bot(html, { whole = false } = {}) {
   const s = session;
-  const parts = splitSentences(html);
+  const parts = whole ? [html] : splitSentences(html);
   if (endsWith(html, parts)) return;
   for (let i = 0; i < parts.length; i++) {
     const typing = row("bot", `<div class="bubble typing"><i></i><i></i><i></i></div>`);

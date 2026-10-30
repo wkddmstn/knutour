@@ -800,7 +800,7 @@ async function runZone(zone, resuming = false) {
 
   if (!store.isVerified(zone.id)) {
     if (!resuming) {
-      await chat.bot("일단 <b>위치 인증</b>부터 하자! 지도의 <b>빨간 점선 영역</b> 안으로 들어와 줘.");
+      await chat.bot("지도의 <b>빨간 점선 영역</b>으로 와서 위치를 인증해 줘!");
     }
 
     if (DEMO_MODE) {
@@ -814,10 +814,8 @@ async function runZone(zone, resuming = false) {
 
     const first = store.grantBonus("arrive:" + zone.id, 10);
     if (first) ui.reward(10);
-    await chat.bot(
-      "좋아, <b>위치 인증 완료</b>!<br>" +
-      (first ? "도착 보너스 10 XP 챙겼어. " : "") + (zone.missions.length ? "이제 미션 시작해볼까?" : "천천히 둘러보자!")
-    );
+    // 바로 뒤에 미션 메뉴가 물어보니 "이제 미션 시작해볼까?"는 빼고 결과만
+    await chat.bot(`<b>위치 인증 완료!</b>${first ? " <b>+10 XP</b>" : ""}${zone.missions.length ? "" : " 천천히 둘러보자 🙂"}`, { whole: true });
 
   }
   // 인증 이후에도 계속 위치를 지켜보다가, 구역(반경) 밖으로 나가면 배너로 알리고 미션 진행을 막는다
@@ -973,7 +971,7 @@ async function missionMenu(zone) {
         ? "다시 해 볼 미션을 골라 봐! 📸"
         : left.length === zone.missions.length
         ? "어떤 미션부터 시작할까요?"
-        : `남은 미션이 <b>${left.length}개</b> 있어요. 다음은 뭘 할까요?`
+        : `남은 미션이 <b>${left.length}개</b> 있어요.`
     );
     const pick = await chat.choices([
       ...zone.missions.map((m) => {
@@ -1008,7 +1006,7 @@ const allCleared = () => zones.filter((z) => z.missions.length).every(zoneCleare
 async function finishZone(zone) {
   if (store.grantBonus("zone:" + zone.id, 50)) {
     ui.reward(50);
-    await chat.bot(`<b>${zone.name}</b> 클리어!<br>구역 보너스 <b>50 XP</b>랑 스탬프 ${zone.emoji} 챙겼어.`);
+    await chat.bot(`<b>${zone.name}</b> 클리어! 🎉 <b>+50 XP</b> · 스탬프 ${zone.emoji}`, { whole: true });
   } else {
     await chat.bot("여긴 이미 다 깬 곳이야!");
   }
@@ -1017,8 +1015,8 @@ async function finishZone(zone) {
   if (allCleared() && store.grantBonus(theme ? "all:" + theme.id : "all", 200)) {
     ui.reward(200);
     await chat.bot(theme
-      ? `우와, <b>${theme.emoji} ${theme.name}</b> 테마 장소를 다 돌았네!<br>테마 완주 보너스 <b>200 XP</b>까지 챙겼어.`
-      : "우와, <b>전 구역 완주</b>했네!<br>완주 보너스 <b>200 XP</b>까지 챙겼어.");
+      ? `<b>${theme.emoji} ${theme.name}</b> 테마 완주! 🏆 <b>+200 XP</b>`
+      : "<b>전 구역 완주!</b> 🏆 <b>+200 XP</b>", { whole: true });
     ui.showFinale(() => goTab("rank"));
   }
 
