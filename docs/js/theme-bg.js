@@ -1,105 +1,78 @@
 // js/theme-bg.js — 테마별 화면 배경 (모든 화면 맨 뒤에 깔리는 그림)
-//   march   (3월 첫 주, 기본): 활기찬 새 학기 — 가랜드 깃발, 색종이, 풍선, 새싹 언덕
-//   cherry  (벚꽃 기간)       : 벚꽃나무 한 그루 + 날리는 꽃잎 (홈 대표 카드 모서리에 꽃잎 하나가 내려앉음)
-//   midterm (중간고사)        : 공부 책상 — 줄 공책 바탕 + KNU 빨간 여백선, 포스트잇(D-7·A+), 연필, 알람시계, 책 더미, 종이비행기
-// 배경은 카드 사이 빈 공간에서 잘 보이고, 카드 위에서는 카드가 거의 가려서 글이 눈에 잘 들어오게 한다 (style.css).
-// 폰(좁은 화면)은 그림을 모서리에 작게, 노트북(넓은 화면)은 앱 양옆 빈 공간에 크게 둔다 (style.css의 @media).
+// 시선을 뺏지 않도록 아주 연하고 잔잔하게: 얇은 선으로 그린 일러스트 + 은은한 빛, 움직임은 느리고 적게.
+//   march   (3월 첫 주, 기본): 아침 등굣길 — 정문·시계탑 건물·도서관·가로등·나무가 이어지는 캠퍼스, 아침 햇살, 새
+//   cherry  (벚꽃 기간)       : 벚꽃나무 + 천천히 날리는 꽃잎 몇 장 (홈 대표 카드 모서리에 꽃잎 하나)
+//   midterm (중간고사)        : 늦은 밤 공부 책상 — 스탠드 불빛, 펼친 책·책 더미, 김 나는 머그컵, 화분, 희미한 공책 줄
+// 카드는 반투명 유리라 배경이 살짝만 비친다 (style.css).
+// 폰(좁은 화면)은 그림을 아래·가장자리에 작게, 노트북(넓은 화면)은 앱 양옆 빈 공간에 크게 둔다 (style.css의 @media).
 
 const PETAL = "img/hobanu/petal.png";
 const TREE = "img/hobanu/cherry-tree.webp";
+const INK = "#4a6fa5";   // 선 색 (남색: KNU 빨강과 잘 어울림)
 
-// 같은 자리·속도로 흩어 놓아 매번 같은 모양 (left %, 지속 s, 시작 지연 s, 크기 px). wide: 넓은 화면에서만
-const SPOTS = [
-  [4, 13, 1, 16], [12, 17, 7, 12], [21, 15, 3, 18], [30, 19, 11, 13], [39, 14, 5, 15], [48, 18, 9, 12],
-  [57, 16, 2, 17], [66, 20, 13, 13], [75, 15, 6, 16], [84, 18, 10, 12], [92, 14, 4, 15], [98, 19, 8, 13],
-];
-
-function fallers(kind) {
-  return SPOTS.map(([left, dur, delay, size], i) => {
-    const wide = i % 2 ? " wide" : "";   // 폰에선 절반만 (덜 산만하게)
-    const style = `left:${left}%;width:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s`;
-    if (kind === "petal") return `<img class="tb-fall${wide}" src="${PETAL}" alt="" style="${style}">`;
-    const colors = ["#ff8a93", "#ffc85c", "#7fb3ff", "#8fd9b0", "#c4a7ff"];
-    return `<i class="tb-fall tb-conf${wide}" style="${style};height:${Math.round(size * 0.55)}px;background:${colors[i % colors.length]}"></i>`;
-  }).join("");
+// 꽃잎: 자리·속도 고정 (left %, 지속 s, 지연 s, 크기 px). 홀수 번째는 넓은 화면에서만
+const PETALS = [[8, 22, 2, 14], [26, 26, 11, 12], [44, 24, 6, 15], [63, 28, 15, 12], [81, 23, 9, 14], [94, 27, 4, 12]];
+function petals() {
+  return PETALS.map(([left, dur, delay, size], i) =>
+    `<img class="tb-fall${i % 2 ? " wide" : ""}" src="${PETAL}" alt="" style="left:${left}%;width:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s">`).join("");
 }
 
-// 가랜드 깃발 한 줄 (SVG)
-function bunting() {
-  const colors = ["#ff8a93", "#ffc85c", "#7fb3ff", "#8fd9b0", "#c4a7ff"];
-  let flags = "";
-  for (let i = 0; i < 24; i++) {
-    const x = i * 50 + 10;
-    const y = 18 + Math.sin((i / 23) * Math.PI) * 26;   // 가운데가 처진 줄
-    flags += `<path d="M${x} ${y} L${x + 36} ${y + 2} L${x + 18} ${y + 34} Z" fill="${colors[i % colors.length]}"/>`;
-  }
-  return `<svg class="tb-bunting" viewBox="0 0 1210 80" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0 16 Q605 66 1210 16" fill="none" stroke="#e8b9a0" stroke-width="2.5"/>${flags}</svg>`;
-}
-
-const BALLOON = (c) => `<svg viewBox="0 0 60 110" aria-hidden="true"><path d="M30 4C14 4 4 17 4 32C4 50 18 64 30 70C42 64 56 50 56 32C56 17 46 4 30 4Z" fill="${c}"/>
-  <ellipse cx="20" cy="22" rx="6" ry="9" fill="#fff" opacity=".45"/><path d="M27 70L33 70L30 76Z" fill="${c}"/>
-  <path d="M30 76Q24 88 31 98T29 110" fill="none" stroke="#c9b8a8" stroke-width="1.5"/></svg>`;
-
-// 시험 기간 소품 (남색·빨강·흰색: KNU 빨강과 어울리게)
-const NAVY = "#4a6fa5", NAVY_L = "#c9d7ee", RED = "#e2525a";
-const NOTE = (text, color, cls) => `<div class="tb-note ${cls}" style="background:${color}"><span>${text}</span></div>`;
-const PENCIL = `<svg class="tb-pencil" viewBox="0 0 200 40" aria-hidden="true">
-  <rect x="30" y="8" width="140" height="24" rx="4" fill="#ffd46b"/><rect x="30" y="8" width="140" height="8" rx="4" fill="#ffe39a"/>
-  <rect x="150" y="8" width="20" height="24" fill="#c9d1de"/><rect x="170" y="8" width="22" height="24" rx="8" fill="${RED}"/>
-  <path d="M30 8L4 20L30 32Z" fill="#f2d3b3"/><path d="M12 16L4 20L12 24Z" fill="#3b4252"/></svg>`;
-const CLOCK = `<svg class="tb-clock" viewBox="0 0 120 130" aria-hidden="true">
-  <circle cx="28" cy="22" r="16" fill="${RED}"/><circle cx="92" cy="22" r="16" fill="${RED}"/>
-  <path d="M30 116L20 128M90 116L100 128" stroke="${NAVY}" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="60" cy="70" r="50" fill="#fff" stroke="${NAVY}" stroke-width="7"/>
-  ${[0, 90, 180, 270].map((r) => `<rect x="58" y="28" width="4" height="9" rx="2" fill="${NAVY_L}" transform="rotate(${r} 60 70)"/>`).join("")}
-  <g class="tb-hand-m"><rect x="57.5" y="34" width="5" height="38" rx="2.5" fill="${NAVY}"/></g>
-  <g class="tb-hand-h"><rect x="57" y="48" width="6" height="24" rx="3" fill="${RED}"/></g>
-  <circle cx="60" cy="70" r="5" fill="${NAVY}"/></svg>`;
-const DESK = `<svg class="tb-desk" viewBox="0 0 260 220" aria-hidden="true">
-  <rect x="20" y="176" width="170" height="30" rx="10" fill="${NAVY}"/><rect x="30" y="180" width="150" height="6" rx="3" fill="#fff" opacity=".5"/>
-  <rect x="34" y="142" width="150" height="34" rx="10" fill="${RED}"/><rect x="44" y="147" width="130" height="6" rx="3" fill="#fff" opacity=".5"/>
-  <rect x="26" y="110" width="140" height="32" rx="10" fill="#ffffff" stroke="${NAVY_L}" stroke-width="3"/><rect x="36" y="117" width="120" height="5" rx="2.5" fill="${NAVY_L}"/>
-  <rect x="196" y="150" width="46" height="56" rx="14" fill="#fff" stroke="${NAVY_L}" stroke-width="3"/><path d="M242 164Q258 164 258 178Q258 192 242 192" fill="none" stroke="${NAVY_L}" stroke-width="7"/>
-  <text x="219" y="186" font-size="18" font-weight="900" fill="${RED}" text-anchor="middle" font-family="Pretendard,sans-serif">K</text>
-  <path class="tb-steam" d="M210 140Q204 128 212 118Q220 108 214 96" fill="none" stroke="${NAVY_L}" stroke-width="4" stroke-linecap="round"/>
-  <path class="tb-steam" style="animation-delay:-1.2s" d="M228 140Q222 128 230 118Q238 108 232 96" fill="none" stroke="${NAVY_L}" stroke-width="4" stroke-linecap="round"/>
+// 아침 캠퍼스 등굣길 (얇은 선): 가로등 · 정문 · 시계탑 건물 · 나무 · 도서관 · 가로등 · 나무 · 건물 · 나무
+const CAMPUS = `<svg class="tb-campus" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <g fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 200H1200"/>
+    <path d="M40 200V150M30 150H50"/><circle cx="40" cy="144" r="5"/>
+    <path d="M120 200V120Q120 112 128 112H150Q158 112 158 120V200M250 200V120Q250 112 258 112H280Q288 112 288 120V200"/>
+    <path d="M150 128Q204 96 258 128"/><path d="M164 152H244"/>
+    <text x="204" y="146" font-size="13" text-anchor="middle" fill="${INK}" stroke="none" font-family="Pretendard,sans-serif" letter-spacing="3">KNU</text>
+    <path d="M340 200V128H470V200M340 128L405 96L470 128"/><path d="M405 96V72"/><circle cx="405" cy="62" r="10"/><path d="M405 56V62L409 64"/>
+    <path d="M362 150H448M362 172H448"/><path d="M392 200V182H418V200"/>
+    <circle cx="520" cy="168" r="22"/><path d="M520 190V200"/><circle cx="556" cy="176" r="15"/><path d="M556 191V200"/>
+    <path d="M600 200V138H780V200M600 138H780M612 150H768"/><path d="M630 162V190M660 162V190M690 162V190M720 162V190M750 162V190"/>
+    <path d="M830 200V150M820 150H840"/><circle cx="830" cy="144" r="4"/>
+    <circle cx="880" cy="172" r="18"/><path d="M880 190V200"/>
+    <path d="M930 200V112H1040V200M930 112H1040M985 112V90M972 90H998"/><path d="M948 130H1022M948 150H1022M948 170H1022"/>
+    <circle cx="1090" cy="166" r="24"/><path d="M1090 190V200"/><circle cx="1130" cy="178" r="14"/><path d="M1130 192V200"/>
+  </g>
 </svg>`;
+const BIRD = `<svg viewBox="0 0 30 12" aria-hidden="true"><path d="M1 8Q8 1 15 8Q22 1 29 8" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
-const PLANE = `<svg viewBox="0 0 48 30" aria-hidden="true"><path d="M2 14L46 2L30 28L22 18Z" fill="#fff" stroke="#c9d7ee" stroke-width="1.5" stroke-linejoin="round"/><path d="M22 18L46 2L26 22Z" fill="#dbe5f5"/><path d="M22 18L24 27L26 22Z" fill="#c9d7ee"/></svg>`;
+// 늦은 밤 공부 책상 (얇은 선 + 스탠드 불빛): 스탠드 · 펼친 책 · 책 더미 + 화분
+const DESK = `<svg class="tb-desk" viewBox="0 0 520 300" aria-hidden="true">
+  <defs><radialGradient id="tbLamp" cx="50%" cy="40%" r="50%"><stop offset="0" stop-color="#ffd98a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient></defs>
+  <ellipse class="tb-glow" cx="150" cy="190" rx="170" ry="120" fill="url(#tbLamp)"/>
+  <g fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 270H510"/>
+    <path d="M70 270H150M110 270V250L80 160L150 110"/><circle cx="80" cy="160" r="5"/><path d="M130 96L190 92L176 140L118 128Z"/>
+    <path d="M200 270V238Q240 228 280 238V270M280 238Q320 228 360 238V270"/>
+    <path d="M214 250H266M294 250H346M214 260H262M294 260H340"/>
+    <rect x="380" y="242" width="110" height="28" rx="5"/><rect x="390" y="216" width="96" height="26" rx="5"/><rect x="384" y="192" width="100" height="24" rx="5"/>
+    <path d="M440 192V170M440 172Q428 158 432 146M440 176Q454 164 452 150"/>
+  </g>
+</svg>`;
+const MUG = `<svg class="tb-mug" viewBox="0 0 80 90" aria-hidden="true"><g fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round">
+  <path d="M12 40H54V74Q54 84 44 84H22Q12 84 12 74Z"/><path d="M54 48Q68 48 68 58Q68 68 54 68"/>
+  <path class="tb-steam" d="M26 32Q22 24 28 16Q34 8 30 2"/><path class="tb-steam" style="animation-delay:-1.5s" d="M40 32Q36 24 42 16Q48 8 44 2"/></g></svg>`;
 
 function sceneHtml(id) {
   if (id === "cherry") {
     return `
       <img class="tb-tree tb-tree-a" src="${TREE}" alt="">
       <img class="tb-tree tb-tree-b" src="${TREE}" alt="">
-      ${fallers("petal")}`;
+      ${petals()}`;
   }
   if (id === "midterm") {
     return `
-      <div class="tb-margin"></div>
-      ${NOTE("D-7", "#ffe1e3", "tb-note-a")}
-      ${NOTE("A+", "#dfe9fb", "tb-note-b wide")}
-      ${NOTE("화이팅!", "#e2f5ea", "tb-note-c wide")}
-      ${PENCIL}
-      ${CLOCK}
-      <div class="tb-plane tb-plane-a">${PLANE}</div>
-      <div class="tb-plane tb-plane-b wide">${PLANE}</div>
-      ${DESK}`;
+      <div class="tb-lines"></div>
+      <div class="tb-desk-wrap">${DESK}</div>
+      <div class="tb-mug-wrap wide">${MUG}</div>`;
   }
-  // march (기본)
+  // march (기본): 아침 등굣길
   return `
-    <div class="tb-sun"></div>
-    ${bunting()}
-    <div class="tb-balloon tb-balloon-a">${BALLOON("#ff8a93")}</div>
-    <div class="tb-balloon tb-balloon-b">${BALLOON("#7fb3ff")}</div>
-    <div class="tb-balloon tb-balloon-c wide">${BALLOON("#ffc85c")}</div>
-    <div class="tb-balloon tb-balloon-d wide">${BALLOON("#8fd9b0")}</div>
-    ${fallers("confetti")}
-    <svg class="tb-hills" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M0 160V90Q200 40 420 86T820 74T1200 92V160Z" fill="#d9f2e2"/>
-      <path d="M0 160V118Q260 86 560 116T1200 112V160Z" fill="#c4ebd3"/>
-    </svg>`;
+    <div class="tb-sunlight"></div>
+    <div class="tb-bird tb-bird-a">${BIRD}</div>
+    <div class="tb-bird tb-bird-b wide">${BIRD}</div>
+    <div class="tb-campus-wrap">${CAMPUS}</div>`;
 }
 
 let current = null;

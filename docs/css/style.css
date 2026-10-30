@@ -1081,10 +1081,10 @@ body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가
 .bp-thumb { flex: none; width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: var(--cream-weak); }
 
 /* ============ 테마별 화면 배경 (theme-bg.js) ============ */
-/* 맨 뒤에 깔리는 그림. 카드 사이 빈 공간에서는 잘 보이고, 카드는 거의 불투명(살짝 비침 + 흐림)이라 글에 집중된다.
+/* 맨 뒤에 깔리는 아주 연한 그림. 카드 사이 빈 공간에서 은은하게 보이고, 카드는 반투명 유리라 살짝만 비친다.
    폰: 그림을 모서리·가장자리에 작게 / 노트북(760px 이상): 가운데 앱 양옆 넓은 공간에 크게 */
 #theme-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-#theme-bg > * { opacity: .7; }   /* 그림 전체를 조금 더 연하게 (바탕색은 그대로) */
+#theme-bg > * { opacity: .4; }   /* 그림은 아주 연하게 (바탕색은 그대로). 시선은 카드로 */
 #app { z-index: 1; }
 body[data-view="zone"] #theme-bg, body[data-view="onboard"] #theme-bg { display: none; }
 body[data-theme-bg]:not([data-view="zone"]):not([data-view="onboard"]) { background: transparent; }
@@ -1101,70 +1101,50 @@ body[data-theme-bg]:not([data-view="zone"]) :is(.card, .list-card, .post, .zone-
     box-shadow: 0 10px 26px -12px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .07); }
 }
 #theme-bg .wide { display: none; }
-.tb-fall { position: absolute; top: -40px; animation: tbFall linear infinite; opacity: .9; }
-@keyframes tbFall { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-40px, 52vh) rotate(170deg); }
-  100% { transform: translate(-110px, 108vh) rotate(340deg); } }
-.tb-conf { border-radius: 3px; opacity: .75; }
+.tb-fall { position: absolute; top: -40px; animation: tbFall linear infinite; opacity: .8; }
+@keyframes tbFall { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-30px, 52vh) rotate(150deg); }
+  100% { transform: translate(-80px, 108vh) rotate(300deg); } }
 
-/* 3월 첫 주: 활기찬 새 학기 */
-.tb-march { background: linear-gradient(180deg, #edf6ff 0%, #fffdf2 55%, #f5fcf7 100%); }
-.tb-sun { position: absolute; top: 74px; right: 5%; width: 84px; height: 84px; border-radius: 50%; background: #ffe7a3;
-  box-shadow: 0 0 0 18px rgba(255, 231, 163, .35), 0 0 0 40px rgba(255, 231, 163, .15); animation: tbPulse 4s ease-in-out infinite; }
-@keyframes tbPulse { 50% { transform: scale(1.06); } }
-.tb-bunting { position: absolute; top: 0; left: -2%; width: 104%; height: 54px; transform-origin: 50% 0; animation: tbSway 5s ease-in-out infinite; opacity: .85; }
-@keyframes tbSway { 50% { transform: translateY(3px) rotate(.4deg); } }
-.tb-balloon { position: absolute; width: 34px; animation: tbFloat 7s ease-in-out infinite; opacity: .85; }
-.tb-balloon svg { display: block; width: 100%; }
-.tb-balloon-a { left: 2%; bottom: 22%; }
-.tb-balloon-b { right: 3%; bottom: 40%; animation-delay: -3s; }
-.tb-balloon-c { left: 11%; bottom: 46%; animation-delay: -1.5s; }
-.tb-balloon-d { right: 12%; bottom: 16%; animation-delay: -5s; }
-@keyframes tbFloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-22px) rotate(3deg); } }
-.tb-hills { position: absolute; left: 0; bottom: 0; width: 100%; height: 110px; }
+/* 3월 첫 주: 아침 등굣길 (얇은 선 캠퍼스 + 아침 햇살 + 새) */
+.tb-march { background: linear-gradient(180deg, #f1f6fd 0%, #fafbfd 60%, #f7f9fc 100%); }
+.tb-sunlight { position: absolute; top: -120px; right: -120px; width: 380px; height: 380px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 226, 160, .55) 0%, rgba(255, 226, 160, 0) 65%); }
+.tb-campus-wrap { position: absolute; left: 0; right: 0; bottom: 70px; height: 150px; }
+.tb-campus { width: 100%; height: 100%; }
+.tb-bird { position: absolute; width: 22px; animation: tbBird 40s linear infinite; }
+.tb-bird svg { display: block; width: 100%; }
+.tb-bird-a { top: 18%; }
+.tb-bird-b { top: 26%; width: 16px; animation-duration: 52s; animation-delay: -20s; }
+@keyframes tbBird { 0% { transform: translate(-40px, 0); } 50% { transform: translate(50vw, -18px); } 100% { transform: translate(calc(100vw + 40px), 6px); } }
 
-/* 벚꽃 기간: 벚꽃나무 + 꽃잎 */
-.tb-cherry { background: linear-gradient(180deg, #fff6f8 0%, #fffcfc 60%, #fff5f7 100%); }
+/* 벚꽃 기간: 벚꽃나무 + 천천히 날리는 꽃잎 */
+.tb-cherry { background: linear-gradient(180deg, #fff7f9 0%, #fffcfc 60%, #fff8fa 100%); }
 .tb-tree { position: absolute; }
-.tb-tree-a { right: -110px; top: -30px; width: 280px; opacity: .3; }
+.tb-tree-a { right: -110px; top: -30px; width: 280px; opacity: .5; }
 .tb-tree-b { display: none; }
-.tb-cherry .tb-fall { width: 14px; }
+.tb-cherry .tb-fall { width: 13px; }
 .hero-petal { position: absolute; top: -11px; left: 34%; width: 28px; z-index: 2; transform: rotate(-28deg);
   filter: drop-shadow(0 2px 2px rgba(212, 18, 26, .15)); pointer-events: none; }
 
-/* 중간고사: 공부 책상 — 줄 공책 바탕 + 빨간 여백선 */
-.tb-midterm { background-color: #fbfcfe;
-  background-image: repeating-linear-gradient(180deg, transparent 0 31px, rgba(74, 111, 165, .12) 31px 32px); }
-.tb-margin { position: absolute; top: 0; bottom: 0; left: 22px; width: 2px; background: rgba(226, 82, 90, .35); }
-.tb-note { position: absolute; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 6px;
-  box-shadow: 0 6px 14px -6px rgba(25, 31, 40, .25); font: 900 15px/1 "Jua", var(--font); color: #4a6fa5; animation: tbNote 6s ease-in-out infinite; }
-.tb-note::before { content: ""; position: absolute; top: -7px; left: 50%; width: 26px; height: 12px; margin-left: -13px; border-radius: 3px;
-  background: rgba(255, 255, 255, .7); transform: rotate(-3deg); }
-.tb-note-a { top: 70px; right: 10px; transform: rotate(6deg); color: #e2525a; }
-.tb-note-b { transform: rotate(-7deg); }
-.tb-note-c { transform: rotate(5deg); font-size: 13px; color: #2f8a5b; }
-@keyframes tbNote { 50% { translate: 0 -4px; } }
-.tb-pencil { position: absolute; left: -40px; bottom: 32%; width: 130px; transform: rotate(-24deg); opacity: .85; }
-.tb-clock { position: absolute; display: none; width: 96px; }
-.tb-hand-m { transform-origin: 60px 70px; animation: tbTick 60s steps(60) infinite; }
-.tb-hand-h { transform-origin: 60px 70px; transform: rotate(120deg); }
-@keyframes tbTick { to { transform: rotate(360deg); } }
-.tb-plane { position: absolute; left: 0; width: 34px; opacity: .85; animation: tbFly 28s linear infinite; }
-.tb-plane svg { display: block; width: 100%; }
-.tb-plane-a { top: 30%; }
-.tb-plane-b { top: 58%; animation-duration: 36s; animation-delay: -14s; }
-@keyframes tbFly { 0% { transform: translate(-60px, 0) rotate(-6deg); } 50% { transform: translate(50vw, -30px) rotate(4deg); }
-  100% { transform: translate(calc(100vw + 60px), 10px) rotate(-4deg); } }
-.tb-desk { position: absolute; bottom: 0; right: -30px; width: 150px; opacity: .8; }
-.tb-steam { animation: tbSteam 3s ease-in-out infinite; opacity: .7; }
-@keyframes tbSteam { 0%, 100% { opacity: .15; transform: translateY(4px); } 50% { opacity: .8; transform: translateY(-4px); } }
+/* 중간고사: 늦은 밤 공부 책상 (희미한 공책 줄 + 스탠드 불빛 + 얇은 선 소품) */
+.tb-midterm { background: linear-gradient(180deg, #f2f4fa 0%, #f8f9fc 60%, #f6f7fb 100%); }
+.tb-lines { position: absolute; inset: 0; background-image: repeating-linear-gradient(180deg, transparent 0 35px, rgba(74, 111, 165, .1) 35px 36px); }
+.tb-desk-wrap { position: absolute; right: -40px; bottom: 74px; width: 280px; }
+.tb-desk { display: block; width: 100%; }
+.tb-glow { animation: tbGlow 6s ease-in-out infinite; }
+@keyframes tbGlow { 50% { opacity: .7; } }
+.tb-mug-wrap { position: absolute; width: 70px; }
+.tb-mug { display: block; width: 100%; }
+.tb-steam { animation: tbSteam 4s ease-in-out infinite; }
+@keyframes tbSteam { 0%, 100% { opacity: .1; transform: translateY(3px); } 50% { opacity: .9; transform: translateY(-3px); } }
 
 /* 홈 대표 카드도 테마 색으로 */
 .quest-map-card { position: relative; }
-body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(255, 246, 214, .8) 140%); }
+body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(226, 237, 252, .8) 140%); }
 body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(255, 222, 231, .8) 140%); }
 body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(255, 255, 255, .8) 0%, rgba(220, 231, 248, .8) 140%); }
 @media (prefers-color-scheme: dark) {
-  body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(74, 66, 38, .72) 140%); }
+  body[data-theme-bg] .quest-map-card.hero-march { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(40, 56, 84, .72) 140%); }
   body[data-theme-bg] .quest-map-card.hero-cherry { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(86, 44, 58, .72) 140%); }
   body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(160deg, rgba(42, 45, 52, .72) 0%, rgba(40, 60, 96, .72) 140%); }
 }
@@ -1172,47 +1152,34 @@ body[data-theme-bg] .quest-map-card.hero-midterm { background: linear-gradient(1
 /* 노트북처럼 넓은 화면: 앱 양옆 빈 공간에 그림을 크게 */
 @media (min-width: 760px) {
   #theme-bg .wide { display: block; }
-  .tb-bunting { height: 86px; }
-  .tb-sun { top: 110px; right: 8%; width: 140px; height: 140px; }
-  .tb-balloon { width: 60px; }
-  .tb-balloon-a { left: 8%; bottom: 26%; }
-  .tb-balloon-b { right: 9%; bottom: 44%; }
-  .tb-balloon-c { left: 18%; bottom: 52%; }
-  .tb-balloon-d { right: 19%; bottom: 20%; }
-  .tb-hills { height: 200px; }
-  .tb-tree-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .6; }
-  .tb-tree-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .45; transform: scaleX(-1); }
-  .tb-cherry .tb-fall { width: 20px; }
-  .tb-margin { left: calc(50% - 240px - 60px); }
-  .tb-note { width: 96px; height: 96px; font-size: 26px; border-radius: 8px; }
-  .tb-note-c { font-size: 20px; }
-  .tb-note-a { top: 110px; right: calc(50% - 240px - 200px); }
-  .tb-note-b { top: 160px; left: calc(50% - 240px - 230px); }
-  .tb-note-c { top: 46%; right: calc(50% - 240px - 150px); }
-  .tb-pencil { left: calc(50% - 240px - 330px); bottom: 34%; width: 240px; }
-  .tb-clock { display: block; left: calc(50% - 240px - 200px); bottom: 12%; width: 130px; }
-  .tb-plane { width: 52px; }
-  .tb-desk { right: calc(50% - 240px - 320px); width: 260px; }
+  .tb-sunlight { top: -160px; right: 6%; width: 560px; height: 560px; }
+  .tb-campus-wrap { bottom: 0; height: 240px; }
+  .tb-bird { width: 30px; }
+  .tb-bird-b { width: 22px; }
+  .tb-tree-a { right: auto; top: auto; left: calc(50% - 240px - 470px); bottom: -10px; width: 500px; opacity: .42; }
+  .tb-tree-b { display: block; right: calc(50% - 240px - 400px); bottom: -10px; width: 380px; opacity: .32; transform: scaleX(-1); }
+  .tb-cherry .tb-fall { width: 18px; }
+  .tb-desk-wrap { right: auto; left: max(16px, calc(50% - 240px - 580px)); bottom: 20px; width: min(520px, calc(50vw - 280px)); }   /* 앱 왼쪽 빈 공간 안에 다 보이게 */
+  .tb-mug-wrap { right: calc(50% - 240px - 200px); bottom: 70px; width: 96px; }
 }
 @media (min-width: 760px) and (max-width: 1100px) {
   .tb-tree-a { left: -140px; width: 420px; }
   .tb-tree-b { right: -120px; width: 320px; }
-  .tb-desk { right: 8px; width: 180px; }
-  .tb-clock { left: 20px; }
-  .tb-pencil { left: -60px; }
-  .tb-note-b { left: 40px; }
+  .tb-desk-wrap { left: -60px; width: 400px; }
+  .tb-mug-wrap { right: 30px; }
 }
-/* 다크 모드: 그림을 통째로 어둡게 누르지 않고, 바탕은 테마 색이 살짝 도는 밤하늘로, 그림은 은은하게 */
+/* 다크 모드: 바탕은 테마 색이 살짝 도는 밤, 선 그림은 밝은 색으로 아주 은은하게 */
 @media (prefers-color-scheme: dark) {
-  #theme-bg > * { opacity: .34; }
-  .tb-march { background: linear-gradient(180deg, #1c2633 0%, #1d2026 55%, #1b2420 100%); }
-  .tb-cherry { background: linear-gradient(180deg, #2b1f26 0%, #1f1d22 60%, #281d23 100%); }
-  .tb-midterm { background-color: #1c2230;
-    background-image: repeating-linear-gradient(180deg, transparent 0 31px, rgba(160, 185, 225, .08) 31px 32px); }
+  #theme-bg > * { opacity: .28; }
+  .tb-march { background: linear-gradient(180deg, #1e2430 0%, #1c1e24 60%, #1b1d22 100%); }
+  .tb-cherry { background: linear-gradient(180deg, #2a2026 0%, #1f1d22 60%, #221d21 100%); }
+  .tb-midterm { background: linear-gradient(180deg, #1d2231 0%, #1c1e26 60%, #1b1d22 100%); }
+  #theme-bg :is(.tb-campus, .tb-desk, .tb-mug, .tb-bird) { filter: invert(.85) hue-rotate(180deg); }
+  .tb-lines { background-image: repeating-linear-gradient(180deg, transparent 0 35px, rgba(180, 200, 235, .1) 35px 36px); }
 }
 @media (prefers-reduced-motion: reduce) {
   #theme-bg *, #theme-bg *::before { animation: none !important; }
-  #theme-bg .tb-fall, #theme-bg .tb-plane { display: none; }
+  #theme-bg .tb-fall, #theme-bg .tb-bird { display: none; }
 }
 /* 대표 카드(내 정보·내 순위)도 같은 유리 느낌으로 */
 body[data-theme-bg] .card-hero:not(.quest-map-card) {
