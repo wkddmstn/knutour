@@ -9,7 +9,6 @@ import { subscribeFriendRequests, getFriendRequest } from "./friend.js";
 import { activeKey, pairKey } from "./together.js";   // 함께 돌기 실시간 미션
 import { openNotifPanel, closeNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
-import { matchFood } from "./ar-missions.js";   // 돌림판 메뉴 → 맛집 모아 보기 (장주연)
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
          setCommentLike, pickBest, toTag } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
@@ -67,18 +66,12 @@ let campusMap = null;    // 탐험 화면 지도 (CampusMap)
 let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 때 사용
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
-let exploreMode = "zones";    // 캠퍼스 탐험 화면: "zones"(미션 장소) | "food"(맛집)
-const food = { data: null, theme: "all", tipOnly: false, selId: null, kw: null };   // 맛집 화면 상태 (kw: 돌림판 메뉴로 모아 보기)
-// 피크닉 돌림판 결과 → 맛집 화면을 그 메뉴 가게만 모아서 연다 (장주연)
+// 맛집은 링크로 공유할 수 있는 따로 된 페이지(restaurant/, js/food-page.js)에서 연다.
+// 피크닉 돌림판 결과는 그 메뉴 가게만 모아서 연다 (?menu=pizza) (장주연)
+const FOOD_PAGE = "restaurant/";
 window.addEventListener("knu:open-restaurants", (e) => {
-  const { category, name, emoji } = e.detail || {};
-  if (!category) return;
-  food.kw = { id: category, name: name || category, emoji: emoji || "🍽️" };
-  food.theme = category === "dessert" ? "cafe" : "meal";   // 디저트는 카페, 나머지는 밥집 중에서
-  food.tipOnly = false;
-  food.selId = null;
-  exploreMode = "food";
-  goTab("explore", { food: true });
+  const { category } = e.detail || {};
+  location.href = FOOD_PAGE + (category ? `?menu=${encodeURIComponent(category)}` : "");
 });
 const HOT_TAG = "인기글", HOT_LIKES = 5, HOT_COMMENTS = 2;   // #인기글 기준 (장주연)
 let communityTag = null;      // 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자
@@ -341,24 +334,17 @@ async function goTab(tab, opts = {}) {
     // (장주연) 홈 카드: 맛집 (FOOD_ON_HOME 스위치)
     import("./home-cards.js").then((hc) => {
       if (document.body.dataset.view !== "home") return;
-      if (FOOD_ON_HOME) hc.renderFoodCard($("home-food-slot"), () => goTab("explore", { food: true }));
+      if (FOOD_ON_HOME) hc.renderFoodCard($("home-food-slot"), () => { location.href = FOOD_PAGE; });
       // "AR 호반우 만나기" 카드는 뺐다 (호반우는 도감에서 만남). 다시 넣으려면 hc.renderArCard($("home-ar-slot"), …)
     }).catch((e) => console.warn("[홈 카드]", e));
     refreshBellBadge();
   } else if (tab === "explore") {
-    if (FOOD_ON_HOME) exploreMode = opts.food ? "food" : "zones";   // (장주연) 맛집은 홈 카드로만 들어온다
     const mz = zones.filter((z) => z.missions.length);   // 미션이 있는 장소만 진행도에 센다
     const clearedCount = mz.filter(zoneCleared).length;
-    ui.renderExplore(clearedCount, mz.length, exploreMode, themes.currentTheme(), { seg: !FOOD_ON_HOME });
+    ui.renderExplore(clearedCount, mz.length, themes.currentTheme(), { seg: !FOOD_ON_HOME });
     ui.showView("explore");
-    $("view-explore").querySelectorAll("[data-mode]").forEach((b) => {
-      b.onclick = () => { if (exploreMode !== b.dataset.mode) { exploreMode = b.dataset.mode; goTab("explore"); } };
-    });
-    if (exploreMode === "food") renderFoodSection();
-    else {
-      initCampusMap(openZone); renderZoneListSection();
-      try { tour?.renderQuestCard($("explore-tour-slot"), { entry: true }); } catch (e) { console.warn("[투어]", e); }   // 투어 입구 (장주연)
-    }
+    initCampusMap(openZone); renderZoneListSection();
+    try { tour?.renderQuestCard($("explore-tour-slot"), { entry: true }); } catch (e) { console.warn("[투어]", e); }   // 투어 입구 (장주연)
   } else if (tab === "dex") {
     renderHobanuPane($("view-dex"));   // 도감 화면 (dex-tab.js, 장주연). 못 불러오면 예전 호반우 화면으로 대신 그림
     ui.showView("dex");
@@ -616,59 +602,6 @@ function leaveZone() {
   chat.clear();
   resetZoneTheme();
   if (map) { map.destroy(); map = null; }
-}
-
-/* ================= 맛집 (캠퍼스 탐험 > 맛집) ================= */
-// data/restaurants.json: 선배 꿀팁 가게(tip) + 문 주변 카카오맵 검색 가게. 밥집·카페·술집(theme)과 가까운 문(area)으로 나뉜다.
-async function loadFood() {
-  if (food.data) return food.data;
-  try { food.data = await (await fetch("data/restaurants.json")).json(); } catch { food.data = {}; }
-  if (!Array.isArray(food.data.restaurants)) food.data.restaurants = [];
-  return food.data;
-}
-
-async function renderFoodSection() {
-  const data = await loadFood();
-  if (!$("food-pane")) return;   // 그사이 다른 화면으로 갔으면 그리지 않음
-  // 위치가 확인된 가게만 (돌림판 초안 중 카카오맵에서 못 찾은 곳은 lat이 0), 같은 가게(같은 카카오맵 링크)는 한 번만
-  const seenUrl = new Set();
-  const list = data.restaurants.filter((r) => {
-    if (!r.lat || !r.theme || (r.url && seenUrl.has(r.url))) return false;
-    if (r.url) seenUrl.add(r.url);
-    return (food.theme === "all" || r.theme === food.theme) && (!food.tipOnly || r.tip) && (!food.kw || matchFood(r, food.kw.id));
-  });
-  if (!list.some((r) => r.id === food.selId)) food.selId = null;
-  ui.renderFood(data, list, food);
-
-  // 지도: 처음 한 번 만들고, 필터가 바뀌면 핀만 다시 꽂는다
-  if (!campusMap && campusDataReady() && $("campus-map")) campusMap = new CampusMap($("campus-map"));
-  const emojiOf = (r) => data.themes?.find((t) => t.id === r.theme)?.emoji || "🍽️";
-  // 캠퍼스 밖은 길이 거의 안 그려져 있어서, 북문·정문 같은 문 위치(🚪)도 함께 꽂아 방향을 잡기 쉽게 한다
-  const gatePins = (data.gates || []).map((g) => ({ ...g, id: "gate-" + g.id, emoji: "🚪", gate: true }));
-  campusMap?.setZones([...gatePins, ...list.map((r) => ({ ...r, emoji: emojiOf(r), icon: r.theme }))], {
-    status: (r) => r.gate ? "gate" : ["food", r.tip ? "tip" : "", r.id === food.selId ? "sel" : ""].join(" "),
-    onSelect: (r) => { if (!r.gate) selectFood(r.id, false); },
-    bubble: false,
-  });
-  const sel = list.find((r) => r.id === food.selId);
-  if (sel) campusMap?.fit([sel], 220);   // 너무 확대하면 캠퍼스 밖은 길이 안 그려져 빈 땅처럼 보여서, 근처 문·가게가 함께 보이게
-  else if (list.length) campusMap?.fit(list, 40);
-
-  const pane = $("food-pane");
-  pane.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { food.theme = b.dataset.theme; food.kw = null; renderFoodSection(); }));
-  pane.querySelector("[data-kwoff]")?.addEventListener("click", () => { food.kw = null; renderFoodSection(); });
-  pane.querySelector("[data-tip]").onclick = () => { food.tipOnly = !food.tipOnly; renderFoodSection(); };
-  pane.querySelectorAll("[data-rest]").forEach((b) => (b.onclick = () => selectFood(b.dataset.rest, true)));
-  pane.querySelector("[data-close]")?.addEventListener("click", () => { food.selId = null; renderFoodSection(); });
-}
-
-// 가게 선택: 지도에서 그 가게로 확대하고, 지도 바로 아래에 상세 카드를 띄운다.
-// 목록에서 눌렀으면(fromList) 지도와 상세 카드가 보이도록 위로 올려 준다.
-async function selectFood(id, fromList) {
-  food.selId = id;
-  await renderFoodSection();
-  const target = fromList ? $("campus-map") : $("food-detail");
-  target?.scrollIntoView({ behavior: "smooth", block: fromList ? "start" : "nearest" });
 }
 
 function clearCampusMap() {

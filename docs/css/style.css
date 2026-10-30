@@ -1259,3 +1259,15 @@ body[data-theme-bg] .card-hero:not(.quest-map-card) {
 @media (prefers-color-scheme: dark) {
   .att-empty { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .16); }   /* 출석 빈칸이 구멍처럼 까맣게 보이지 않게 */
 }
+
+/* ============ 맛집 지도 페이지 (restaurant/) ============ */
+.fp-share svg, .fp-actions svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
+.fp-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fp-actions .btn { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; text-decoration: none; }
+.fp-actions .fp-share-btn svg, .fp-actions .btn.alt svg { width: 18px; height: 18px; }
+.fp-app { display: block; margin-top: 18px; text-align: center; text-decoration: none; }
+.seg .seg-link { flex: 1; padding: 11px; border-radius: 11px; text-align: center; color: var(--sub); font-size: 14px; font-weight: 600; text-decoration: none; }
+/* 맛집 목록 위 문별로 보기 칩 (전체 · 🚪 북문 44 · …) */
+.gate-chips { margin: -2px 0 6px; }
+.gate-chips button span { margin-left: 2px; font-weight: 600; opacity: .6; }
