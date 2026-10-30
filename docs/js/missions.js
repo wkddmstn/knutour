@@ -249,7 +249,7 @@ async function photo(m, zone) {
     const file = await chat.ask((card, done) => {
       card.innerHTML = `
         ${withHob ? `<button class="chip primary hob-cam" style="margin-bottom:8px">🐾 호반우와 함께 찍기</button>` : ""}
-        <label class="btn-file">사진 찍기 · 선택하기
+        <label class="btn-file">사진 찍기
           <input type="file" accept="image/*" capture="environment" hidden>
         </label>
         <img class="preview hidden" alt="미리보기">
