@@ -107,11 +107,34 @@ function splitSentences(html) {
   }, []);
 }
 
+// 대화창 맨 끝이 이미 이 말(답장 없이 그대로 남은 같은 말풍선들)로 끝나는지.
+// 장소에 다시 들어오면 미션 메뉴가 같은 질문을 또 하는데, 답하지 않은 질문이 쌓이지 않게 한다.
+// (문장 단위로 나누기 전에 저장된 예전 기록은 말풍선 하나에 통째로 들어 있어서 그것도 같은 말로 본다)
+function endsWith(html, parts) {
+  const rows = [...$("chat").children].filter((r) => !r.matches(".row.choices, .row.widget") && !r.querySelector(".bubble.typing"));
+  const said = (r) => (r.classList.contains("bot") ? r.querySelector(".bubble")?.innerHTML.trim() : null);
+  const tail = rows.slice(-parts.length);
+  if (tail.length === parts.length && tail.every((r, i) => said(r) === parts[i])) return true;
+  return rows.length > 0 && said(rows[rows.length - 1]) === html.trim();
+}
+
+// 저장해 둔 대화를 복원했을 때, 위 문제로 이미 똑같은 봇 말풍선이 연달아 쌓여 있으면 하나만 남긴다
+export function dedupeRepeats() {
+  let prev = null;
+  [...$("chat").children].forEach((r) => {
+    const said = r.classList.contains("bot") ? r.querySelector(".bubble")?.innerHTML.trim() : null;
+    if (said && said === prev) r.remove();
+    else prev = said;
+  });
+}
+
 // 가이드(봇) 말풍선. 문장마다 "입력 중..." 표시 후 한 말풍선씩 나타난다.
 // 다음 문장은 앞 문장을 읽을 시간(글자 수에 비례, 최대 약 2초)만큼 기다렸다가 보여 준다.
+// 답장 없이 방금 한 말과 똑같은 말이면 다시 말하지 않는다.
 export async function bot(html) {
   const s = session;
   const parts = splitSentences(html);
+  if (endsWith(html, parts)) return;
   for (let i = 0; i < parts.length; i++) {
     const typing = row("bot", `<div class="bubble typing"><i></i><i></i><i></i></div>`);
     await sleep(i === 0

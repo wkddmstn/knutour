@@ -654,6 +654,7 @@ function openZone(zone) {
   if (resuming) {
     $("chat").innerHTML = savedChat;
     chat.fixDeadMedia($("chat"));   // 예전에 저장된 깨진 사진·녹음(blob:)은 글자 표시로
+    chat.dedupeRepeats();           // 다시 들어올 때마다 쌓였던 똑같은 질문 말풍선은 하나만
     requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
   }
 
