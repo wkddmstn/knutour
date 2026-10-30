@@ -1069,7 +1069,7 @@ export function setStatus(r, pos) {
 export function setVerified() {
   const el = $("status");
   el.className = "pill ok";
-  el.textContent = "위치 인증이 완료됐어요";
+  el.textContent = "위치 인증 완료";
 }
 
 const ERR = {

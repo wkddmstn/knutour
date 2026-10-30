@@ -221,35 +221,54 @@ body[data-view="zone"] {
 #map { position: relative; z-index: 0; height: 150px; margin-top: 8px; border-radius: 16px; overflow: hidden;
        transition: height .25s, margin .25s; }
 .zone-top.collapsed #map { height: 0; margin-top: 0; }
-.pill { margin-top: 8px; padding: 11px 14px; background: var(--card); border-radius: 12px; color: var(--sub);
-        font-size: 13px; font-weight: 500; line-height: 1.45; border: 1px solid var(--line); }
+/* 위치 상태: 화면 폭을 다 차지하는 상자 대신 아이콘이 붙은 작은 뱃지 */
+.pill { display: flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%; margin-top: 8px; padding: 6px 12px;
+        background: var(--card); border-radius: 999px; color: var(--sub); font-size: 12.5px; font-weight: 600; line-height: 1.4;
+        border: 1px solid var(--line); }
 .pill.ok { background: var(--green-weak); color: var(--green); border-color: transparent; }
 .pill.warn { background: var(--amber-weak); color: var(--amber); border-color: transparent; }
+.pill.ok::before, .pill.warn::before {
+  flex: none; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+  color: #fff; font-size: 10px; font-weight: 800; line-height: 1;
+}
+.pill.ok::before { content: "✓"; background: var(--green); }
+.pill.warn::before { content: "!"; background: var(--amber); }
 
 #chat { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
 .row { display: flex; gap: 8px; align-items: flex-end; animation: rise .22s; }
-.row.bot { justify-content: flex-start; padding-left: 104px; position: relative; }
+.row.bot { justify-content: flex-start; padding-left: 46px; position: relative; }
 .row.user { justify-content: flex-end; }
+.row.bot + .row.bot { margin-top: -5px; }   /* 이어지는 말풍선은 더 붙여서 */
 #chat-mascot { display: none; }
-/* 메시지별 아바타: 연속된 봇 메시지 중 '마지막' 말풍선에만 붙여서(인스타그램 DM 스타일)
-   스크롤하면 같이 따라가게 한다. 다음 형제가 .row.bot이 아닌(=런의 마지막) 경우에만 보인다. */
+/* 카카오톡처럼 연속된 봇 메시지 중 '첫' 말풍선에만 동그란 프로필 + 이름표를 붙이고,
+   이어지는 말풍선은 아바타 없이 같은 들여쓰기로 이어 간다. */
 .row.bot .row-avatar { display: none; }
-.row.bot:not(:has(+ .row.bot)) .row-avatar {
-  display: block; position: absolute; left: 0; bottom: 0; z-index: 1;
-  width: 84px; height: 110px; object-fit: contain; object-position: bottom; pointer-events: none;
+.row.bot:not(.row.bot + .row.bot) { padding-top: 20px; }
+.row.bot:not(.row.bot + .row.bot)::before {
+  content: "호반우"; position: absolute; top: 0; left: 46px; font-size: 12px; font-weight: 600; color: var(--sub);
 }
-.bubble { max-width: 100%; padding: 11px 15px; font-size: 15px; line-height: 1.55; border-radius: 18px; }
-.bot .bubble { background: var(--card); border-bottom-left-radius: 6px; border: 1px solid var(--line); }
-.user .bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 6px; }
+.row.bot:not(.row.bot + .row.bot) .row-avatar {
+  display: block; position: absolute; left: 0; top: 0; width: 38px; height: 38px; border-radius: 50%;
+  object-fit: cover; background: var(--cream-weak, #fff6e5); border: 1px solid var(--line); pointer-events: none;
+}
+.bubble { max-width: 100%; padding: 12px 16px; font-size: 15px; line-height: 1.55; border-radius: 20px; }
+.bot .bubble { background: var(--card); border: 1px solid rgba(0, 0, 0, .04);
+               box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .05); }
+.row.bot:not(.row.bot + .row.bot) .bubble { border-top-left-radius: 6px; }   /* 말꼬리: 첫 말풍선만 */
+.user .bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 6px;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, .06); }
 .typing { display: flex; gap: 5px; padding: 15px 16px; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); animation: blink 1s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s; }
 .typing i:nth-child(3) { animation-delay: .3s; }
 
-.row.choices { flex-direction: column; align-items: stretch; gap: 8px; padding-left: 104px; }
-.row.widget { padding-left: 104px; }
-.widget-card { width: 100%; max-width: 100%; padding: 14px; background: var(--card); border-radius: 18px 18px 18px 6px;
-               border: 1px solid var(--line); }
+/* 선택 버튼: 세로로 길게 쌓지 않고 칩처럼 가로로 이어 붙인다 (자리가 모자라면 다음 줄로) */
+.row.choices { flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; padding-left: 46px; }
+.row.choices .chip { max-width: 100%; padding: 10px 15px; border-radius: 18px; font-size: 14px; text-align: center; line-height: 1.4; }
+.row.choices .chip.ghost { border: 1px solid var(--line); }
+.row.widget { padding-left: 46px; }
+.widget-card { width: 100%; max-width: 100%; padding: 16px; background: var(--card); border-radius: 20px;
+               border: 1px solid rgba(0, 0, 0, .04); box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .05); }
 .chip { padding: 14px 16px; text-align: left; font-size: 15px; font-weight: 600; color: var(--primary-dark);
         background: var(--primary-weak); border-radius: 14px; transition: transform .15s var(--ease-toss), background .15s var(--ease-toss); }
 .chip:active:not(:disabled) { transform: scale(.96); }

@@ -49,18 +49,19 @@ export function fixDeadMedia(root) {
   };
   root.querySelectorAll('img[src^="blob:"]').forEach((el) => swap(el, "📷 제출한 사진"));
   root.querySelectorAll('audio[src^="blob:"]').forEach((el) => swap(el, "🎙️ 제출한 녹음"));
+  // 예전 기록의 아바타(전신 그림)도 얼굴 프로필로
+  root.querySelectorAll(".row-avatar").forEach((el) => { if (el.getAttribute("src") !== AVATAR) el.setAttribute("src", AVATAR); });
 }
 
 function persist() {
   if (persistFn) persistFn(snapshot());
 }
 
-// 봇 말풍선에 붙는 호반우 아바타. 인스타그램 DM처럼 "연속된 봇 메시지 중 마지막"에만
-// 보이도록 하는데, 실제 보일지 말지는 style.css의 :not(:has(+ .row.bot)) 규칙이 처리한다.
-// (고정된 위치가 아니라 매 메시지 안에 들어가므로 스크롤하면 같이 따라간다)
+// 봇 말풍선에 붙는 호반우 프로필(얼굴만 동그랗게). 카카오톡처럼 "연속된 봇 메시지 중 첫 번째"에만
+// 보이도록 하는데, 실제 보일지 말지는 style.css의 :not(.row.bot + .row.bot) 규칙이 처리한다.
+const AVATAR = "img/mascot/avatar.png";
 function avatarHtml() {
-  const src = document.getElementById("chat-mascot")?.getAttribute("src") || "img/mascot/cheer.png";
-  return `<img class="row-avatar" src="${src}" alt="">`;
+  return `<img class="row-avatar" src="${AVATAR}" alt="">`;
 }
 
 function row(cls, html) {
