@@ -12,9 +12,9 @@ export const esc = (s) =>
 
 /* ---------- 화면 전환 ---------- */
 // 탭 화면 4개(home·dex·community·me) + 카드 버튼으로 여는 상세 화면(explore·rank) + 구역(zone)
-const VIEWS = ["onboard", "home", "dex", "community", "me", "explore", "rank", "board", "zone"];
+const VIEWS = ["onboard", "home", "dex", "community", "me", "explore", "rank", "board", "feedback", "zone"];
 // 상세 화면에 있을 때 탭바에서 어느 탭을 켜 둘지 (어느 탭에서 들어왔는지 보이게)
-const PARENT_TAB = { explore: "home", rank: "community", board: "community" };
+const PARENT_TAB = { explore: "home", rank: "community", board: "community", feedback: "me" };
 export function showView(name) {
   VIEWS.forEach((v) => $("view-" + v)?.classList.toggle("hidden", v !== name));
   document.body.dataset.view = name;
@@ -111,10 +111,19 @@ export function renderOnboard(depts, onSubmit) {
       <button id="btn-start" class="btn">시작하기</button>
     </div>
     <p class="onb-privacy">시작하면 <a href="privacy.html" target="_blank" rel="noopener">접속 기록 · 개인정보 안내</a>에 동의한 것으로 봐요.</p>`;
-  const submit = () => {
+  let busy = false;
+  const submit = async () => {
+    if (busy) return;
     const nickname = $("in-nick").value.trim();
     if (nickname.length < 2) { $("onb-err").textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
-    onSubmit({ nickname, dept: $("in-dept").value });
+    // onSubmit이 오류 문구를 돌려주면(예: 이미 가입된 닉네임) 그대로 보여 주고 다시 입력받는다
+    busy = true;
+    $("onb-err").textContent = "";
+    $("btn-start").disabled = true;
+    const err = await onSubmit({ nickname, dept: $("in-dept").value });
+    busy = false;
+    if ($("btn-start")) $("btn-start").disabled = false;
+    if (err && $("onb-err")) { $("onb-err").textContent = err; $("in-nick").focus(); }
   };
   $("btn-start").onclick = submit;
   $("in-nick").onkeydown = (e) => { if (e.key === "Enter") submit(); };
@@ -818,7 +827,8 @@ const COLLEGE_STICKER = {
 export const collegeSticker = (dept) => `img/stickers/college${COLLEGE_STICKER[dept] || "21"}.png`;
 
 /* ---------- 내 정보 ---------- */
-export function renderMe(zones, onReset, onMyPosts = null) {
+// actions: { onMyPosts, onEditNickname, onWithdraw, onFeedback }
+export function renderMe(zones, { onMyPosts = null, onEditNickname, onWithdraw, onFeedback } = {}) {
   const st = getState();
   const myCode = getCachedProfile()?.code;
   const lv = getLevel(st.score);
@@ -842,13 +852,125 @@ export function renderMe(zones, onReset, onMyPosts = null) {
       <div class="sum-foot">'함께하기' 미션에서 친구에게 이 코드를 알려주세요</div>
     </div>` : ""}
     ${menuCard("btn-my-posts", "내가 쓴 글", "커뮤니티에 올린 글 모아 보기", { icon: "📝" })}
-    <h3 class="sec">설정</h3>
-    <button id="btn-reset" class="btn alt" style="margin-top:0">기록 초기화하고 처음부터 시작</button>`;
-  $("btn-reset").onclick = () => {
-    if (confirm("모든 점수와 기록을 지우고 처음부터 시작할까요?")) onReset();
-  };
+    <h3 class="sec">정보 수정</h3>
+    <div class="list-card me-menu">
+      <button type="button" class="me-row" id="btn-edit-nick"><span>닉네임 수정</span><small>${esc(st.profile.nickname)}</small><i aria-hidden="true">›</i></button>
+      <button type="button" class="me-row danger" id="btn-withdraw"><span>회원 탈퇴</span><i aria-hidden="true">›</i></button>
+    </div>
+    <h3 class="sec">의견과 제안</h3>
+    <div class="list-card me-menu">
+      <button type="button" class="me-row" id="btn-feedback"><span>사용한 학생들의 의견을 기다려요</span><i aria-hidden="true">›</i></button>
+    </div>`;
+  $("btn-edit-nick").onclick = onEditNickname;
+  $("btn-withdraw").onclick = onWithdraw;
+  $("btn-feedback").onclick = onFeedback;
   if (onMyPosts) $("btn-my-posts").onclick = onMyPosts;
   $("btn-level-info").onclick = () => showLevelInfo(lv.level);
+}
+
+/* ---------- 내 정보 > 닉네임 수정 ---------- */
+// onSave(닉네임) => Promise<오류 문구 | null>. 오류가 없으면 창을 닫는다.
+export function showNicknameEditor(current, onSave) {
+  const m = $("modal");
+  m.classList.remove("hidden");
+  m.classList.add("modal-center");
+  m.innerHTML = `
+    <div class="modal-card pop-in" style="text-align:left">
+      <h2 style="font-size:19px;text-align:center">닉네임 수정</h2>
+      <p style="text-align:center;font-size:13px;margin-bottom:14px">랭킹·커뮤니티에 보이는 이름이에요. 내가 쓴 글·댓글의 이름도 함께 바뀌어요.</p>
+      <input id="nick-in" class="text-in" maxlength="10" placeholder="2~10자로 입력해 주세요" autocomplete="off" value="${esc(current)}">
+      <p id="nick-err" class="err" style="margin-top:6px"></p>
+      <button id="nick-save" class="btn">저장</button>
+      <button id="nick-cancel" class="btn alt">취소</button>
+    </div>`;
+  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
+  const input = $("nick-in"), err = $("nick-err"), save = $("nick-save");
+  input.focus();
+  input.select();
+  const submit = async () => {
+    const n = input.value.trim();
+    if (n.length < 2) { err.textContent = "닉네임은 2자 이상 입력해 주세요."; return; }
+    if (n === current) { close(); return; }
+    save.disabled = true;
+    save.textContent = "저장하는 중…";
+    const msg = await onSave(n);
+    if (!msg) { close(); return; }
+    err.textContent = msg;
+    save.disabled = false;
+    save.textContent = "저장";
+  };
+  save.onclick = submit;
+  input.onkeydown = (e) => { if (e.key === "Enter") submit(); };
+  input.oninput = () => { err.textContent = ""; };
+  $("nick-cancel").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
+}
+
+/* ---------- 내 정보 > 회원 탈퇴 ---------- */
+// onConfirm() => Promise<boolean>. 성공하면 앱이 처음 화면으로 돌아가므로 여기서 따로 닫지 않는다.
+export function showWithdrawConfirm(onConfirm) {
+  const m = $("modal");
+  m.classList.remove("hidden");
+  m.classList.add("modal-center");
+  m.innerHTML = `
+    <div class="modal-card pop-in" style="text-align:left">
+      <h2 style="font-size:19px;text-align:center">회원 탈퇴</h2>
+      <p style="font-size:14px;margin:6px 0 10px">탈퇴하면 아래 정보가 모두 지워지고 <b>되돌릴 수 없어요.</b></p>
+      <ul class="withdraw-list">
+        <li>닉네임·소속·점수(XP)·레벨과 미션 기록</li>
+        <li>내가 쓴 글·댓글·좋아요와 알림</li>
+        <li>이 기기에 저장된 도감·사진 앨범·투어 기록</li>
+      </ul>
+      <button id="wd-ok" class="btn btn-danger">탈퇴하기</button>
+      <button id="wd-cancel" class="btn alt">취소</button>
+    </div>`;
+  const close = () => { m.classList.add("hidden"); m.classList.remove("modal-center"); m.innerHTML = ""; };
+  $("wd-cancel").onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
+  $("wd-ok").onclick = async () => {
+    const b = $("wd-ok");
+    b.disabled = true;
+    b.textContent = "탈퇴하는 중…";
+    if (!(await onConfirm())) {
+      b.disabled = false;
+      b.textContent = "탈퇴하기";
+      toast("탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+}
+
+/* ---------- 의견과 제안 (내 정보 > 사용한 학생들의 의견을 기다려요) ---------- */
+export const FEEDBACK_TYPES = ["기능 제안", "오류 신고", "장소·미션 제안", "맛집 정보 제보", "디자인·사용성", "기타"];
+// onSend(유형, 내용) => Promise<boolean>
+export function renderFeedback(onSend) {
+  $("view-feedback").innerHTML = `
+    ${subHeader("의견과 제안")}
+    <label class="fb-label" for="fb-type">제안 유형</label>
+    <div class="fb-select">
+      <select id="fb-type" class="text-in" required>
+        <option value="" selected disabled>선택해주세요</option>
+        ${FEEDBACK_TYPES.map((x) => `<option>${esc(x)}</option>`).join("")}
+      </select>
+    </div>
+    <label class="fb-label" for="fb-msg">내용</label>
+    <textarea id="fb-msg" class="text-in fb-msg" maxlength="2000" placeholder="전하고 싶은 내용을 자유롭게 적어주세요."></textarea>
+    <button id="fb-send" class="btn" disabled>보내기</button>
+    <ul class="fb-notes">
+      <li>남겨주신 의견은 모두 꼼꼼히 확인하고 있어요.</li>
+      <li>OnCampus를 함께 만들어 가는 데 큰 힘이 돼요. 고마워요!</li>
+      <li>제출 시 원활한 파악을 위해 기기 정보가 함께 저장되며, <a href="privacy.html" target="_blank" rel="noopener">개인정보 안내</a>에 동의한 것으로 간주돼요.</li>
+    </ul>`;
+  const type = $("fb-type"), msg = $("fb-msg"), send = $("fb-send");
+  const check = () => { send.disabled = !type.value || !msg.value.trim(); };
+  type.onchange = check;
+  msg.oninput = check;
+  send.onclick = async () => {
+    send.disabled = true;
+    send.textContent = "보내는 중…";
+    const ok = await onSend(type.value, msg.value);
+    send.textContent = "보내기";
+    if (!ok) { check(); toast("보내지 못했어요. 잠시 후 다시 시도해 주세요."); }
+  };
 }
 
 // 레벨 기준표 + 내가 실제로 각 레벨을 언제 찍었는지 보여주는 작은 팝업

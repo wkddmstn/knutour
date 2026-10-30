@@ -28,6 +28,7 @@ async function tryEnter(pw) {
   loadAnnouncements();
   loadCommunityPosts();
   loadReports();
+  loadFeedback();
   loadThemes();
   loadHiddenMissions();
   loadDemoSetting();
@@ -121,6 +122,52 @@ async function deleteCommunityPost(id) {
   loadCommunityPosts();
   loadReports();   // 지운 글에 달려있던 신고도 같이 사라짐 (DB에서 cascade 삭제됨)
 }
+
+/* ---------- 💬 의견과 제안 (supabase/account_feedback.sql) ---------- */
+async function loadFeedback() {
+  const list = $("feedback-list");
+  const { data, error } = await client.rpc("admin_list_feedback", { p_password: password });
+  if (error) {
+    list.innerHTML = `<p style="color:var(--mute);font-size:13px">의견을 불러오지 못했어요. Supabase에서 supabase/account_feedback.sql을 실행했는지 확인해 주세요.</p>`;
+    return;
+  }
+  const onlyNew = document.querySelector('input[name="fb-f"]:checked')?.value !== "all";
+  const rows = (data || []).filter((f) => !onlyNew || f.status !== "done");
+  const newCount = (data || []).filter((f) => f.status !== "done").length;
+  $("fb-new").textContent = newCount || "";
+  if (!rows.length) {
+    list.innerHTML = `<p style="color:var(--mute);font-size:13px">${onlyNew ? "새 의견이 없어요." : "아직 받은 의견이 없어요."}</p>`;
+    return;
+  }
+  list.innerHTML = rows.map((f) => `
+    <div class="fb-item ${f.status === "done" ? "done" : ""}">
+      <div class="fb-top">
+        <span class="fb-cat">${esc(f.category)}</span>
+        <span class="fb-who">${f.nickname ? esc(f.nickname) : "(탈퇴한 사용자)"}</span>
+        <time>${new Date(f.created_at).toLocaleString("ko-KR")}</time>
+      </div>
+      <p>${esc(f.message)}</p>
+      ${f.device ? `<div class="fb-dev">${esc(f.device)}</div>` : ""}
+      <div class="meta">
+        <button data-fb-status="${f.id}" data-next="${f.status === "done" ? "new" : "done"}">${f.status === "done" ? "새 의견으로 되돌리기" : "확인 완료"}</button>
+        <button data-fb-del="${f.id}">삭제</button>
+      </div>
+    </div>`).join("");
+  list.querySelectorAll("[data-fb-status]").forEach((btn) => {
+    btn.onclick = async () => {
+      await client.rpc("admin_set_feedback_status", { p_password: password, p_id: btn.dataset.fbStatus, p_status: btn.dataset.next });
+      loadFeedback();
+    };
+  });
+  list.querySelectorAll("[data-fb-del]").forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm("이 의견을 삭제할까요?")) return;
+      await client.rpc("admin_delete_feedback", { p_password: password, p_id: btn.dataset.fbDel });
+      loadFeedback();
+    };
+  });
+}
+document.querySelectorAll('input[name="fb-f"]').forEach((r) => (r.onchange = loadFeedback));
 
 /* ---------- 🚩 신고 접수함 ---------- */
 async function loadReports() {

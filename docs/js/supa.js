@@ -37,6 +37,11 @@ export function getCachedProfile() {
   return cachedProfile;
 }
 
+// 닉네임을 바꾸거나 탈퇴했을 때 기억해 둔 프로필도 맞춰 둔다 (account.js)
+export function setCachedProfile(p) {
+  cachedProfile = p;
+}
+
 export async function findProfileByCode(code) {
   const { data, error } = await client
     .from("profiles").select("*").eq("code", code.trim().toUpperCase()).maybeSingle();

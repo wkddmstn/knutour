@@ -5,6 +5,7 @@ import * as ui from "./ui.js";
 import { runMission, icon } from "./missions.js";
 import { getRanking } from "./ranking.js";
 import { ensureProfile, getCachedProfile } from "./supa.js";
+import { isNicknameTaken, changeNickname, deleteAccount, sendFeedback, NICK_TAKEN_MSG } from "./account.js";   // 내 정보: 닉네임·탈퇴·의견
 import { subscribeFriendRequests, getFriendRequest } from "./friend.js";
 import { activeKey, pairKey } from "./together.js";   // 함께 돌기 실시간 미션
 import { openNotifPanel, closeNotifPanel, refreshBellBadge } from "./notif-ui.js";
@@ -308,11 +309,21 @@ async function runMissionIn(zone, m, extra) {
 }
 
 function showOnboard() {
+  // 오류 문구를 돌려주면 가입 화면에 보여 주고 다시 입력받는다
   ui.renderOnboard(DEPTS, async (profile) => {
+    try {
+      if (await isNicknameTaken(profile.nickname)) return NICK_TAKEN_MSG;
+      await ensureProfile(profile);   // Supabase 프로필 생성 (친구 코드 발급)
+    } catch (e) {
+      // 같은 닉네임으로 거의 동시에 가입한 경우 (서버의 고유 인덱스가 막음)
+      if (e?.code === "23505") return NICK_TAKEN_MSG;
+      console.warn("[가입]", e);
+      return "가입하지 못했어요. 잠시 후 다시 시도해 주세요.";
+    }
     store.saveProfile(profile);
-    await ensureProfile(profile);   // Supabase 프로필 생성 (친구 코드 발급)
     setupNotifications();
     goTab("home");
+    return null;
   });
   ui.showView("onboard");
 }
@@ -322,7 +333,7 @@ function showOnboard() {
 // 상세 화면 3개: explore(홈 > 캠퍼스 탐험 지도 > 미션 하러 가기) · rank(커뮤니티 > 내 순위 > 전체 랭킹)
 //               board(커뮤니티 > 자유게시판 / 질문 카드)
 // 상세 화면의 "‹" 버튼은 자기가 나온 탭으로 돌아간다.
-const BACK_TO = { explore: "home", rank: "community", board: "community" };
+const BACK_TO = { explore: "home", rank: "community", board: "community", feedback: "me" };
 
 /* ================= 주소(#)와 뒤로 가기 ================= */
 // 탭·상세 화면마다 주소를 붙여서 휴대폰·브라우저의 뒤로 가기가 동작하게 한다 (새로고침해도 보던 화면 유지).
@@ -331,7 +342,7 @@ const BACK_TO = { explore: "home", rank: "community", board: "community" };
 // 기록 쌓는 규칙: 홈이 맨 아래. 홈 → 탭은 쌓고, 탭 → 탭은 바꿔치기(그래서 탭에서 뒤로 가면 늘 홈),
 // 상세 화면은 그 위에 쌓는다. 이미 지나온 화면으로 가면(예: 장소 → "다른 장소 보기" → 탐험) 그만큼 뒤로 간다.
 // history.state = { nav, route, opts, depth(몇 번째 기록인지, 홈 0), stack(홈부터 지금까지 화면들) }
-const ROUTE_HASH = { dex: "camera", community: "community", me: "my", explore: "explore", rank: "rank", board: "board" };
+const ROUTE_HASH = { dex: "camera", community: "community", me: "my", explore: "explore", rank: "rank", board: "board", feedback: "feedback" };
 const TAB_ROOTS = new Set(["home", "dex", "community", "me"]);
 const routeUrl = (route) =>
   route === "home" ? location.pathname + location.search
@@ -442,13 +453,38 @@ async function showTab(tab, opts = {}) {
     if (opts.board || opts.filter) { communityFilter = opts.filter || "all"; communityTag = opts.tag || null; }
     await renderCommunityTab();
     ui.showView("board");
+  } else if (tab === "feedback") {
+    ui.renderFeedback(async (category, message) => {
+      if (!(await sendFeedback(category, message))) return false;
+      ui.toast("소중한 의견 고마워요! 꼼꼼히 확인할게요");
+      goBack("me");
+      return true;
+    });
+    ui.showView("feedback");
   } else if (tab === "rank") {
     ui.renderRankView();
     ui.showView("rank");
     showRank(opts.mode || (themes.currentTheme() ? "theme" : "total"));
   } else if (tab === "me") {
-    ui.renderMe(allZones, onReset, () => {
-      goTab("board", { board: "post", filter: "mine" });
+    ui.renderMe(allZones, {
+      onMyPosts: () => goTab("board", { board: "post", filter: "mine" }),
+      onEditNickname: () => ui.showNicknameEditor(store.getState().profile.nickname, async (n) => {
+        if (await isNicknameTaken(n)) return NICK_TAKEN_MSG;
+        const r = await changeNickname(n);
+        if (!r.ok) return r.reason === "taken" ? NICK_TAKEN_MSG
+          : r.reason === "invalid" ? "닉네임은 2~10자로 입력해 주세요." : "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.";
+        store.saveProfile({ ...store.getState().profile, nickname: r.nickname });
+        ui.toast("닉네임을 바꿨어요");
+        showTab("me");
+        return null;
+      }),
+      onWithdraw: () => ui.showWithdrawConfirm(async () => {
+        if (!(await deleteAccount())) return false;
+        store.resetAll();
+        location.replace(location.pathname);   // 처음(가입) 화면부터 다시
+        return true;
+      }),
+      onFeedback: () => goTab("feedback"),
     });
     refreshBellBadge();
     ui.showView("me");
@@ -672,11 +708,6 @@ async function showRank(mode) {
 }
 // 테마 랭킹에 들어가는 미션 (장소 미션 + 특별 미션)
 const themeMissionIds = (t) => [...t.missions, ...t.special.map((sp) => sp.id)];
-
-function onReset() {
-  store.resetAll();
-  showOnboard();
-}
 
 /* ================= 구역 화면 ================= */
 function leaveZone() {

@@ -1318,3 +1318,30 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
   border: 3.5px solid var(--primary-dark); background: var(--card); box-shadow: 0 2px 6px rgba(36, 28, 22, .18); }
 #home-tour-slot .tour-card::before { left: 13%; }
 #home-tour-slot .tour-card::after { right: 13%; }
+
+/* ============ 내 정보: 정보 수정 · 의견과 제안 ============ */
+.me-menu { margin-bottom: 4px; }
+.me-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 16px 18px; text-align: left; background: var(--card);
+          font-size: 15px; font-weight: 600; color: var(--ink); transition: background .15s; }
+.me-row + .me-row { border-top: 1px solid var(--line); }
+.me-row:hover { background: var(--bg); }
+.me-row span { flex: 1; }
+.me-row small { color: var(--mute); font-size: 13px; font-weight: 500; }
+.me-row i { font-style: normal; color: var(--mute); font-size: 20px; line-height: 1; }
+.me-row.danger span { color: var(--red); }
+.withdraw-list { margin: 0 0 6px; padding-left: 20px; color: var(--sub); font-size: 13.5px; line-height: 1.7; }
+.btn.btn-danger { background: var(--red); }
+.modal-card .err { color: var(--red); text-align: left; }   /* 창 안의 오류 문구도 빨갛게 (예: 이미 가입된 닉네임입니다.) */
+
+/* 의견과 제안 화면 */
+.fb-label { display: block; margin: 18px 4px 8px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.fb-select { position: relative; }
+.fb-select select { appearance: none; -webkit-appearance: none; padding-right: 44px; font-size: 16px; }
+.fb-select::after { content: ""; position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; pointer-events: none;
+                    border-right: 2px solid var(--mute); border-bottom: 2px solid var(--mute); transform: rotate(45deg); }
+.fb-select select:invalid, .fb-select select option[value=""] { color: var(--mute); }
+.fb-msg { min-height: 190px; resize: vertical; font-size: 16px; line-height: 1.6; }
+#fb-send { margin-top: 24px; }
+#fb-send:disabled { background: var(--cream-weak); color: var(--mute); box-shadow: none; }
+.fb-notes { margin: 24px 4px 0; padding-left: 18px; color: var(--sub); font-size: 13.5px; line-height: 1.75; }
+.fb-notes a { color: var(--sub); text-decoration: underline; }

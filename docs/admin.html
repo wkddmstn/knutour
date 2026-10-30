@@ -18,6 +18,21 @@
   .ann-item .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
   .ann-item time { font-size: 12px; color: var(--mute); }
   .ann-item button { color: var(--red); font-size: 13px; font-weight: 600; }
+  /* 의견과 제안 */
+  .fb-new { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 4px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 12px; vertical-align: 1px; }
+  .fb-new:empty { display: none; }
+  .fb-filter { display: flex; gap: 14px; margin-bottom: 10px; font-size: 13px; color: var(--sub); }
+  .fb-item { padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+  .fb-item.done { opacity: .55; }
+  .fb-item .fb-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+  .fb-item .fb-cat { padding: 2px 8px; border-radius: 999px; background: var(--primary-weak); color: var(--primary-dark); font-weight: 700; font-size: 12px; }
+  .fb-item .fb-who { font-weight: 700; }
+  .fb-item time { margin-left: auto; font-size: 12px; color: var(--mute); }
+  .fb-item p { margin: 8px 0 0; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+  .fb-item .fb-dev { margin-top: 6px; font-size: 11px; color: var(--mute); word-break: break-all; }
+  .fb-item .meta { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+  .fb-item .meta button { font-size: 12px; font-weight: 700; color: var(--sub); }
+  .fb-item .meta button[data-fb-del] { color: var(--red); }
   .post-item { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
   .post-item img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex: none; }
   .post-item .post-body { flex: 1; min-width: 0; }
@@ -120,6 +135,16 @@
       <h2>커뮤니티 게시판 관리</h2>
       <p style="color:var(--mute);font-size:13px;margin-bottom:10px">부적절한 글이나 사진을 찾아 삭제할 수 있어요.</p>
       <div id="post-list">불러오는 중...</div>
+    </div>
+
+    <div class="admin-card">
+      <h2>💬 의견과 제안 <span id="fb-new" class="fb-new"></span></h2>
+      <p style="color:var(--mute);font-size:13px;margin-bottom:10px">학생들이 내 정보 &gt; 의견과 제안으로 보낸 글이에요. 확인한 의견은 '확인 완료'로 표시해 두세요.</p>
+      <div class="fb-filter">
+        <label><input type="radio" name="fb-f" value="new" checked> 새 의견</label>
+        <label><input type="radio" name="fb-f" value="all"> 전체</label>
+      </div>
+      <div id="feedback-list">불러오는 중...</div>
     </div>
 
     <div class="admin-card">
