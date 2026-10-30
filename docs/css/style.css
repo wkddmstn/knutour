@@ -1309,3 +1309,12 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
 .quiz-ans { margin-left: 6px; font-size: 15px; font-weight: 700; color: var(--ink); }
 .quiz-exp { margin: 10px 0 0 !important; padding: 10px 12px; border-radius: 12px; background: var(--bg); text-align: left;
             font-size: 13.5px; line-height: 1.55; color: var(--sub) !important; }
+
+/* 홈: '미션 하러 가기' 카드와 진행 중인 투어 코스 카드는 이어지는 미션이라, 고리 두 개로 매달린 것처럼 잇는다
+   (코스 카드는 투어 진행 중일 때만 #home-tour-slot에 생김. tour.js의 .tour-card) */
+#home-tour-slot .tour-card { position: relative; margin-top: 22px; }
+#home-tour-slot .tour-card::before, #home-tour-slot .tour-card::after {
+  content: ""; position: absolute; top: -36px; width: 14px; height: 50px; border-radius: 999px; pointer-events: none;
+  border: 3.5px solid var(--primary-dark); background: var(--card); box-shadow: 0 2px 6px rgba(36, 28, 22, .18); }
+#home-tour-slot .tour-card::before { left: 13%; }
+#home-tour-slot .tour-card::after { right: 13%; }
