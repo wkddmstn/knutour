@@ -1271,3 +1271,12 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
 /* 맛집 목록 위 문별로 보기 칩 (전체 · 🚪 북문 44 · …) */
 .gate-chips { margin: -2px 0 6px; }
 .gate-chips button span { margin-left: 2px; font-weight: 600; opacity: .6; }
+/* 지도 핀 묶음: 겹치는 핀들을 숫자 동그라미 하나로 (campusmap.js drawClusters). 많이 모일수록 조금 크게 */
+.cm-pin.cm-clustered { display: none; }
+.cm-cluster { position: absolute; z-index: 2; transform: translate(-50%, -50%); display: grid; place-items: center;
+              width: calc(34px + var(--n, 2) * 1px); height: calc(34px + var(--n, 2) * 1px); padding: 0; border-radius: 50%;
+              background: var(--primary); color: #fff; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums;
+              border: 3px solid var(--card); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 10px rgba(36, 28, 22, .25);
+              cursor: pointer; transition: transform .15s var(--ease-toss); }
+.cm-cluster:active { transform: translate(-50%, -50%) scale(.92); }
+.campus-map.dragging .cm-cluster { pointer-events: none; }

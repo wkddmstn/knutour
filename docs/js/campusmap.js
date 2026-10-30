@@ -314,6 +314,7 @@ export class CampusMap {
     (this.marks || []).forEach((m) => put(m.node, m.lat, m.lng));
     if (this.bubble) put(this.bubble.node, this.bubble.lat, this.bubble.lng);
     this.el.classList.toggle("show-zone-names", this.scale >= this.at.zone);
+    this.drawClusters();
     if (!this._labelRaf) this._labelRaf = requestAnimationFrame(() => { this._labelRaf = 0; this.drawLabels(); });
   }
 
@@ -347,8 +348,11 @@ export class CampusMap {
   // ----- 장소 핀 -----
   // status(zone) → "cleared" | "next" | "" , onSelect(zone)
   // status: "cleared" | "next" | "locked"(다른 테마 장소, 누르면 lockNote 안내만) | ""
-  setZones(zones, { status = () => "", onSelect = null, bubble = true, lockNote = () => "" } = {}) {
+  // cluster: 핀이 많을 때(맛집 지도) 화면에서 겹치는 핀들을 "숫자 동그라미"로 묶는다. 확대할수록 풀린다.
+  //   { radius: 묶는 거리(px), skip: (z) => true면 안 묶음(문 표시·선택한 가게 등) }. 안 주면 묶지 않는다.
+  setZones(zones, { status = () => "", onSelect = null, bubble = true, lockNote = () => "", cluster = null } = {}) {
     this.pins.forEach((p) => p.node.remove());
+    this.cluster = cluster;
     this.pins = zones.map((z) => {
       const st = status(z);
       const node = document.createElement("button");
@@ -366,9 +370,65 @@ export class CampusMap {
         if (bubble) this.showBubble(z, st, onSelect); else onSelect(z);
       };
       this.layer.appendChild(node);
-      return { lat: z.lat, lng: z.lng, node };
+      return { lat: z.lat, lng: z.lng, node, z };
     });
     this.place();
+  }
+
+  // ----- 핀 묶기 (숫자 동그라미) -----
+  // 지금 확대 정도에서 화면상 radius px 안에 모인 핀들을 한 묶음으로. 앞에서부터 차례로 묶는 단순한 방식(핀 100개 안팎이면 충분히 빠름).
+  // 같은 건물처럼 사실상 같은 자리(8m 안)에 있는 핀은 아무리 확대해도 안 풀리니 묶지 않고 그대로 둔다.
+  drawClusters() {
+    const pool = (this.clusterNodes ||= []);
+    let used = 0;
+    if (this.cluster) {
+      const s = this.scale, R = this.cluster.radius || 44, skip = this.cluster.skip || (() => false);
+      const pts = this.pins.filter((p) => !skip(p.z)).map((p) => ({ p, x: (px(p.lng) - this.vb.x) * s, y: (py(p.lat) - this.vb.y) * s }));
+      // 핀 하나하나를 묶음으로 시작해서, 중심끼리 R보다 가까운 두 묶음을 더 이상 없을 때까지 합친다 (숫자 동그라미끼리도 안 겹치게)
+      let groups = pts.map((b) => ({ m: [b], x: b.x, y: b.y }));
+      for (let merged = true; merged;) {
+        merged = false;
+        for (let i = 0; i < groups.length && !merged; i++) {
+          for (let j = i + 1; j < groups.length; j++) {
+            const A = groups[i], B = groups[j];
+            if (Math.hypot(A.x - B.x, A.y - B.y) > R) continue;
+            const m = [...A.m, ...B.m];
+            groups[i] = { m, x: m.reduce((t, b) => t + b.x, 0) / m.length, y: m.reduce((t, b) => t + b.y, 0) / m.length };
+            groups.splice(j, 1);
+            merged = true;
+            break;
+          }
+        }
+      }
+      const taken = new Set();
+      for (const { m: group } of groups) {
+        if (group.length < 2) continue;
+        const spreadM = Math.max(...group.flatMap((b) => group.map((c) => Math.hypot(b.x - c.x, b.y - c.y)))) / s;
+        if (spreadM < 8) continue;
+        group.forEach((b) => { taken.add(b); b.p.node.classList.add("cm-clustered"); });
+        let node = pool[used];
+        if (!node) {
+          node = pool[used] = document.createElement("button");
+          node.type = "button";
+          node.className = "cm-cluster";
+          this.layer.appendChild(node);
+        }
+        used++;
+        const n = group.length;
+        node.hidden = false;
+        node.textContent = n;
+        node.setAttribute("aria-label", `가게 ${n}곳 모여 있음, 눌러서 확대`);
+        node.style.setProperty("--n", Math.min(n, 30));
+        node.style.left = (group.reduce((t, b) => t + b.x, 0) / n / this.el.clientWidth) * 100 + "%";
+        node.style.top = (group.reduce((t, b) => t + b.y, 0) / n / this.el.clientHeight) * 100 + "%";
+        const members = group.map((b) => ({ lat: b.p.lat, lng: b.p.lng }));
+        node.onclick = (e) => { e.stopPropagation(); this.fit(members, 30); };
+      }
+      this.pins.forEach((p) => { if (!pts.some((b) => b.p === p && taken.has(b))) p.node.classList.remove("cm-clustered"); });
+    } else {
+      this.pins.forEach((p) => p.node.classList.remove("cm-clustered"));
+    }
+    for (let i = used; i < pool.length; i++) pool[i].hidden = true;
   }
   // 핀을 누르면 뜨는 작은 말풍선: 장소 이름 + "미션 보기"
   showBubble(z, st, onSelect, note = "") {
