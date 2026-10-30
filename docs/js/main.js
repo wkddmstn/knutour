@@ -34,6 +34,9 @@ const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
 // 데모 모드: true면 실제 GPS를 쓰지 않고, 구역에 들어올 때마다 "위치 이동" 버튼을 눌러야 미션이 시작됩니다.
 // 실제 운영 때는 false로 바꾸세요.
 const DEMO_MODE = true;
+// (장주연) 화면 배치 스위치 — 언제든 false로 바꾸면 예전 모습으로 돌아간다
+const FOOD_ON_HOME = true;      // true: 맛집을 홈 "미션 하러 가기" 아래 카드로 / false: 캠퍼스 탐험의 "장소 | 맛집" 탭으로
+const OPEN_ALL_PLACES = true;   // true: 장소는 늘 열고 미션만 이번 시즌 것 / false: 이번 시즌에 미션 없는 장소는 잠금
 
 // 소속 목록은 학교 상황에 맞게 수정하세요
 const DEPTS = ["인문대학", "사회과학대학", "자연과학대학", "경상대학", "공과대학", "IT대학",
@@ -179,6 +182,10 @@ async function init() {
     try {
       await themes.loadThemes();
       ({ active: zones, locked: lockedZones } = themes.splitZones(allZones));
+      if (OPEN_ALL_PLACES) {   // (장주연) 모든 장소를 열되, 미션은 이번 시즌 것만 (없으면 빈 목록 → 둘러보기만)
+        zones = allZones.map((z) => zones.find((a) => a.id === z.id) || { ...z, missions: [] });
+        lockedZones = [];
+      }
     } catch (e) {
       console.warn("[테마] 불러오지 못해서 모든 장소를 엽니다", e);
     }
@@ -186,7 +193,7 @@ async function init() {
     // 지도 모양 데이터 (탐험·장소 화면 지도에서 씀). 못 불러와도 지도만 빠지고 앱은 계속 동작한다
     await loadCampusData().catch((e) => console.warn("[지도] 캠퍼스 지도 데이터를 불러오지 못했어요", e));
     // 이미 깨놓은 구역들을 기준점으로 잡아둬서, 첫 화면에서 "방금 깼다" 효과가 잘못 뜨지 않게 한다
-    lastClearedSet = new Set(zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
+    lastClearedSet = new Set(zones.filter(zoneCleared).map((z) => z.id));
   } catch {
     $("view-explore").classList.remove("hidden");
     $("view-explore").innerHTML = `<div class="card">데이터를 불러오지 못했어요.<br>Live Server로 열었는지, data/zones.json 경로가 맞는지 확인해 주세요.</div>`;
@@ -316,10 +323,25 @@ async function goTab(tab, opts = {}) {
     ui.showView("home");
     renderDailySection();
     try { tour?.renderQuestCard($("home-tour-slot")); } catch (e) { console.warn("[투어]", e); }   // 투어 카드 (장주연)
+    // (장주연) 홈 카드: 맛집(스위치), AR 호반우 만나기 (투어 카드 아래)
+    import("./home-cards.js").then((hc) => {
+      if (document.body.dataset.view !== "home") return;
+      if (FOOD_ON_HOME) hc.renderFoodCard($("home-food-slot"), () => goTab("explore", { food: true }));
+      hc.renderArCard($("home-ar-slot"), {
+        zones: allZones,
+        meet: async (zone) => {
+          const r = await startAR(zone);
+          if (r?.met && store.grantBonus("ar:" + zone.id, 20)) ui.reward(20);
+          ui.updateHud();
+        },
+      });
+    }).catch((e) => console.warn("[홈 카드]", e));
     refreshBellBadge();
   } else if (tab === "explore") {
-    const clearedCount = zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).length;
-    ui.renderExplore(clearedCount, zones.length, exploreMode, themes.currentTheme());
+    if (FOOD_ON_HOME) exploreMode = opts.food ? "food" : "zones";   // (장주연) 맛집은 홈 카드로만 들어온다
+    const mz = zones.filter((z) => z.missions.length);   // 미션이 있는 장소만 진행도에 센다
+    const clearedCount = mz.filter(zoneCleared).length;
+    ui.renderExplore(clearedCount, mz.length, exploreMode, themes.currentTheme(), { seg: !FOOD_ON_HOME });
     ui.showView("explore");
     $("view-explore").querySelectorAll("[data-mode]").forEach((b) => {
       b.onclick = () => { if (exploreMode !== b.dataset.mode) { exploreMode = b.dataset.mode; goTab("explore"); } };
@@ -533,7 +555,7 @@ async function renderCommunityTab() {
 
 // 구역 목록: 직전 렌더 이후 새로 클리어된 구역엔 "통과" 도장 효과를 준다
 function renderZoneListSection() {
-  const clearedNow = new Set(zones.filter((z) => z.missions.every((m) => store.isDone(m.id))).map((z) => z.id));
+  const clearedNow = new Set(zones.filter(zoneCleared).map((z) => z.id));
   const justCleared = new Set([...clearedNow].filter((id) => !lastClearedSet.has(id)));
   ui.renderZoneList(zones, store.isDone, justCleared, lockedZones);
   document.querySelectorAll("#zone-list .zone-row").forEach((btn) => {
@@ -713,7 +735,7 @@ async function runZone(zone, resuming = false) {
     if (first) ui.reward(10);
     await chat.bot(
       "좋아, <b>위치 인증 완료</b>!<br>" +
-      (first ? "도착 보너스 10 XP 챙겼어. " : "") + "이제 미션 시작해볼까?"
+      (first ? "도착 보너스 10 XP 챙겼어. " : "") + (zone.missions.length ? "이제 미션 시작해볼까?" : "천천히 둘러보자!")
     );
 
   }
@@ -850,6 +872,15 @@ async function missionMenu(zone) {
   let replay = false;   // 구역 클리어 후 "사진·AR 미션 다시 하기"를 고른 경우 (장주연)
   while (true) {
     const left = zone.missions.filter((m) => !store.isDone(m.id));
+    if (!zone.missions.length) {   // (장주연) 이번 시즌 미션이 없는 장소: "미션 없어요" 대신 둘러보기만
+      const pick = await chat.choices([
+        ...tourItem(zone),
+        { label: "다른 장소 보기", value: "explore" },
+      ]);
+      if (pick === "__tour") tour?.next(zone);
+      else goTab("explore");
+      return;
+    }
     if (!left.length && !replay) {
       if ((await finishZone(zone)) !== "stay") return;
       replay = true;
@@ -891,7 +922,7 @@ async function missionMenu(zone) {
   }
 }
 
-const allCleared = () => zones.every((z) => z.missions.every((m) => store.isDone(m.id)));
+const allCleared = () => zones.filter((z) => z.missions.length).every(zoneCleared);
 
 async function finishZone(zone) {
   if (store.grantBonus("zone:" + zone.id, 50)) {
@@ -924,7 +955,8 @@ async function finishZone(zone) {
 }
 
 /* ================= 지도 (캠퍼스 일러스트 지도, campusmap.js) ================= */
-const zoneCleared = (zone) => zone.missions.every((m) => store.isDone(m.id));
+// 미션이 없는 장소(이번 시즌 미션 없음)는 "클리어"로 치지 않는다 (장주연)
+function zoneCleared(zone) { return zone.missions.length > 0 && zone.missions.every((m) => store.isDone(m.id)); }
 
 // 탐험 화면: 캠퍼스 전체 + 장소 핀. 핀을 누르면 말풍선 → "미션 보기"
 function initCampusMap(onSelect) {
@@ -932,7 +964,7 @@ function initCampusMap(onSelect) {
   if (!zones.length || !el) return;
   if (!campusDataReady()) { el.textContent = "지도를 불러오지 못했어요. 아래 목록에서 장소를 골라 주세요."; return; }
   campusMap = new CampusMap(el);
-  const next = zones.find((z) => !zoneCleared(z));
+  const next = zones.find((z) => z.missions.length && !zoneCleared(z));
   // 지금 테마 장소 + 다른 테마 장소(잠금 핀, 누르면 "○○에 열려요")
   campusMap.setZones([...zones, ...lockedZones], {
     status: (z) => (z.openTheme !== undefined ? "locked" : zoneCleared(z) ? "cleared" : z === next ? "next" : ""),

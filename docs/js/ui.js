@@ -155,8 +155,10 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
       ${heroHtml(theme, nextZone)}
       <button id="btn-go-quest" class="btn cta-glow">${nextZone ? "미션 하러 가기" : "다시 둘러보기"}</button>
     </div>
+    <div id="home-food-slot"></div>
     <div id="daily-section"></div>
     <div id="home-tour-slot"></div>
+    <div id="home-ar-slot"></div>
     ${hidden ? `
     <div class="card hidden-mission-card">
       <div class="sum-label">✨ 히든미션</div>
@@ -173,11 +175,12 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
 
 /* ---------- 캠퍼스 탐험 (홈 카드의 "미션 하러 가기"로 여는 상세 화면): 지도 · 장소 목록 ---------- */
 // mode: "zones"(미션 장소) | "food"(맛집), theme: 지금 시즌 테마(themes.js, 장소 화면 안내에 표시). 위쪽 전환 버튼은 data-mode, 맛집 화면의 필터·목록은 renderFood()가 채운다.
-export function renderExplore(cleared = 0, total = 0, mode = "zones", theme = null) {
+export function renderExplore(cleared = 0, total = 0, mode = "zones", theme = null, { seg = true } = {}) {
   const food = mode === "food";
+  // seg=false (장주연): 맛집이 홈 카드로 빠졌을 때는 "장소 | 맛집" 탭을 숨기고 제목만 바꾼다
   $("view-explore").innerHTML = `
-    ${subHeader("캠퍼스 탐험", food ? "" : `<span class="qm-chip">${cleared} / ${total} 장소</span>`)}
-    <div class="seg" role="tablist" style="margin:4px 0 8px">
+    ${subHeader(food && !seg ? "학교 근처 맛집" : "캠퍼스 탐험", food ? "" : `<span class="qm-chip">${cleared} / ${total} 장소</span>`)}
+    <div class="seg${seg ? "" : " hidden"}" role="tablist" style="margin:4px 0 8px">
       <button data-mode="zones" role="tab" aria-selected="${!food}" class="${food ? "" : "on"}">📍 장소</button>
       <button data-mode="food" role="tab" aria-selected="${food}" class="${food ? "on" : ""}">🍽️ 맛집</button>
     </div>
@@ -261,17 +264,17 @@ export function renderZoneList(zones, isDone, justCleared = new Set(), locked = 
   const rows = zones
     .map((z) => ({
       zone: z,
-      done: z.missions.every((m) => isDone(m.id)),
+      done: z.missions.length > 0 && z.missions.every((m) => isDone(m.id)),   // 미션 없는 장소는 "통과"로 안 침 (장주연)
       doneCnt: z.missions.filter((m) => isDone(m.id)).length,
     }))
-    .sort((a, b) => Number(a.done) - Number(b.done));
+    .sort((a, b) => (!a.zone.missions.length - !b.zone.missions.length) || Number(a.done) - Number(b.done));   // 미션 있는 장소 먼저 (장주연)
 
   el.innerHTML = rows.map(({ zone: z, done, doneCnt }) => `
     <button type="button" class="zone-row ${done ? "cleared" : ""} ${justCleared.has(z.id) ? "just-cleared" : ""}" data-zone="${z.id}">
       <span class="zr-emoji">${zoneIcon(z)}</span>
       <span class="zr-body">
         <strong>${esc(z.name)}</strong>
-        <span>${doneCnt}/${z.missions.length} 미션</span>
+        <span>${z.missions.length ? `${doneCnt}/${z.missions.length} 미션` : "둘러보기"}</span>
       </span>
       ${done ? '<span class="zr-check">✓ 통과</span>' : '<span class="zr-arrow">›</span>'}
     </button>`).join("") + (locked.length ? `

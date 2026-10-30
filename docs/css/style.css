@@ -42,7 +42,7 @@ h1, h2, h3 { margin: 0; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 main { padding: calc(8px + env(safe-area-inset-top)) 16px calc(116px + env(safe-area-inset-bottom)); }
-body[data-view="zone"] main { padding-bottom: 40px; }
+body[data-view="zone"] main { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }   /* 아이폰 홈 바에 마지막 버튼이 가리지 않게 */
 .view { animation: viewIn .38s var(--ease-toss); }
 
 /* ============ 줄무늬 포인트 악센트 (호반우 무늬 모티브) ============ */
@@ -355,7 +355,7 @@ body[data-view="zone"] #tabbar, body[data-view="onboard"] #tabbar { display: non
 .fab:hover { transform: translateY(-2px); }
 .fab:active { transform: scale(.92); background: var(--primary-dark); }
 body[data-view="board"] .fab { display: grid; animation: fabIn .35s var(--ease-toss); }
-body[data-view="board"] main { padding-bottom: 160px; }   /* 마지막 카드가 버튼에 가려지지 않게 */
+body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }   /* 마지막 카드가 글쓰기 버튼·탭바에 가려지지 않게 */
 @keyframes fabIn { from { opacity: 0; transform: scale(.6); } }
 
 /* ============ 알림 · 하단 시트 ============ */

@@ -242,7 +242,9 @@ async function shotThumb(file) {
 }
 
 async function photo(m, zone) {
-  const withHob = !!(zone && MASCOTS[zone.id]);   // 이 장소에 호반우가 있으면 "호반우와 함께 찍기" 제공 (장주연)
+  // (장주연) 장소 미션에서는 AR 호반우 선택칸을 뺐다 (호반우는 홈 "AR 호반우 만나기"·도감에서). 다시 넣으려면 HOB_IN_PHOTO = true
+  const HOB_IN_PHOTO = false;
+  const withHob = HOB_IN_PHOTO && !!(zone && MASCOTS[zone.id]);
   while (true) {
     const file = await chat.ask((card, done) => {
       card.innerHTML = `

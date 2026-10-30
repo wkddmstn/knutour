@@ -730,6 +730,8 @@ const isMobile = () => isIOS() || /Android/i.test(navigator.userAgent);
 export function openPhotoStudio({ items, start, submit = false, place = "", zoneId = null } = {}) {
   injectStyle();
   items = items || collectedItems();
+  // (장주연) 모은 호반우가 없어도 기본 호반우 + 기본 프레임으로 바로 찍을 수 있게
+  if (!items.length) items = [{ id: "basic", name: "호반우", img: DEFAULT.img }];
 
   return new Promise((resolve) => {
     const root = el("div");

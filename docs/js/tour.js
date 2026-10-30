@@ -4,7 +4,9 @@
 // main.js는 이 파일을 "있으면 쓰는" 방식(동적 import + try/catch)으로 불러온다.
 // 그래서 이 파일에 문제가 생겨도 기존 앱(구역 채팅·미션·AR)은 그대로 동작한다.
 import * as geo from "./geo.js";
-import { MASCOTS, setHobanuPaneExtra } from "./ar.js";
+import { MASCOTS, setHobanuPaneExtra, startAR, openPhotoStudio } from "./ar.js";
+import * as bgm from "./tour-bgm.js";   // 안내 음성이 없을 때 깔리는 배경 음악 (말할 땐 작아짐)
+import { currentTheme } from "./themes.js";
 
 export const TOUR_ON = true;          // false로 바꾸면 투어 카드/버튼이 전부 사라진다
 const DEMO_WALK = true;               // 시연용 "데모로 걸어가기" 버튼 (실제 운영 때는 false)
@@ -150,18 +152,19 @@ function playKey(key, fallbackText, { mode = "interrupt", onStart } = {}) {
   if (playing && mode === "queue") { waiting = { key, fallbackText, onStart }; return; }
   waiting = null;
   onStart?.();
-  const done = () => { playing = false; const w = waiting; waiting = null; if (w) playKey(w.key, w.fallbackText, { onStart: w.onStart }); };
+  const done = () => { playing = false; const w = waiting; waiting = null; if (w) playKey(w.key, w.fallbackText, { onStart: w.onStart }); else bgm.duck(false); };
   if (!SCRIPT[key]) { speak(text, { interrupt: true }); playing = false; return; }
   try { speechSynthesis.cancel(); } catch {}
   const a = getVoiceEl();
   try { a.pause(); } catch {}
   playing = true;
+  bgm.duck(true);
   a.onended = done;
   a.onerror = () => { speak(text, { interrupt: true }); done(); };
   a.src = AUDIO_DIR + key + ".mp3";
   a.play().catch(() => { speak(text, { interrupt: true }); done(); });
 }
-function stopVoice() { waiting = null; playing = false; try { voiceEl?.pause(); } catch {} try { speechSynthesis.cancel(); } catch {} }
+function stopVoice() { waiting = null; playing = false; bgm.duck(false); try { voiceEl?.pause(); } catch {} try { speechSynthesis.cancel(); } catch {} }
 const voiceOn = () => { try { return localStorage.getItem(VOICE_KEY) !== "off"; } catch { return true; } };
 const setVoice = (on) => { try { localStorage.setItem(VOICE_KEY, on ? "on" : "off"); } catch {} if (!on) { try { speechSynthesis.cancel(); } catch {} try { voiceEl?.pause(); } catch {} } };
 let koVoice = null;
@@ -183,6 +186,8 @@ function speak(text, { interrupt = false } = {}) {
     const u = new SpeechSynthesisUtterance(t);
     u.lang = "ko-KR"; u.rate = 1.05; u.pitch = 1.1;
     if (koVoice) u.voice = koVoice;
+    u.onstart = () => bgm.duck(true);
+    u.onend = u.onerror = () => { if (!playing) bgm.duck(false); };
     speechSynthesis.speak(u);
   } catch {}
 }
@@ -258,6 +263,32 @@ function injectStyle() {
     background:var(--line,#e5e8eb);color:inherit}
   #tour-move .tm-btns button.primary{background:var(--primary,#d4121a);color:#fff}
   #tour-move .tm-arrive{animation:tm-pop .5s var(--ease-toss,ease-out)}
+  /* (장주연) 걸어가는 호반우 띠: 홈 카드(hero.js) 그림을 작게 재사용. 움직일 때만 걷고 배경이 흐른다 */
+  #tour-move .tm-walk{height:92px;margin:6px 14px 0;border-radius:18px;flex:none}
+  #tour-move .tm-walk .hx-layer{width:auto}
+  #tour-move .tm-walk .hx-layer svg{width:240px}
+  #tour-move .tm-walk .hx-far{animation:tmScroll 22s linear infinite}
+  #tour-move .tm-walk .hx-near{animation:tmScroll 8s linear infinite}
+  #tour-move .tm-walk .hx-walker{left:30%;bottom:6px;width:62px;margin-left:-31px;animation-duration:.42s}
+  #tour-move .tm-walk .hx-walker .hx-f1,#tour-move .tm-walk .hx-walker .hx-f2{animation-duration:.42s}
+  #tour-move .tm-walk .tm-sweat{position:absolute;left:calc(30% + 22px);bottom:62px;z-index:4;font-size:13px;animation:tmSweat .9s ease-out infinite}
+  #tour-move .tm-walk .tm-sweat.s2{left:calc(30% - 30px);bottom:56px;animation-delay:.45s;font-size:11px}
+  #tour-move .tm-walk .tm-goal{position:absolute;right:12px;bottom:8px;z-index:3;width:58px;height:58px;object-fit:contain;opacity:0;transition:opacity .4s}
+  #tour-move .tm-walk:not(.moving) .hx-layer,#tour-move .tm-walk:not(.moving) .hx-walker,#tour-move .tm-walk:not(.moving) .hx-walker img{animation-play-state:paused}
+  #tour-move .tm-walk:not(.moving) .tm-sweat{display:none}
+  #tour-move .tm-walk.arrived .hx-walker{left:62%;transition:left .8s ease-out}
+  #tour-move .tm-walk.arrived .tm-goal{opacity:1}
+  #tour-move .tm-walk .tm-state{position:absolute;left:10px;top:8px;z-index:5;background:rgba(255,255,255,.88);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:800;color:var(--primary,#d4121a)}
+  @keyframes tmScroll{to{transform:translateX(-240px)}}
+  @keyframes tmSweat{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(10px,-14px)}}
+  /* 대화 기록: 호반우가 한 말이 위로 쌓인다 (마지막 말이 말풍선) */
+  #tour-move .tm-log{flex:none;max-height:112px;overflow-y:auto;padding:8px 14px 0;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+  #tour-move .tm-log p{margin:0;align-self:flex-start;max-width:92%;background:var(--cream-weak,#f2f4f6);border-radius:14px 14px 14px 4px;padding:7px 11px;font-size:12.5px;line-height:1.45;color:var(--sub,#4e5968)}
+  #tour-move .tm-log p:last-child{font-size:14.5px;color:var(--ink,#191f28);padding:10px 13px;background:var(--primary-weak,#fbe7e5)}
+  #tour-move .tm-tools{display:flex;gap:8px;padding:8px 14px 0}
+  #tour-move .tm-tools button{flex:1;width:auto;margin:0;padding:9px 6px;border:1px solid var(--line,#e5e8eb);border-radius:12px;background:var(--card,#fff);color:inherit;font-size:13px;font-weight:800;font-family:inherit}
+  #tour-move .tm-tools button.off{opacity:.55}
+  @media (prefers-reduced-motion:reduce){ #tour-move .tm-walk *{animation:none!important} }
   .tour-pin{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--primary,#d4121a);display:flex;align-items:center;justify-content:center;
     font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,.25)}
   .tour-tip{background:#d4121a;color:#fff;border:none;border-radius:999px;padding:3px 9px;font-weight:800;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
@@ -270,6 +301,7 @@ function injectStyle() {
   @keyframes tm-pop{0%{transform:scale(.9);opacity:.3}100%{transform:none;opacity:1}}
   /* PC(넓은 화면)·휴대폰 가로: 왼쪽 큰 지도 + 오른쪽 안내 */
   @media (orientation:landscape) and (max-height:520px){ #tour-move .tm-guide img{width:56px!important;height:56px!important}
+    #tour-move .tm-side{overflow-y:auto} #tour-move .tm-walk{height:70px} #tour-move .tm-log{max-height:84px}
     #tour-move .tm-bubble{font-size:13.5px!important;padding:8px 12px} #tour-move .tm-btns button{padding:11px} #tour-move .tm-arrow{width:52px;height:52px} }
   @media (min-width:900px), (orientation:landscape) and (max-height:520px){
     #tour-move{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);grid-template-rows:auto auto minmax(0,1fr) auto}
@@ -277,7 +309,7 @@ function injectStyle() {
     #tour-map{grid-column:1;grid-row:3;margin:0 0 0 16px;min-height:0}
     #tour-move .tm-legend{grid-column:1;grid-row:4;padding:6px 16px 12px}
     #tour-move .tm-side{grid-column:2;grid-row:3 / 5;display:flex;flex-direction:column;justify-content:center;padding:0 8px 16px}
-    #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} }`;
+    #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} #tour-move .tm-log{max-height:240px} }`;
   document.head.appendChild(s);
 }
 
@@ -377,6 +409,21 @@ export function next(zone) {
 
 /* ---------------- 이동 화면 ---------------- */
 let mv = null;   // 지금 열린 이동 화면의 상태
+const LOG_KEY = "knu-tour-log";   // 호반우 대화 기록 (이 탭을 닫으면 지워짐)
+let tourLog = (() => { try { return JSON.parse(sessionStorage.getItem(LOG_KEY)) || []; } catch { return []; } })();
+// 걷는 호반우 배경 (hero.js 그림을 단순하게 다시 그림: 먼 언덕·건물 / 가까운 나무·건물)
+const FAR_SVG = `<svg viewBox="0 0 600 230" preserveAspectRatio="xMinYMax meet" aria-hidden="true">
+  <path d="M0 200 Q80 150 170 190 T360 185 T600 195 V230 H0Z" fill="var(--hx-hill2)"/>
+  <rect x="40" y="120" width="70" height="80" rx="22" fill="var(--hx-far1)"/><circle cx="75" cy="118" r="26" fill="var(--hx-far2)"/>
+  <rect x="250" y="110" width="90" height="90" rx="26" fill="var(--hx-far3)"/>
+  <rect x="440" y="130" width="60" height="70" rx="20" fill="var(--hx-far4)"/><circle cx="470" cy="128" r="20" fill="var(--hx-far4)"/></svg>`;
+const NEAR_SVG = `<svg viewBox="0 0 600 230" preserveAspectRatio="xMinYMax meet" aria-hidden="true">
+  <path d="M0 206 Q150 186 300 204 T600 204 V230 H0Z" fill="var(--hx-hill)"/>
+  <rect x="10" y="118" width="110" height="90" rx="26" fill="var(--hx-wall)"/><path d="M10 140 Q65 84 120 140Z" fill="var(--hx-roof)"/>
+  <circle cx="168" cy="168" r="24" fill="var(--hx-tree1)"/><circle cx="186" cy="152" r="18" fill="var(--hx-tree2)"/><rect x="163" y="186" width="10" height="22" rx="5" fill="var(--hx-trunk)"/>
+  <ellipse cx="300" cy="200" rx="46" ry="10" fill="var(--hx-pool)"/><path d="M300 196 Q290 170 300 150 Q310 170 300 196" fill="var(--hx-jet)"/>
+  <rect x="390" y="124" width="100" height="84" rx="26" fill="var(--hx-wall)"/><rect x="390" y="124" width="100" height="26" rx="13" fill="var(--hx-roof2)"/>
+  <circle cx="540" cy="174" r="20" fill="var(--hx-tree3)"/><circle cx="556" cy="160" r="15" fill="var(--hx-tree4)"/><rect x="536" y="188" width="9" height="20" rx="4.5" fill="var(--hx-trunk)"/></svg>`;
 function closeMove() {
   if (!mv) return;
   try { mv.stop(); } catch {}
@@ -399,6 +446,8 @@ function _openMove(first) {
   if (!zone) return;
   const prev = st.idx === 0 ? GATES[st.gate || "main"] : zoneById(c.stops[st.idx - 1]);
   const mascot = MASCOTS[zone.id]?.img || "img/hobanu/react-hi.png";
+  const themeId = (() => { try { return currentTheme()?.id || ""; } catch { return ""; } })();
+  if (first) { tourLog = []; try { sessionStorage.removeItem(LOG_KEY); } catch {} }
 
   const root = document.createElement("div");
   root.id = "tour-move";
@@ -416,13 +465,75 @@ function _openMove(first) {
         <div class="tm-arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L33 34 L20 27 L7 34 Z" fill="var(--primary,#d4121a)"/></svg></div>
         <div class="tm-dist"><b>${zone.emoji || "📍"} ${zone.name}</b><span>거리를 재는 중…</span></div>
       </div>
-      <div class="tm-guide"><img src="${mascot}" alt="호반우"><div class="tm-bubble"></div></div>
+      <div class="tm-walk hx-stage hx-${["cherry", "midterm"].includes(themeId) ? themeId : "march"}" aria-hidden="true">
+        <div class="hx-layer hx-far">${FAR_SVG.repeat(4)}</div>
+        <div class="hx-layer hx-near">${NEAR_SVG.repeat(4)}</div>
+        <div class="hx-walker"><img class="hx-f1" src="img/mascot/commute1.png" alt=""><img class="hx-f2" src="img/mascot/commute2.png" alt=""></div>
+        <span class="tm-sweat">💦</span><span class="tm-sweat s2">💦</span>
+        <img class="tm-goal" src="${mascot}" alt="">
+        <span class="tm-state">잠깐 쉬는 중</span>
+      </div>
+      <div class="tm-log" aria-live="polite"></div>
+      <div class="tm-tools">
+        <button data-t="photo">📸 사진</button>
+        <button data-t="pet">🤚 쓰다듬기</button>
+        <button data-t="bgm"></button>
+      </div>
       <div class="tm-btns"></div>
     </div>`;
   document.body.appendChild(root);
   const $ = (s) => root.querySelector(s);
-  const bubble = (t, opt) => { $(".tm-bubble").textContent = clean(t); speak(t, opt); };
-  const say = (key, fallback, mode = "interrupt") => playKey(key, fallback, { mode, onStart: () => { const b = root.querySelector(".tm-bubble"); if (b) b.textContent = clean(SCRIPT[key] || fallback); } });
+  // (장주연) 호반우가 한 말은 대화 기록으로 쌓는다 (투어 내내 유지, 장소가 바뀌어도 이어서 보임)
+  const logBox = $(".tm-log");
+  const paintLog = () => {
+    logBox.innerHTML = tourLog.map((t) => `<p>${t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</p>`).join("");
+    logBox.scrollTop = logBox.scrollHeight;
+  };
+  const addLog = (t) => {
+    t = clean(t);
+    if (!t || tourLog[tourLog.length - 1] === t) return;
+    tourLog.push(t);
+    if (tourLog.length > 40) tourLog.shift();
+    try { sessionStorage.setItem(LOG_KEY, JSON.stringify(tourLog)); } catch {}
+    if (mv?.root === root || !mv) paintLog();
+  };
+  paintLog();
+  const bubble = (t, opt) => { addLog(t); speak(t, opt); };
+  const say = (key, fallback, mode = "interrupt") => playKey(key, fallback, { mode, onStart: () => addLog(SCRIPT[key] || fallback) });
+
+  // --- 걷는 호반우: 실제로 움직이는 동안만 걷는다 ---
+  const walk = $(".tm-walk");
+  let lastMoveAt = 0, lastP = null;
+  const setMoving = (on) => {
+    walk.classList.toggle("moving", on);
+    walk.querySelector(".tm-state").textContent = arrived ? "도착!" : on ? "열심히 걷는 중" : "잠깐 쉬는 중";
+  };
+  const moveTimer = setInterval(() => { if (!arrived) setMoving(demoRunning || Date.now() - lastMoveAt < 6000); }, 1000);
+
+  // --- 도구: 사진 · 쓰다듬기 · 배경 음악 ---
+  const bgmBtn = $('[data-t="bgm"]');
+  const paintBgm = () => { bgmBtn.textContent = bgm.isOn() ? "🎵 음악 켬" : "🎵 음악 끔"; bgmBtn.classList.toggle("off", !bgm.isOn()); };
+  paintBgm();
+  bgm.start();
+  bgmBtn.onclick = () => { bgm.setOn(!bgm.isOn()); paintBgm(); };
+  root.addEventListener("pointerdown", () => bgm.resume(), { passive: true });   // 휴대폰이 소리를 막아 두면 화면을 누를 때 다시 켠다
+  $('[data-t="photo"]').onclick = async () => {
+    stopVoice();
+    bgm.duck(true);
+    try { await openPhotoStudio({ start: "basic", place: arrived ? zone.name : `${zone.name} 가는 길`, zoneId: arrived ? zone.id : null, record: true }); }
+    catch (e) { console.warn("[투어] 사진", e); }
+    bgm.duck(false);
+  };
+  $('[data-t="pet"]').onclick = async () => {
+    stopVoice();
+    bgm.duck(true);
+    try {
+      const r = await startAR({ id: "", name: "캠퍼스 투어", mascot: { name: "호반우", img: "img/hobanu/react-hi.png", lines: ["같이 걸으니까 좋다!", "조금만 더 가면 도착이야!", "쓰다듬어 줘서 힘이 나!"] } },
+        { mission: { id: "tour-pet", ar: "pet", title: "호반우 쓰다듬기" } });
+      if (r?.done) addLog("쓰다듬어 줘서 힘이 났어! 다시 출발하자!");
+    } catch (e) { console.warn("[투어] 쓰다듬기", e); }
+    bgm.duck(false);
+  };
   const vBtn = $('[data-a="voice"]');
   const paintVoice = () => (vBtn.textContent = voiceOn() ? "🔊 음성" : "🔇 음성");
   paintVoice();
@@ -503,6 +614,7 @@ function _openMove(first) {
     setMe(p);
     const d = geo.distanceM(p, zone);
     lastBearing = geo.bearingDeg(p, zone);
+    if (sim || !lastP || geo.distanceM(lastP, p) > 2) { lastMoveAt = Date.now(); lastP = p; if (!walk.classList.contains("moving")) setMoving(true); }
     if (d0 == null) d0 = Math.max(d, 1);
     minD = Math.min(minD, d);
     const pct = Math.max(0, Math.min(100, 100 - (d / d0) * 100));
@@ -574,7 +686,9 @@ function _openMove(first) {
     navigator.vibrate?.([120, 60, 120]);
     root.querySelector(".tm-steps .now")?.style.setProperty("--p", "100%");
     $(".tm-dist span").textContent = "도착했어요!";
-    $(".tm-guide").classList.add("tm-arrive");
+    walk.classList.remove("moving");
+    walk.classList.add("arrived", "tm-arrive");
+    setMoving(false);
     say("intro-" + zone.id, `도착! ${INTRO[zone.id] || zone.name + "에 왔어!"}`, "queue");
     paintBtns();
     if (map) map.flyTo([zone.lat, zone.lng], 18, { duration: .8 });
@@ -614,6 +728,8 @@ function _openMove(first) {
       demoRunning = false;
       cancelAnimationFrame(demoRaf);
       clearInterval(arrowTimer);
+      clearInterval(moveTimer);
+      bgm.stop();
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       window.removeEventListener("deviceorientationabsolute", onOri);
       window.removeEventListener("deviceorientation", onOri);
