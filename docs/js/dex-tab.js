@@ -74,6 +74,14 @@ export async function renderDexTab(container) {
   const photos = await listPhotos();
   container.innerHTML = `
     <div class="dx-wrap">
+      <!-- 카메라 탭 (장주연): 사진 찍기를 맨 위로, 그 아래 도감·투어 뱃지 -->
+      <section class="dx-card">
+        <div class="dx-head"><b>📸 호반우와 사진</b>${photos.length ? `<button class="dx-more" data-a="album">앨범 ${photos.length}장 ›</button>` : ""}</div>
+        ${photos.length
+          ? `<div class="dx-recent">${photos.slice(0, 4).map((p) => `<button data-a="album"><img src="${p.thumb}" alt="" loading="lazy"></button>`).join("")}</div>`
+          : `<p class="dx-sub">호반우와 사진을 찍고 <b>도감에 기록</b>하면 여기에 모여요.</p>`}
+        <button class="dx-cta" data-a="shot"><img src="img/hobanu/react-hi.png" alt="">호반우와 사진 찍기</button>
+      </section>
       <section class="dx-card">
         <div class="dx-head"><b>📖 호반우 도감</b><span>${n} / ${ids.length}</span></div>
         <div class="dx-bar"><i style="width:${(n / ids.length) * 100}%"></i></div>
@@ -88,13 +96,6 @@ export async function renderDexTab(container) {
             <img src="${RARE[i].img}" alt=""><b>${dex[i] ? RARE[i].name : "???"}</b><small>${dex[i] ? "희귀!" : "?"}</small></button>`).join("")}</div>
       </section>
       <section class="dx-card dx-badges"></section>
-      <section class="dx-card">
-        <div class="dx-head"><b>📸 호반우와 사진</b>${photos.length ? `<button class="dx-more" data-a="album">앨범 ${photos.length}장 ›</button>` : ""}</div>
-        ${photos.length
-          ? `<div class="dx-recent">${photos.slice(0, 4).map((p) => `<button data-a="album"><img src="${p.thumb}" alt="" loading="lazy"></button>`).join("")}</div>`
-          : `<p class="dx-sub">호반우와 사진을 찍고 <b>도감에 기록</b>하면 여기에 모여요.</p>`}
-        <button class="dx-cta" data-a="shot"><img src="img/hobanu/react-hi.png" alt="">호반우와 사진 찍기</button>
-      </section>
     </div>`;
   const redraw = () => renderDexTab(container);
   // 투어 뱃지 (tour.js가 있으면)

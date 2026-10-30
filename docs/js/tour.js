@@ -206,7 +206,7 @@ const SCRIPT_STD = {
 // 지금 고른 목소리의 대사 (SCRIPT[키]로 쓰면 알아서 개나리=사투리, 몽실이=표준어)
 const SCRIPT = new Proxy({}, { get: (_, k) => (voicePick() === "mongsil" ? SCRIPT_STD : SCRIPT_DIALECT)[k] });
 // 호반우 목소리 고르기 (장주연): 개나리(기본, 경상도 사투리) / 몽실이(표준어). 파일은 tools/make_voice.py 로 만든다
-const VOICES = { gaenari: { name: "개나리", dir: "audio/tour/" }, mongsil: { name: "몽실이", dir: "audio/tour-mongsil/" } };
+const VOICES = { gaenari: { name: "사투리", dir: "audio/tour/" }, mongsil: { name: "표준어", dir: "audio/tour-mongsil/" } };   // 개나리 = 사투리, 몽실이 = 표준어 (타입캐스트 보이스)
 const PICK_KEY = "knu-tour-voice-pick";
 const voicePick = () => { try { const v = localStorage.getItem(PICK_KEY); return VOICES[v] ? v : "gaenari"; } catch { return "gaenari"; } };
 const setVoicePick = (v) => { try { localStorage.setItem(PICK_KEY, v); } catch {} };
@@ -216,7 +216,7 @@ const voiceVol = () => { try { const v = parseFloat(localStorage.getItem(VOL_KEY
 const setVoiceVol = (v) => { try { localStorage.setItem(VOL_KEY, String(v)); } catch {} if (voiceEl) voiceEl.volume = v; };
 
 // 긴 말을 말풍선 한 줄(약 20자) 크기로 자른다: 문장 → 쉼표 → 띄어쓰기 순서로 끊는다
-const LINE_MAX = 20;
+const LINE_MAX = 30;   // 말풍선 두 줄 정도
 function splitLines(text) {
   const out = [];
   const sentences = String(text).match(/[^.!?]+[.!?]*/g) || [String(text)];
@@ -305,11 +305,11 @@ function openSoundPanel(host, onChange) {
   el.id = "tm-sound";
   const choice = () => (voiceOn() ? voicePick() : "off");
   el.innerHTML = `<div class="sd">
-    <h3>🔊 소리 설정</h3>
+    <h3>소리 설정</h3>
     <div class="sd-row">
       <h4>호반우 안내 멘트 <small data-vv></small></h4>
       <div class="sd-seg" data-g="voice">
-        <button data-v="gaenari">사투리 (개나리)</button><button data-v="mongsil">표준어 (몽실이)</button><button data-v="off">끄기</button>
+        <button data-v="mongsil">표준어</button><button data-v="gaenari">사투리</button><button data-v="off">끄기</button>
       </div>
       <input type="range" min="0" max="100" step="5" data-r="voice" aria-label="안내 멘트 크기">
     </div>
@@ -318,7 +318,8 @@ function openSoundPanel(host, onChange) {
       <div class="sd-seg" data-g="bgm"><button data-v="on">켜기</button><button data-v="off">끄기</button></div>
       <input type="range" min="0" max="100" step="5" data-r="bgm" aria-label="배경 음악 크기">
     </div>
-    <button class="sd-close">닫기</button></div>`;
+    <button class="sd-close">닫기</button>
+    <p class="sd-credit">호반우 음성: 타입캐스트</p></div>`;
   (host || document.body).appendChild(el);
   const q = (s) => el.querySelector(s);
   const paint = () => {
@@ -426,6 +427,9 @@ function injectStyle() {
   @keyframes tb-shine{0%{transform:scale(.4) rotate(-20deg);opacity:0}60%{transform:scale(1.12) rotate(6deg);opacity:1}100%{transform:none}}
   .tour-card{background:linear-gradient(135deg,var(--primary,#d4121a),#ff6a5b);color:#fff;border-radius:20px;padding:16px 18px;margin:4px 0 14px;
     display:flex;align-items:center;gap:12px;box-shadow:0 10px 24px -12px rgba(212,18,26,.6)}
+  .tour-card.tc-new{animation:tcGlow 2.2s ease-in-out infinite}
+  @keyframes tcGlow{0%,100%{box-shadow:0 8px 20px -10px rgba(212,18,26,.5)}50%{box-shadow:0 0 0 5px rgba(212,18,26,.18),0 10px 26px -8px rgba(212,18,26,.6)}}
+  @media (prefers-reduced-motion:reduce){.tour-card.tc-new{animation:none}}
   .tour-card img{width:58px;height:58px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
   .tour-card .tc-body{flex:1;min-width:0}
   .tour-card b{display:block;font-size:17px}
@@ -454,6 +458,7 @@ function injectStyle() {
   #tour-move .tm-head{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
   #tour-move .tm-head b{flex:1;font-size:15px}
   #tour-move .tm-head small{display:block;font-size:12px;color:var(--sub,#4e5968);font-weight:600}
+  #tour-move .tm-icon.off{opacity:.55;text-decoration:line-through}
   #tour-move .tm-icon{width:auto;margin:0;border:none;background:var(--line,#e5e8eb);color:inherit;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700;font-family:inherit}
   #tour-move .tm-steps{display:flex;gap:4px;padding:0 14px 8px}
   #tour-move .tm-steps i{flex:1;height:5px;border-radius:3px;background:var(--line,#e5e8eb)}
@@ -485,6 +490,7 @@ function injectStyle() {
   #tm-sound .qz-o button:disabled{opacity:1}
   #tm-sound .qz-why{margin:0 0 12px;font-size:13.5px;line-height:1.5;color:var(--sub,#4e5968)}
   @keyframes qzShake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  #tm-sound .sd-credit{margin:10px 0 0;text-align:center;font-size:11px;color:var(--mute,#8b95a1)}
   #tm-sound .sd-close{width:100%;margin:0;padding:13px;border:none;border-radius:14px;background:var(--line,#e5e8eb);color:inherit;font-weight:800;font-family:inherit}
   #tour-move .tm-next{display:flex;align-items:center;gap:12px;padding:12px 16px 4px}
   #tour-move .tm-arrow{width:64px;height:64px;flex:none;border-radius:50%;background:var(--primary-weak,#fbe7e5);display:flex;align-items:center;justify-content:center}
@@ -500,33 +506,16 @@ function injectStyle() {
     background:var(--line,#e5e8eb);color:inherit}
   #tour-move .tm-btns button.primary{background:var(--primary,#d4121a);color:#fff}
   #tour-move .tm-arrive{animation:tm-pop .5s var(--ease-toss,ease-out)}
-  /* (장주연) 걸어가는 호반우 띠: 홈 카드(hero.js) 그림을 작게 재사용. 움직일 때만 걷고 배경이 흐른다 */
-  /* 휴대폰(세로): 걷는 호반우 무대를 아래쪽에 크게, 호반우가 하는 말은 무대 위 말풍선에 */
-  #tour-move .tm-walk{height:230px;margin:6px 14px 0;border-radius:20px;flex:none}
-  #tour-move .tm-walk .hx-layer{width:auto}
-  #tour-move .tm-walk .hx-layer svg{width:600px}
-  #tour-move .tm-walk .hx-far{animation:tmScrollB 40s linear infinite}
-  #tour-move .tm-walk .hx-near{animation:tmScrollB 14s linear infinite}
-  #tour-move .tm-walk .hx-walker{left:42%;bottom:8px;width:92px;margin-left:-46px;animation-duration:.42s}
-  #tour-move .tm-walk .hx-walker .hx-f1,#tour-move .tm-walk .hx-walker .hx-f2{animation-duration:.42s}
-  #tour-move .tm-walk .tm-sweat{position:absolute;left:calc(42% + 34px);bottom:92px;z-index:4;font-size:15px;animation:tmSweat .9s ease-out infinite}
-  #tour-move .tm-walk .tm-sweat.s2{left:calc(42% - 46px);bottom:84px;animation-delay:.45s;font-size:12px}
-  #tour-move .tm-walk .tm-goal{position:absolute;right:14px;bottom:10px;z-index:3;width:84px;height:84px;object-fit:contain;opacity:0;transition:opacity .4s}
-  #tour-move .tm-say{position:absolute;left:12px;right:12px;bottom:140px;z-index:6;margin:0;padding:7px 14px;text-align:center;
-    background:rgba(255,255,255,.96);color:#191f28;border-radius:18px;box-shadow:0 4px 14px rgba(25,31,40,.14);cursor:pointer;overflow:hidden}
-  #tour-move .tm-line{display:block;font-size:15.5px;font-weight:700;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:tmLineIn .35s ease-out}
-  @keyframes tmLineIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  #tour-move .tm-say-tail{position:absolute;z-index:6;bottom:129px;left:calc(42% - 6px);width:16px;height:12px;background:rgba(255,255,255,.95);clip-path:polygon(0 0,100% 0,30% 100%)}
-  #tour-move .tm-say small{display:block;margin-top:3px;font-size:10.5px;color:#8b95a1;font-weight:700}
-  #tour-move .tm-walk.arrived .tm-say-tail{left:calc(60% - 6px)}
-  @keyframes tmScrollB{to{transform:translateX(-600px)}}
-  #tour-move .tm-walk:not(.moving) .hx-layer,#tour-move .tm-walk:not(.moving) .hx-walker,#tour-move .tm-walk:not(.moving) .hx-walker img{animation-play-state:paused}
-  #tour-move .tm-walk:not(.moving) .tm-sweat{display:none}
-  #tour-move .tm-walk.arrived .hx-walker{left:60%;transition:left .8s ease-out}
-  #tour-move .tm-walk.arrived .tm-goal{opacity:1}
-  #tour-move .tm-walk .tm-state{position:absolute;left:10px;bottom:10px;z-index:5;background:rgba(255,255,255,.88);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:800;color:var(--primary,#d4121a)}
-  @keyframes tmScroll{to{transform:translateX(-240px)}}
-  @keyframes tmSweat{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(10px,-14px)}}
+  /* (장주연) 휴대폰: 왼쪽에 호반우가 서 있고, 오른쪽 말풍선에 하는 말을 두세 줄씩 */
+  #tour-move .tm-walk{display:flex;align-items:flex-end;gap:8px;margin:10px 14px 0;flex:none}
+  #tour-move .tm-hob{width:86px;height:86px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.12))}
+  #tour-move .tm-say{position:relative;flex:1;min-width:0;min-height:76px;margin:0 0 6px;padding:12px 15px;display:flex;align-items:center;
+    background:var(--card,#fff);color:var(--ink,#191f28);border:1.5px solid var(--line,#e5e8eb);border-radius:20px 20px 20px 6px;
+    box-shadow:0 6px 16px -8px rgba(25,31,40,.25);cursor:pointer}
+  #tour-move .tm-say::before{content:"";position:absolute;left:-9px;bottom:12px;width:14px;height:14px;background:inherit;
+    border-left:1.5px solid var(--line,#e5e8eb);border-bottom:1.5px solid var(--line,#e5e8eb);transform:rotate(45deg)}
+  #tour-move .tm-line{display:block;font-size:15.5px;font-weight:700;line-height:1.45;word-break:keep-all;animation:tmLineIn .35s ease-out}
+  @keyframes tmLineIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   /* 대화 기록: 호반우가 한 말이 위로 쌓인다 (마지막 말이 말풍선) */
   #tour-move .tm-log{position:relative;flex:none;max-height:112px;overflow-y:auto;padding:8px 14px 0;display:none;flex-direction:column;gap:6px;scroll-behavior:smooth}
   #tour-move .tm-log p{margin:0;align-self:flex-start;max-width:92%;background:var(--cream-weak,#f2f4f6);border-radius:14px 14px 14px 4px;padding:7px 11px;font-size:12.5px;line-height:1.45;color:var(--sub,#4e5968)}
@@ -570,14 +559,8 @@ function injectStyle() {
     #tour-move .tm-legend{grid-column:1;grid-row:4;padding:6px 16px 12px}
     #tour-move .tm-side{grid-column:2;grid-row:3 / 5;display:flex;flex-direction:column;justify-content:center;padding:0 8px 16px}
     #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} #tour-move .tm-log{max-height:240px}
-    /* 넓은 화면: 무대는 작게, 말은 오른쪽 대화 기록으로 */
-    #tour-move .tm-walk{height:92px} #tour-move .tm-walk .hx-layer svg{width:240px}
-    #tour-move .tm-walk .hx-far{animation-name:tmScroll;animation-duration:22s} #tour-move .tm-walk .hx-near{animation-name:tmScroll;animation-duration:8s}
-    #tour-move .tm-walk .hx-walker{left:30%;bottom:6px;width:62px;margin-left:-31px}
-    #tour-move .tm-walk .tm-sweat{left:calc(30% + 22px);bottom:62px;font-size:13px} #tour-move .tm-walk .tm-sweat.s2{left:calc(30% - 30px);bottom:56px;font-size:11px}
-    #tour-move .tm-walk .tm-goal{width:58px;height:58px;right:12px;bottom:8px}
-    #tour-move .tm-walk .tm-state{top:8px;bottom:auto}
-    #tour-move .tm-say,#tour-move .tm-say-tail{display:none}
+    /* 넓은 화면: 호반우 말은 오른쪽 대화 기록으로 */
+    #tour-move .tm-walk{display:none}
     #tour-move .tm-log{display:flex;height:300px;max-height:none;overflow-y:scroll;padding:150px 10px 150px 14px;margin-top:8px;
       border-radius:16px;background:color-mix(in srgb,var(--cream-weak,#f2f4f6) 55%,transparent);scrollbar-width:thin;scrollbar-color:var(--cream,#b0b8c1) transparent}
     #tour-move .tm-log::-webkit-scrollbar{width:8px} #tour-move .tm-log::-webkit-scrollbar-thumb{background:var(--cream,#b0b8c1);border-radius:4px}
@@ -592,14 +575,20 @@ function courseStats(c, gate = GATES.main) {
   c.stops.forEach((id) => { const z = zoneById(id); if (z) { dist += geo.distanceM(prev, z); prev = z; } });
   return { walk: walkMin(dist), total: walkMin(dist) + c.stops.length * 4 };
 }
-export function renderQuestCard(container) {
+// entry=false(홈): 투어를 시작한 사람에게만 "이어서 하기" 카드 / entry=true(캠퍼스 탐험): 늘 보이는 투어 입구 (장주연)
+const TRIED_KEY = "knu-tour-tried";   // 한 번이라도 코스를 골랐는지 (안 해 본 사람에게는 입구 카드를 반짝이게)
+export function renderQuestCard(container, { entry = false } = {}) {
   if (!TOUR_ON || !container || !app) return;
   injectStyle();
   container.querySelector(".tour-card")?.remove();
   const st = load();
   const c = st && course(st.course);
+  if (!c && !entry) return;   // 홈: 진행 중인 투어가 없으면 카드 없음
   const card = document.createElement("div");
   card.className = "tour-card";
+  let tried = false;
+  try { tried = localStorage.getItem(TRIED_KEY) === "1"; } catch {}
+  if (entry && !c && !tried) card.classList.add("tc-new");
   const curZone = c && zoneById(c.stops[st.idx]);
   const here = c && st.arrived === st.idx;        // 지금 장소에 이미 도착해 있음 (미션 중)
   const nextZone = c && zoneById(c.stops[st.idx + 1]);
@@ -627,19 +616,16 @@ function openCourseSheet() {
   const el = document.createElement("div");
   el.id = "tour-sheet";
   el.innerHTML = `<div class="ts">
-    <h3>🐮 호반우와 캠퍼스 투어</h3>
+    <h3>호반우와 캠퍼스 투어</h3>
     <p class="ts-sub">호반우가 길을 안내하고 장소를 소개해 줘요. 걸으면서 사진도 찍고 호반우도 쓰다듬어 봐요!</p>
-    <div class="ts-gates"><button class="on">🚩 정문에서 출발</button><button disabled>북문 (준비 중)</button></div>
-    <p class="ts-sub" style="margin:0 0 6px;font-weight:700">🔊 호반우 목소리 (누르면 미리 들어 봐요)</p>
-    <div class="ts-gates ts-voice">${Object.entries(VOICES).map(([id, v]) => `<button data-v="${id}" class="${voicePick() === id ? "on" : ""}">${v.name}${id === "mongsil" ? " (표준어)" : " (사투리)"}</button>`).join("")}</div>
-    ${COURSES.map((c) => { const s = courseStats(c); return `
+    <div class="ts-gates"><button class="on">정문</button><button disabled>북문 (준비 중)</button></div>
+    ${COURSES.map((c) => `
       <button class="ts-course" data-c="${c.id}">
-        <div class="t"><span>${c.emoji} ${c.name}</span><em>약 ${s.total}분</em></div>
-        <div class="d">${c.desc} · 걷기만 약 ${s.walk}분</div>
+        <div class="t"><span>${c.emoji} ${c.name}</span></div>
+        <div class="d">${c.desc}</div>
         <div class="r">정문 → ${c.stops.map((id) => zoneById(id)?.name || id).join(" → ")}</div>
-      </button>`; }).join("")}
-    <button class="ts-close">닫기</button>
-    <p class="ts-sub" style="margin:10px 0 0;text-align:center;font-size:11px">호반우 음성: 타입캐스트</p></div>`;
+      </button>`).join("")}
+    <button class="ts-close">닫기</button></div>`;
   document.body.appendChild(el);
   el.onclick = (e) => { if (e.target === el) el.remove(); };
   el.querySelector(".ts-close").onclick = () => el.remove();
@@ -653,6 +639,7 @@ function openCourseSheet() {
   el.querySelectorAll(".ts-course").forEach((b) => (b.onclick = () => {
     unlockAudio();
     save({ course: b.dataset.c, idx: 0, gate: "main", startedAt: Date.now() });
+    try { localStorage.setItem(TRIED_KEY, "1"); } catch {}
     el.remove();
     openMove(true);
   }));
@@ -741,20 +728,15 @@ function _openMove(first) {
     </div>
     <div class="tm-steps">${c.stops.map((_, i) => `<i class="${i < st.idx ? "done" : i === st.idx ? "now" : ""}"></i>`).join("")}</div>
     <div id="tour-map"></div>
-    <div class="tm-legend"><span><i style="background:#3182f6"></i>내 위치</span><span><i style="background:var(--primary,#d4121a)"></i>도착 지점 (빨간 점선 안에 들어오면 도착)</span><span>점선: 걸어갈 길</span><span style="margin-left:auto">음성: 타입캐스트</span></div>
+    <div class="tm-legend"><span><i style="background:#3182f6"></i>내 위치</span><span><i style="background:var(--primary,#d4121a)"></i>도착 지점 (빨간 점선 안에 들어오면 도착)</span><span>점선: 걸어갈 길</span></div>
     <div class="tm-side">
       <div class="tm-next">
         <div class="tm-arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L33 34 L20 27 L7 34 Z" fill="var(--primary,#d4121a)"/></svg></div>
-        <div class="tm-dist"><b>${zone.emoji || "📍"} ${zone.name}</b><span>거리를 재는 중…</span></div>
+        <div class="tm-dist"><b>${zone.name}</b><span>거리를 재는 중…</span></div>
       </div>
-      <div class="tm-walk hx-stage hx-${["cherry", "midterm"].includes(themeId) ? themeId : "march"}" aria-hidden="true">
-        <div class="hx-layer hx-far">${FAR_SVG.repeat(4)}</div>
-        <div class="hx-layer hx-near">${NEAR_SVG.repeat(4)}</div>
-        <div class="hx-walker"><img class="hx-f1" src="img/mascot/commute1.png" alt=""><img class="hx-f2" src="img/mascot/commute2.png" alt=""></div>
-        <span class="tm-sweat">💦</span><span class="tm-sweat s2">💦</span>
-        <img class="tm-goal" src="${mascot}" alt="">
-        <span class="tm-state">잠깐 쉬는 중</span>
-        <p class="tm-say" role="button" aria-label="호반우가 한 말 (누르면 지난 대화 보기)"></p><i class="tm-say-tail"></i>
+      <div class="tm-walk">
+        <img class="tm-hob" src="img/hobanu/react-hi.png" alt="호반우">
+        <p class="tm-say" role="button" aria-label="호반우가 한 말 (누르면 지난 대화 보기)"></p>
       </div>
       <div class="tm-log" aria-live="polite"></div>
       <div class="tm-btns"></div>
@@ -816,7 +798,8 @@ function _openMove(first) {
   let lastMoveAt = 0, lastP = null;
   const setMoving = (on) => {
     walk.classList.toggle("moving", on);
-    walk.querySelector(".tm-state").textContent = arrived ? "도착!" : on ? "열심히 걷는 중" : "잠깐 쉬는 중";
+    const sEl = walk.querySelector(".tm-state");   // (걷는 그림을 없애서 지금은 없음)
+    if (sEl) sEl.textContent = arrived ? "도착!" : on ? "열심히 걷는 중" : "잠깐 쉬는 중";
   };
   const moveTimer = setInterval(() => { if (!arrived) setMoving(demoRunning || Date.now() - lastMoveAt < 6000); }, 1000);
 
@@ -877,7 +860,7 @@ function _openMove(first) {
   };
   const vBtn = $('[data-a="voice"]');
   // "음성" 버튼 → 소리 설정 창: 안내 멘트(사투리·표준어·끄기 + 크기), 배경 음악(켜기·끄기 + 크기)
-  const paintVoice = () => (vBtn.textContent = voiceOn() || bgm.isOn() ? "🔊 음성" : "🔇 음성");
+  const paintVoice = () => { vBtn.textContent = "음성"; vBtn.classList.toggle("off", !voiceOn() && !bgm.isOn()); };
   paintVoice();
   vBtn.onclick = () => openSoundPanel(root, paintVoice);
   $('[data-a="out"]').onclick = () => { stopVoice(); closeMove(); try { app.goTab("home"); } catch {} };
@@ -1028,6 +1011,8 @@ function _openMove(first) {
     $(".tm-dist span").textContent = "도착했어요!";
     walk.classList.remove("moving");
     walk.classList.add("arrived", "tm-arrive");
+    const hob = walk.querySelector(".tm-hob");   // 도착하면 그 장소 호반우로
+    if (hob) hob.src = mascot;
     setMoving(false);
     waiting = [];   // 아직 못 한 가는 길·중간 멘트는 버리고 도착 소개를 바로 다음에
     say("intro-" + zone.id, `도착! ${INTRO[zone.id] || zone.name + "에 왔어!"}`, "queue");

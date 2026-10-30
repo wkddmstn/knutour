@@ -183,6 +183,7 @@ export function renderExplore(cleared = 0, total = 0, mode = "zones", theme = nu
       <button data-mode="zones" role="tab" aria-selected="${!food}" class="${food ? "" : "on"}">📍 장소</button>
       <button data-mode="food" role="tab" aria-selected="${food}" class="${food ? "on" : ""}">🍽️ 맛집</button>
     </div>
+    ${food ? "" : `<div id="explore-tour-slot"></div>`}
     <p class="map-guide">${food
       ? "선배 꿀팁 맛집과 문 주변 가게를 모았어요. 핀이나 목록을 누르면 자세히 볼 수 있어요."
       : `${theme ? `지금은 <b>${esc(theme.emoji || "")} ${esc(theme.name)}</b> 테마예요. ` : ""}지도나 목록에서 장소를 골라 미션을 시작해 보세요.`}</p>

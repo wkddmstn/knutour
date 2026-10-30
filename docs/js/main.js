@@ -355,7 +355,10 @@ async function goTab(tab, opts = {}) {
       b.onclick = () => { if (exploreMode !== b.dataset.mode) { exploreMode = b.dataset.mode; goTab("explore"); } };
     });
     if (exploreMode === "food") renderFoodSection();
-    else { initCampusMap(openZone); renderZoneListSection(); }
+    else {
+      initCampusMap(openZone); renderZoneListSection();
+      try { tour?.renderQuestCard($("explore-tour-slot"), { entry: true }); } catch (e) { console.warn("[투어]", e); }   // 투어 입구 (장주연)
+    }
   } else if (tab === "dex") {
     renderHobanuPane($("view-dex"));   // 도감 화면 (dex-tab.js, 장주연). 못 불러오면 예전 호반우 화면으로 대신 그림
     ui.showView("dex");

@@ -23,7 +23,7 @@ function injectStyle() {
     -webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border-color:rgba(255,255,255,.7)}
   .hc-food img{width:50px;height:50px;object-fit:contain;flex:none}
   .hc-food .hc-body{flex:1;min-width:0}
-  .hc-food .hc-title{font-family:"Jua",var(--font);font-size:19px;line-height:1.3;color:var(--ink)}
+  .hc-food .hc-title{font-family:var(--font);font-size:17px;font-weight:800;line-height:1.3;letter-spacing:-.02em;color:var(--ink)}   /* 아래 작은 글씨와 같은 기본 글꼴, 굵게 */
   .hc-food .hc-sub{margin-top:2px;font-size:13px;color:var(--sub);word-break:keep-all}
   .hc-food .hc-go{flex:none;white-space:nowrap;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800;
     background:var(--primary);color:#fff;box-shadow:0 4px 10px -4px rgba(212,18,26,.5)}
