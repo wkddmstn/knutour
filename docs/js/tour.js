@@ -246,6 +246,7 @@ const QUIZ = {
   cherryroad: { q: "벚꽃길 바로 근처에 있는 학식당은?", o: ["공식당", "복지관 식당", "도서관 카페", "정문 식당"], a: 0, why: "벚꽃길은 공식당이랑 아주 가까워요. 밥 먹고 산책하기 딱!" },
   stadium: { q: "대운동장 바로 옆 백호관에 모여 있는 곳은?", o: ["기숙사", "중앙동아리방", "열람실", "학생식당"], a: 1, why: "백호관에는 중앙동아리방이 모여 있어요. 동아리 구경 가 봐요!" },
 };
+const HEART_ZONES = new Set(["loveroad"]);   // 도착 미션 첫 칸이 "하트 그리기"인 장소 (나머지는 "친해지기")
 const DONE_KEY = "knu-tour-done";   // { zoneId: { pet: true, quiz: true } } 투어 도착 미션 한 것
 const tourDone = (id) => { try { return (JSON.parse(localStorage.getItem(DONE_KEY)) || {})[id] || {}; } catch { return {}; } };
 function setTourDone(id, k) {
@@ -837,10 +838,12 @@ function _openMove(first) {
   const doPet = async () => {
     goAway();
     try {
-      const r = await startAR(zone, { mission: { id: "tour-pet-" + zone.id, ar: "pet", title: `${zone.name} 호반우 쓰다듬기` } });
+      // 러브로드는 전설에 맞춰 "하트 그리기"(zones.json의 러브로드 AR 미션), 다른 장소는 쓰다듬기 (장주연)
+      const heart = HEART_ZONES.has(zone.id) && (zone.missions?.find((m) => m.ar === "heart") || { id: "m-loveroad-ar", ar: "heart", title: "호반우에게 하트 그리기" });
+      const r = await startAR(zone, { mission: heart ? { ...heart, title: "호반우에게 하트 그리기" } : { id: "tour-pet-" + zone.id, ar: "pet", title: `${zone.name} 호반우 쓰다듬기` } });
       if (r?.done) {
         if (!tourDone(zone.id).pet) { setTourDone(zone.id, "pet"); if (app.store.grantBonus("tourpet:" + zone.id, 10)) app.ui.reward(10); }
-        addLog(`${zone.name} 호반우랑 친해졌어!`);
+        addLog(heart ? "하트 잘 받았어! 러브로드 전설, 이제 너도 알지?" : `${zone.name} 호반우랑 친해졌어!`);
       }
     } catch (e) { console.warn("[투어] 쓰다듬기", e); }
     comeBack();
@@ -1038,7 +1041,7 @@ function _openMove(first) {
     box.classList.toggle("arrived", arrived);
     box.innerHTML = arrived
       ? `<div class="tm-missions">
-          <button class="tm-ms ${dn.pet ? "done" : ""}" data-t="pet"><b>${dn.pet ? "✓ " : ""}친해지기</b><span>${dn.pet ? "완료" : "+10 XP"}</span></button>
+          <button class="tm-ms ${dn.pet ? "done" : ""}" data-t="pet"><b>${dn.pet ? "✓ " : ""}${HEART_ZONES.has(zone.id) ? "하트 그리기" : "친해지기"}</b><span>${dn.pet ? "완료" : "+10 XP"}</span></button>
           ${QUIZ[zone.id] ? `<button class="tm-ms ${dn.quiz ? "done" : ""}" data-t="quiz"><b>${dn.quiz ? "✓ " : ""}퀴즈</b><span>${dn.quiz ? "완료" : "+15 XP"}</span></button>` : ""}
           <button class="tm-ms ${dn.photo ? "done" : ""}" data-t="photo"><b>${dn.photo ? "✓ " : ""}사진</b><span>${dn.photo ? "완료" : "+10 XP"}</span></button>
         </div>
