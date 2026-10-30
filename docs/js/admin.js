@@ -30,6 +30,7 @@ async function tryEnter(pw) {
   loadReports();
   loadThemes();
   loadHiddenMissions();
+  loadDemoSetting();
   loadProgress();
   loadRanking();
   return true;
@@ -236,7 +237,8 @@ async function loadThemes() {
 const HIDDEN_MISSION_LABELS = { "otter-sincheon": "🦦 신천 수달" };
 
 async function loadHiddenMissions() {
-  const { data, error } = await client.from("hidden_mission_settings").select("*");
+  let { data, error } = await client.from("hidden_mission_settings").select("*");
+  data = (data || []).filter((h) => h.id !== DEMO_ID);   // 데모 모드 줄은 아래 "데모 모드" 칸에서 따로
   const list = $("hidden-list");
   if (error || !data?.length) {
     list.innerHTML = `<p style="color:var(--mute);font-size:13px">히든미션 설정이 아직 없어요. ranking-sync-setup.sql / admin-extra-setup.sql을 실행했는지 확인해 주세요.</p>`;
@@ -258,6 +260,36 @@ async function loadHiddenMissions() {
       if (error) { alert("변경 실패: " + error.message); cb.checked = !cb.checked; }
     };
   });
+}
+
+/* ---------- 🎬 데모(시연) 모드 on/off (장주연) ---------- */
+// 앱(js/demo.js)이 hidden_mission_settings 표의 id "demo" 줄을 읽는다. 줄이 없으면 앱은 "켜짐"으로 본다.
+const DEMO_ID = "demo";
+const DEMO_SQL = "insert into hidden_mission_settings (id, enabled) values ('demo', true) on conflict (id) do nothing;";
+async function loadDemoSetting() {
+  const box = $("demo-setting");
+  if (!box) return;
+  const { data, error } = await client.from("hidden_mission_settings").select("*").eq("id", DEMO_ID).maybeSingle();
+  if (error || !data) {
+    box.innerHTML = `<p style="color:var(--mute);font-size:13px;line-height:1.6">데모 모드 설정 줄이 아직 없어요 (지금 앱은 <b>켜짐</b>으로 동작).<br>
+      Supabase SQL Editor에서 아래 한 줄을 한 번만 실행한 뒤 새로고침해 주세요.</p>
+      <code style="display:block;white-space:pre-wrap;font-size:12px;background:var(--line);padding:8px 10px;border-radius:8px;user-select:all">${esc(DEMO_SQL)}</code>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="hidden-row">
+      <span><b>${data.enabled ? "켜짐" : "꺼짐"}</b> · ${data.enabled ? "시연용 버튼이 보여요" : "실제 사용자 화면이에요"}</span>
+      <label class="switch">
+        <input type="checkbox" id="demo-toggle" ${data.enabled ? "checked" : ""}>
+        <span class="slider"></span>
+      </label>
+    </div>`;
+  $("demo-toggle").onchange = async (e) => {
+    const on = e.target.checked;
+    const { error: err } = await client.rpc("admin_set_hidden_mission", { p_password: password, p_id: DEMO_ID, p_enabled: on });
+    if (err) { alert("변경 실패: " + err.message); e.target.checked = !on; return; }
+    loadDemoSetting();
+  };
 }
 
 /* ---------- 구역/미션 진행 현황 ---------- */

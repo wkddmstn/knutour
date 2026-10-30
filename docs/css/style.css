@@ -775,14 +775,32 @@ body[data-view="board"] main { padding-bottom: calc(160px + env(safe-area-inset-
 /* 자유게시판 해시태그 줄 (장주연): 누르면 그 태그 글만 모아 보기. 가로로 밀어서 더 보기 */
 .tag-row { display: flex; gap: 6px; overflow-x: auto; margin: -4px -4px 12px; padding: 2px 4px 4px; scrollbar-width: none; }
 .tag-row::-webkit-scrollbar { display: none; }
-.tag-pill { flex: none; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
-            color: var(--sub); font-size: 13px; font-weight: 700; white-space: nowrap; }
-.tag-pill.hot { color: var(--primary); border-color: color-mix(in srgb, var(--primary) 35%, var(--line)); }
-.tag-pill.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* 기본은 회색 유리, 누른 태그만 빨강 */
+.tag-pill { flex: none; padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap;
+            color: var(--sub); background: color-mix(in srgb, var(--cream-weak) 78%, transparent); border: 1px solid var(--line);
+            -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: background .15s, color .15s; }
+.tag-pill.on { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 10px -4px rgba(212, 18, 26, .5); }
+/* 자유게시판 "?" 글쓰기 방법 */
+.help-btn { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+            background: var(--primary-weak); color: var(--primary); font-size: 16px; font-weight: 900; }
+#board-help { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: flex-end; justify-content: center; background: rgba(25, 31, 40, .5); }
+#board-help .bh-sheet { width: 100%; max-width: 480px; max-height: 88vh; overflow: auto; background: var(--card); color: var(--ink);
+  border-radius: 24px 24px 0 0; padding: 22px 20px calc(18px + env(safe-area-inset-bottom)); animation: sheet .3s; }
+#board-help h3 { margin: 0 0 12px; font-size: 18px; }
+.bh-steps { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.5; color: var(--sub); }
+.bh-steps b { color: var(--ink); }
+.bh-ex { background: var(--cream-weak); border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+.bh-ex p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; }
+.bh-ex .bh-ex-title { margin: 0; font-size: 12.5px; font-weight: 800; color: var(--primary); }
+.bh-note { margin: 0 0 14px; font-size: 12.5px; color: var(--mute); line-height: 1.5; }
+#board-help .bh-ok { width: 100%; }
 .cw-tag-hint { margin: 0 2px 10px; font-size: 12px; color: var(--mute); line-height: 1.5; }
 .cw-tag-lock { margin-bottom: 10px; font-size: 13px; color: var(--sub); }
 .filter-chip { display: inline-flex; align-items: center; gap: 6px; margin: 4px 4px 12px; padding: 7px 12px;
-               border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 600; }
+               border-radius: 999px; font-size: 13px; font-weight: 600;
+               /* 검정 대신 연한 빨강 (장주연) */
+               background: var(--primary-weak); color: var(--primary-dark); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); }
+@media (prefers-color-scheme: dark) { .filter-chip { color: #ffb3b7; } }
 
 
 /* ============ 캠퍼스 일러스트 지도 (campusmap.js) ============ */

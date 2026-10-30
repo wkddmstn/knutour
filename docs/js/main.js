@@ -9,9 +9,11 @@ import { subscribeFriendRequests, getFriendRequest } from "./friend.js";
 import { activeKey, pairKey } from "./together.js";   // 함께 돌기 실시간 미션
 import { openNotifPanel, closeNotifPanel, refreshBellBadge } from "./notif-ui.js";
 import { startAR, MASCOTS, renderHobanuPane } from "./ar.js";   // AR 호반우 (장주연) — 도감 탭은 renderHobanuPane이 dex-tab.js를 불러 그린다
+import { matchFood } from "./ar-missions.js";   // 돌림판 메뉴 → 맛집 모아 보기 (장주연)
 import { listPosts, postCommunity, reportPost, setLike, listComments, addComment, deleteComment,
          setCommentLike, pickBest, toTag } from "./community.js";
 import { isHiddenMissionEnabled } from "./settings.js";
+import { loadDemo } from "./demo.js";   // 데모(시연) 모드 on/off (관리자 페이지)
 import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";   // 캠퍼스 일러스트 지도
 import * as themes from "./themes.js";
 import { applyThemeBg } from "./theme-bg.js";   // 테마별 화면 배경 그림   // 테마(시즌)별 미션
@@ -33,7 +35,7 @@ const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
 // 데모 모드: true면 실제 GPS를 쓰지 않고, 구역에 들어올 때마다 "위치 이동" 버튼을 눌러야 미션이 시작됩니다.
 // 실제 운영 때는 false로 바꾸세요.
-const DEMO_MODE = true;
+let DEMO_MODE = true;   // 관리자 페이지 "데모 모드" 값으로 시작할 때 바뀐다 (demo.js)
 // (장주연) 화면 배치 스위치 — 언제든 false로 바꾸면 예전 모습으로 돌아간다
 const FOOD_ON_HOME = true;      // true: 맛집을 홈 "미션 하러 가기" 아래 카드로 / false: 캠퍼스 탐험의 "장소 | 맛집" 탭으로
 const OPEN_ALL_PLACES = true;   // true: 장소는 늘 열고 미션만 이번 시즌 것 / false: 이번 시즌에 미션 없는 장소는 잠금
@@ -66,7 +68,18 @@ let forceVerify = null;   // 데모 이동 버튼이 인증을 강제로 끝낼 
 let lastClearedSet = new Set(); // 구역 목록에서 "방금 막 깼다" 도장 효과를 보여줄지 판단하는 기준점
 let communityBoard = "post";   // "post"(자유게시판) | "question"(질문)
 let exploreMode = "zones";    // 캠퍼스 탐험 화면: "zones"(미션 장소) | "food"(맛집)
-const food = { data: null, theme: "all", tipOnly: false, selId: null };   // 맛집 화면 상태
+const food = { data: null, theme: "all", tipOnly: false, selId: null, kw: null };   // 맛집 화면 상태 (kw: 돌림판 메뉴로 모아 보기)
+// 피크닉 돌림판 결과 → 맛집 화면을 그 메뉴 가게만 모아서 연다 (장주연)
+window.addEventListener("knu:open-restaurants", (e) => {
+  const { category, name, emoji } = e.detail || {};
+  if (!category) return;
+  food.kw = { id: category, name: name || category, emoji: emoji || "🍽️" };
+  food.theme = category === "dessert" ? "cafe" : "meal";   // 디저트는 카페, 나머지는 밥집 중에서
+  food.tipOnly = false;
+  food.selId = null;
+  exploreMode = "food";
+  goTab("explore", { food: true });
+});
 const HOT_TAG = "인기글", HOT_LIKES = 5, HOT_COMMENTS = 2;   // #인기글 기준 (장주연)
 let communityTag = null;      // 해시태그로 모아 보는 중이면 "일청담" 같은 태그 글자
 let communityFilter = "all";   // "all" | "mine" (내 정보 > 내가 쓴 글에서 들어오면 "mine")
@@ -190,6 +203,7 @@ async function init() {
     } catch (e) {
       console.warn("[테마] 불러오지 못해서 모든 장소를 엽니다", e);
     }
+    DEMO_MODE = await loadDemo().catch(() => true);
     applyThemeBg(themes.currentTheme());   // 테마를 못 정했으면 기본(3월 첫 주) 배경
     // 지도 모양 데이터 (탐험·장소 화면 지도에서 씀). 못 불러와도 지도만 빠지고 앱은 계속 동작한다
     await loadCampusData().catch((e) => console.warn("[지도] 캠퍼스 지도 데이터를 불러오지 못했어요", e));
@@ -457,6 +471,13 @@ async function renderCommunityTab() {
   const byId = new Map(posts.map((p) => [p.id, p]));
   ui.renderCommunity(allZones, posts, { board: communityBoard, filter: communityFilter, tag: communityTag, tagRow, placeTag: !!tagZone }, myId);
   $("view-board").querySelector("[data-back]")?.addEventListener("click", () => goTab("community"));
+  // 글쓰기 방법 "?" — 처음 들어오면 한 번 자동으로 (장주연)
+  $("view-board").querySelector("[data-help]")?.addEventListener("click", () => ui.showBoardHelp());
+  if (communityBoard === "post") {
+    let seen = false;
+    try { seen = localStorage.getItem("knu-board-help-seen") === "1"; localStorage.setItem("knu-board-help-seen", "1"); } catch {}
+    if (!seen) ui.showBoardHelp();
+  }
   document.querySelectorAll("#view-board .filter-chip").forEach((b) => {
     b.onclick = () => { communityFilter = "all"; communityTag = null; renderCommunityTab(); };
   });
@@ -511,7 +532,9 @@ async function renderCommunityTab() {
       communityTag = tagEl.closest(".tag-row") && communityTag === tagEl.dataset.tag ? null : tagEl.dataset.tag;
       communityFilter = "all";
       await renderCommunityTab();
-      document.querySelector("#view-board .filter-chip")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // 고른 태그가 줄 밖에 있으면 보이게 옆으로 밀어 주고, 화면은 맨 위로
+      const on = document.querySelector("#view-board .tag-pill.on");
+      if (on) { on.parentElement.scrollLeft = on.offsetLeft - on.parentElement.clientWidth / 2 + on.offsetWidth / 2; window.scrollTo({ top: 0, behavior: "smooth" }); }
       return;
     }
     const el = e.target.closest("[data-act]");
@@ -609,7 +632,7 @@ async function renderFoodSection() {
   const list = data.restaurants.filter((r) => {
     if (!r.lat || !r.theme || (r.url && seenUrl.has(r.url))) return false;
     if (r.url) seenUrl.add(r.url);
-    return (food.theme === "all" || r.theme === food.theme) && (!food.tipOnly || r.tip);
+    return (food.theme === "all" || r.theme === food.theme) && (!food.tipOnly || r.tip) && (!food.kw || matchFood(r, food.kw.id));
   });
   if (!list.some((r) => r.id === food.selId)) food.selId = null;
   ui.renderFood(data, list, food);
@@ -629,7 +652,8 @@ async function renderFoodSection() {
   else if (list.length) campusMap?.fit(list, 40);
 
   const pane = $("food-pane");
-  pane.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { food.theme = b.dataset.theme; renderFoodSection(); }));
+  pane.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { food.theme = b.dataset.theme; food.kw = null; renderFoodSection(); }));
+  pane.querySelector("[data-kwoff]")?.addEventListener("click", () => { food.kw = null; renderFoodSection(); });
   pane.querySelector("[data-tip]").onclick = () => { food.tipOnly = !food.tipOnly; renderFoodSection(); };
   pane.querySelectorAll("[data-rest]").forEach((b) => (b.onclick = () => selectFood(b.dataset.rest, true)));
   pane.querySelector("[data-close]")?.addEventListener("click", () => { food.selId = null; renderFoodSection(); });

@@ -138,10 +138,15 @@ export async function loadRestaurants() {
   return foodData;
 }
 
-// 나중에 메인 탭 "맛집" 화면이 생기면 이 이벤트를 받아서 해당 카테고리를 열면 된다.
-//   window.addEventListener("knu:open-restaurants", (e) => openRestaurantTab(e.detail.category));
-export function openRestaurants(categoryId) {
-  window.dispatchEvent(new CustomEvent("knu:open-restaurants", { detail: { category: categoryId } }));
+// 돌림판 결과 → 맛집 화면: main.js가 이 이벤트를 받아 "맛집" 화면을 그 메뉴 가게만 모아서 연다 (장주연)
+// 가게가 그 메뉴인지: category가 같거나, 가게 종류(kind)에 키워드가 들어 있으면
+export const FOOD_WORDS = {
+  chicken: ["치킨", "닭"], pizza: ["피자"], kimbap: ["김밥", "분식"], burger: ["버거"],
+  sandwich: ["샌드위치"], tteokbokki: ["떡볶이", "분식"], dosirak: ["도시락"], dessert: ["디저트", "베이커리", "케이크", "카페"],
+};
+export const matchFood = (r, catId) => r.category === catId || (FOOD_WORDS[catId] || []).some((w) => (r.kind || "").includes(w) || (r.name || "").includes(w));
+export function openRestaurants(categoryId, cat = null) {
+  window.dispatchEvent(new CustomEvent("knu:open-restaurants", { detail: { category: categoryId, name: cat?.name || "", emoji: cat?.emoji || "" } }));
 }
 
 async function roulette(ctx) {
@@ -198,7 +203,7 @@ async function roulette(ctx) {
 
   function showResult(c) {
     // 같은 카테고리 가게 중 하나를 무작위로 추천 (매번 같은 가게만 나오지 않게)
-    const list = data.restaurants.filter((r) => r.category === c.id).sort(() => Math.random() - 0.5);
+    const list = data.restaurants.filter((r) => r.lat && matchFood(r, c.id)).sort(() => Math.random() - 0.5);
     ctx.react("proud", `오늘 피크닉은 ${c.name} 어때?`, 2600);
     ctx.info(`오늘의 피크닉 메뉴는 ${c.emoji} ${c.name}!`);
     navigator.vibrate?.(120);
@@ -207,17 +212,18 @@ async function roulette(ctx) {
         <div class="t">🎡 오늘의 피크닉 메뉴: ${c.emoji} ${c.name}</div>
         <div class="s">${list.length
           ? `호반우 추천: <b>${list[0].name}</b>${list[0].area ? ` (${list[0].area})` : ""}${list[0].comment ? `<br>${list[0].comment}` : ""}`
-          : "근처 맛집 추천은 곧 열려요! 맛집에서 영수증을 인증하면 포인트도 받을 수 있어요."}</div>
+          : "근처에 딱 맞는 가게가 아직 없어요. 맛집 지도에서 다른 가게도 둘러봐!"}</div>
         <div class="arm-row">
           <button class="arm-btn" data-a="again">다시 돌리기</button>
-          <button class="arm-btn primary" data-a="shops">추천 맛집 보기</button>
+          <button class="arm-btn primary" data-a="shops">${c.name} 맛집 모아 보기</button>
         </div>
       </div>`;
     ctx.tray.classList.remove("ar-hidden");
     ctx.tray.querySelector('[data-a="again"]').onclick = spin;
     ctx.tray.querySelector('[data-a="shops"]').onclick = () => {
-      openRestaurants(c.id);
-      ctx.toast("🍽️ 맛집 추천은 준비 중이에요!");
+      // AR 화면을 닫고(미션은 이미 완료) 맛집 화면으로: 밥집 중 이 메뉴 가게만
+      document.getElementById("ar-close")?.click();
+      setTimeout(() => openRestaurants(c.id, c), 350);
     };
     ctx.complete();
   }

@@ -10,7 +10,7 @@ import { currentTheme } from "./themes.js";
 import { CampusMap, campusDataReady } from "./campusmap.js";   // 미션 화면과 같은 지도
 
 export const TOUR_ON = true;          // false로 바꾸면 투어 카드/버튼이 전부 사라진다
-const DEMO_WALK = true;               // 시연용 "데모로 걸어가기" 버튼 (실제 운영 때는 false)
+import { DEMO } from "./demo.js";      // 시연용 "데모로 걷기" 버튼은 관리자 페이지 "데모 모드"가 켜졌을 때만
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";   // ?debug=1 : 지도를 누르면 좌표 표시
 const KEY = "knu-tour-v1";
 const BADGE_KEY = "knu-tour-badges";      // { courseId: 받은 시각 }
@@ -214,6 +214,90 @@ const VOL_KEY = "knu-tour-voice-vol";
 const voiceVol = () => { try { const v = parseFloat(localStorage.getItem(VOL_KEY)); return isFinite(v) ? v : 1; } catch { return 1; } };
 const setVoiceVol = (v) => { try { localStorage.setItem(VOL_KEY, String(v)); } catch {} if (voiceEl) voiceEl.volume = v; };
 
+// 긴 말을 말풍선 한 줄(약 20자) 크기로 자른다: 문장 → 쉼표 → 띄어쓰기 순서로 끊는다
+const LINE_MAX = 20;
+function splitLines(text) {
+  const out = [];
+  const sentences = String(text).match(/[^.!?]+[.!?]*/g) || [String(text)];
+  for (let s of sentences) {
+    s = s.trim();
+    if (!s) continue;
+    if (s.length <= LINE_MAX) { out.push(s); continue; }
+    let cur = "";
+    for (const w of s.split(/\s+/)) {
+      if (cur && (cur + " " + w).length > LINE_MAX) { out.push(cur); cur = w; }
+      else cur = cur ? cur + " " + w : w;
+      if (/,$/.test(cur) && cur.length >= LINE_MAX * 0.6) { out.push(cur); cur = ""; }   // 쉼표에서 끊기 좋으면 끊음
+    }
+    if (cur) out.push(cur);
+  }
+  return out.length ? out : [String(text)];
+}
+
+// 장소에 도착하면 풀 수 있는 퀴즈 (장소마다 한 문제). a: 정답 번호(0부터), why: 정답 설명
+const QUIZ = {
+  loveroad: { q: "러브로드 전설! 연인이 손을 잡고 어느 쪽으로 걸어야 사랑이 이루어질까?", o: ["본관 → 정문", "정문 → 본관", "북문 → 정문", "뒷걸음으로 아무 데나"], a: 1, why: "정문에서 본관 방향으로 손잡고 걸으면 영원한 사랑이 이루어진대요." },
+  ilcheongdam: { q: "일청담은 경북대 상징인 무엇의 모양을 본떠 만들었을까?", o: ["벚꽃", "감꽃", "호반우 뿔", "단풍잎"], a: 1, why: "경북대의 상징인 감꽃 모양을 본떠 만든 연못이에요." },
+  library: { q: "중앙도서관 열람실 자리는 어떻게 예약할까?", o: ["도서관 앱으로 예약", "전화로 예약", "학과 사무실에 신청", "예약 없이 선착순만"], a: 0, why: "열람실 자리는 도서관 앱으로 예약해요. 시험 기간엔 금방 차요!" },
+  bokji: { q: "개강 전에 교재를 사려면 복지관 어디로 가야 할까?", o: ["우체국", "은행", "서점", "학식당"], a: 2, why: "복지관 서점에서 교재를 살 수 있어요. 학기 초엔 사람이 많아요." },
+  centralpark: { q: "센팍 잔디밭에서 열리는, 야외에서 영화를 틀어 주는 행사 이름은?", o: ["무빔", "별빛극장", "센팍시네마", "잔디영화제"], a: 0, why: "센트럴파크에서는 무빔이라는 야외 영화 행사가 열려요." },
+  gongstaurant: { q: "공식당의 '공'은 무슨 뜻일까?", o: ["공짜", "공원", "공대", "공부"], a: 2, why: "공대 학생들이 많이 가는 식당이라 공대 식당, 줄여서 공식당이에요." },
+  cherryroad: { q: "벚꽃길 바로 근처에 있는 학식당은?", o: ["공식당", "복지관 식당", "도서관 카페", "정문 식당"], a: 0, why: "벚꽃길은 공식당이랑 아주 가까워요. 밥 먹고 산책하기 딱!" },
+  stadium: { q: "대운동장 바로 옆 백호관에 모여 있는 곳은?", o: ["기숙사", "중앙동아리방", "열람실", "학생식당"], a: 1, why: "백호관에는 중앙동아리방이 모여 있어요. 동아리 구경 가 봐요!" },
+};
+const DONE_KEY = "knu-tour-done";   // { zoneId: { pet: true, quiz: true } } 투어 도착 미션 한 것
+const tourDone = (id) => { try { return (JSON.parse(localStorage.getItem(DONE_KEY)) || {})[id] || {}; } catch { return {}; } };
+function setTourDone(id, k) {
+  try { const all = JSON.parse(localStorage.getItem(DONE_KEY)) || {}; all[id] = { ...(all[id] || {}), [k]: true }; localStorage.setItem(DONE_KEY, JSON.stringify(all)); } catch {}
+}
+// 퀴즈 창: 맞히면 true. 틀리면 설명을 보여 주고 다시 풀 수 있다
+function openQuiz(zone, q, solved) {
+  return new Promise((resolve) => {
+    const el = document.createElement("div");
+    el.id = "tm-sound";   // 아래에서 올라오는 시트 모양 재사용
+    el.innerHTML = `<div class="sd tm-quiz">
+      <h3>${zone.emoji || "❓"} ${zone.name} 퀴즈${solved ? " <small>(이미 맞혔어요)</small>" : ""}</h3>
+      <p class="qz-q">${q.q}</p>
+      <div class="qz-o">${q.o.map((t, i) => `<button data-i="${i}">${t}</button>`).join("")}</div>
+      <p class="qz-why" hidden></p>
+      <button class="sd-close">닫기</button></div>`;
+    document.body.appendChild(el);
+    let ok = false;
+    const close = () => { el.remove(); resolve(ok); };
+    el.onclick = (e) => { if (e.target === el) close(); };
+    el.querySelector(".sd-close").onclick = close;
+    el.querySelectorAll("[data-i]").forEach((b) => (b.onclick = () => {
+      const right = Number(b.dataset.i) === q.a;
+      el.querySelectorAll("[data-i]").forEach((x) => x.classList.remove("wrong"));
+      b.classList.add(right ? "right" : "wrong");
+      const why = el.querySelector(".qz-why");
+      why.hidden = false;
+      why.textContent = right ? `정답! ${q.why}` : "아쉬워요! 다시 골라 볼까요?";
+      if (right) {
+        ok = true;
+        navigator.vibrate?.(60);
+        el.querySelectorAll("[data-i]").forEach((x) => (x.disabled = true));
+        el.querySelector(".sd-close").textContent = "좋아요!";
+      }
+    }));
+  });
+}
+
+// 지난 대화 전체 보기 (휴대폰에서 말풍선을 누르면)
+function openLogSheet(lines) {
+  const el = document.createElement("div");
+  el.id = "tm-sound";   // 소리 설정 창과 같은 아래 시트 모양
+  el.innerHTML = `<div class="sd"><h3>💬 호반우와 나눈 이야기</h3>
+    <div class="tm-logsheet">${lines.map((t) => `<p>${t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</p>`).join("") || "<p>아직 나눈 이야기가 없어요</p>"}</div>
+    <button class="sd-close">닫기</button></div>`;
+  document.body.appendChild(el);
+  const box = el.querySelector(".tm-logsheet");
+  box.scrollTop = box.scrollHeight;
+  const close = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) close(); };
+  el.querySelector(".sd-close").onclick = close;
+}
+
 // 소리 설정 창 (이동 화면 위쪽 "음성" 버튼)
 function openSoundPanel(host, onChange) {
   const el = document.createElement("div");
@@ -388,6 +472,18 @@ function injectStyle() {
   #tm-sound .sd-seg button.on{border-color:var(--primary,#d4121a);color:var(--primary,#d4121a);background:var(--primary-weak,#fbe7e5)}
   #tm-sound input[type=range]{width:100%;accent-color:var(--primary,#d4121a)}
   #tm-sound input[type=range]:disabled{opacity:.35}
+  #tm-sound .tm-logsheet{max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  #tm-sound .tm-logsheet p{margin:0;align-self:flex-start;max-width:92%;background:var(--cream-weak,#f2f4f6);border-radius:14px 14px 14px 4px;padding:9px 12px;font-size:14px;line-height:1.5}
+  #tm-sound .tm-logsheet p:last-child{background:var(--primary-weak,#fbe7e5)}
+  #tm-sound h3 small{font-size:12px;color:var(--green,#0a9d63)}
+  #tm-sound .qz-q{margin:0 0 12px;font-size:16px;font-weight:700;line-height:1.5}
+  #tm-sound .qz-o{display:grid;gap:8px;margin-bottom:12px}
+  #tm-sound .qz-o button{width:100%;margin:0;padding:13px 14px;text-align:left;border-radius:14px;border:1.5px solid var(--line,#e5e8eb);background:var(--card,#fff);color:inherit;font-size:15px;font-weight:700;font-family:inherit}
+  #tm-sound .qz-o button.right{border-color:var(--green,#0a9d63);background:var(--green-weak,#e5f7ee);color:var(--green,#0a9d63)}
+  #tm-sound .qz-o button.wrong{border-color:var(--primary,#d4121a);background:var(--primary-weak,#fbe7e5);animation:qzShake .3s}
+  #tm-sound .qz-o button:disabled{opacity:1}
+  #tm-sound .qz-why{margin:0 0 12px;font-size:13.5px;line-height:1.5;color:var(--sub,#4e5968)}
+  @keyframes qzShake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
   #tm-sound .sd-close{width:100%;margin:0;padding:13px;border:none;border-radius:14px;background:var(--line,#e5e8eb);color:inherit;font-weight:800;font-family:inherit}
   #tour-move .tm-next{display:flex;align-items:center;gap:12px;padding:12px 16px 4px}
   #tour-move .tm-arrow{width:64px;height:64px;flex:none;border-radius:50%;background:var(--primary-weak,#fbe7e5);display:flex;align-items:center;justify-content:center}
@@ -404,30 +500,53 @@ function injectStyle() {
   #tour-move .tm-btns button.primary{background:var(--primary,#d4121a);color:#fff}
   #tour-move .tm-arrive{animation:tm-pop .5s var(--ease-toss,ease-out)}
   /* (장주연) 걸어가는 호반우 띠: 홈 카드(hero.js) 그림을 작게 재사용. 움직일 때만 걷고 배경이 흐른다 */
-  #tour-move .tm-walk{height:92px;margin:6px 14px 0;border-radius:18px;flex:none}
+  /* 휴대폰(세로): 걷는 호반우 무대를 아래쪽에 크게, 호반우가 하는 말은 무대 위 말풍선에 */
+  #tour-move .tm-walk{height:230px;margin:6px 14px 0;border-radius:20px;flex:none}
   #tour-move .tm-walk .hx-layer{width:auto}
-  #tour-move .tm-walk .hx-layer svg{width:240px}
-  #tour-move .tm-walk .hx-far{animation:tmScroll 22s linear infinite}
-  #tour-move .tm-walk .hx-near{animation:tmScroll 8s linear infinite}
-  #tour-move .tm-walk .hx-walker{left:30%;bottom:6px;width:62px;margin-left:-31px;animation-duration:.42s}
+  #tour-move .tm-walk .hx-layer svg{width:600px}
+  #tour-move .tm-walk .hx-far{animation:tmScrollB 40s linear infinite}
+  #tour-move .tm-walk .hx-near{animation:tmScrollB 14s linear infinite}
+  #tour-move .tm-walk .hx-walker{left:42%;bottom:8px;width:92px;margin-left:-46px;animation-duration:.42s}
   #tour-move .tm-walk .hx-walker .hx-f1,#tour-move .tm-walk .hx-walker .hx-f2{animation-duration:.42s}
-  #tour-move .tm-walk .tm-sweat{position:absolute;left:calc(30% + 22px);bottom:62px;z-index:4;font-size:13px;animation:tmSweat .9s ease-out infinite}
-  #tour-move .tm-walk .tm-sweat.s2{left:calc(30% - 30px);bottom:56px;animation-delay:.45s;font-size:11px}
-  #tour-move .tm-walk .tm-goal{position:absolute;right:12px;bottom:8px;z-index:3;width:58px;height:58px;object-fit:contain;opacity:0;transition:opacity .4s}
+  #tour-move .tm-walk .tm-sweat{position:absolute;left:calc(42% + 34px);bottom:92px;z-index:4;font-size:15px;animation:tmSweat .9s ease-out infinite}
+  #tour-move .tm-walk .tm-sweat.s2{left:calc(42% - 46px);bottom:84px;animation-delay:.45s;font-size:12px}
+  #tour-move .tm-walk .tm-goal{position:absolute;right:14px;bottom:10px;z-index:3;width:84px;height:84px;object-fit:contain;opacity:0;transition:opacity .4s}
+  #tour-move .tm-say{position:absolute;left:12px;right:12px;bottom:112px;z-index:6;margin:0;padding:11px 14px 9px;text-align:center;
+    background:rgba(255,255,255,.96);color:#191f28;border-radius:18px;box-shadow:0 4px 14px rgba(25,31,40,.14);cursor:pointer;overflow:hidden}
+  #tour-move .tm-line{display:block;font-size:16px;font-weight:700;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:tmLineIn .35s ease-out}
+  @keyframes tmLineIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #tour-move .tm-say-tail{position:absolute;z-index:6;bottom:101px;left:calc(42% - 6px);width:16px;height:12px;background:rgba(255,255,255,.95);clip-path:polygon(0 0,100% 0,30% 100%)}
+  #tour-move .tm-say small{display:block;margin-top:3px;font-size:10.5px;color:#8b95a1;font-weight:700}
+  #tour-move .tm-walk.arrived .tm-say-tail{left:calc(60% - 6px)}
+  @keyframes tmScrollB{to{transform:translateX(-600px)}}
   #tour-move .tm-walk:not(.moving) .hx-layer,#tour-move .tm-walk:not(.moving) .hx-walker,#tour-move .tm-walk:not(.moving) .hx-walker img{animation-play-state:paused}
   #tour-move .tm-walk:not(.moving) .tm-sweat{display:none}
-  #tour-move .tm-walk.arrived .hx-walker{left:62%;transition:left .8s ease-out}
+  #tour-move .tm-walk.arrived .hx-walker{left:60%;transition:left .8s ease-out}
   #tour-move .tm-walk.arrived .tm-goal{opacity:1}
-  #tour-move .tm-walk .tm-state{position:absolute;left:10px;top:8px;z-index:5;background:rgba(255,255,255,.88);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:800;color:var(--primary,#d4121a)}
+  #tour-move .tm-walk .tm-state{position:absolute;left:10px;bottom:10px;z-index:5;background:rgba(255,255,255,.88);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:800;color:var(--primary,#d4121a)}
   @keyframes tmScroll{to{transform:translateX(-240px)}}
   @keyframes tmSweat{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(10px,-14px)}}
   /* 대화 기록: 호반우가 한 말이 위로 쌓인다 (마지막 말이 말풍선) */
-  #tour-move .tm-log{flex:none;max-height:112px;overflow-y:auto;padding:8px 14px 0;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+  #tour-move .tm-log{position:relative;flex:none;max-height:112px;overflow-y:auto;padding:8px 14px 0;display:none;flex-direction:column;gap:6px;scroll-behavior:smooth}
   #tour-move .tm-log p{margin:0;align-self:flex-start;max-width:92%;background:var(--cream-weak,#f2f4f6);border-radius:14px 14px 14px 4px;padding:7px 11px;font-size:12.5px;line-height:1.45;color:var(--sub,#4e5968)}
-  #tour-move .tm-log p:last-child{font-size:14.5px;color:var(--ink,#191f28);padding:10px 13px;background:var(--primary-weak,#fbe7e5)}
-  #tour-move .tm-tools{display:flex;gap:8px;padding:8px 14px 0}
-  #tour-move .tm-tools button{flex:1;width:auto;margin:0;padding:9px 6px;border:1px solid var(--line,#e5e8eb);border-radius:12px;background:var(--card,#fff);color:inherit;font-size:13px;font-weight:800;font-family:inherit}
-  #tour-move .tm-tools button.off{opacity:.55}
+  #tour-move .tm-log p.now{font-size:14.5px;color:var(--ink,#191f28);padding:10px 13px;background:var(--primary-weak,#fbe7e5)}
+  /* 아래 버튼: [사진][쓰다듬기] 작게 + 지금 할 일(도착했어요 / 다음 장소로) 크게 */
+  #tour-move .tm-btns{display:grid;grid-template-columns:1fr 2fr;gap:8px;align-items:stretch}
+  #tour-move .tm-btns.arrived{grid-template-columns:1fr}
+  #tour-move .tm-missions{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
+  #tour-move .tm-ms{width:auto;margin:0;padding:10px 6px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--primary,#d4121a) 35%,transparent);
+    background:var(--primary-weak,#fbe7e5);color:var(--ink,#191f28);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px}
+  #tour-move .tm-ms b{font-size:14.5px;color:var(--primary,#d4121a)}
+  #tour-move .tm-ms span{font-size:11.5px;color:var(--sub,#4e5968);font-weight:600}
+  #tour-move .tm-ms.done{background:var(--card,#fff);border-color:var(--line,#e5e8eb)}
+  #tour-move .tm-ms.done b{color:var(--green,#0a9d63)}
+  #tour-move .tm-btns button.sub{padding:12px 4px;font-size:14px;background:var(--card,#fff);border:1.5px solid var(--line,#e5e8eb);color:var(--ink,#191f28)}
+  #tour-move .tm-btns button.primary{font-size:15.5px}
+  /* 데모로 걷기: 실제 사용 흐름과 헷갈리지 않게 지도 위 작은 버튼 (관리자 "데모 모드"일 때만) */
+  #tour-move .tm-demo{position:absolute;left:10px;top:10px;z-index:5;width:auto;margin:0;padding:7px 12px;border:none;border-radius:999px;
+    background:rgba(25,31,40,.78);color:#fff;font-size:12.5px;font-weight:800;font-family:inherit}
+  #tour-move .tm-demo:disabled{opacity:.5}
+  #tour-map{position:relative}
   @media (prefers-reduced-motion:reduce){ #tour-move .tm-walk *{animation:none!important} }
   .tour-pin{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--primary,#d4121a);display:flex;align-items:center;justify-content:center;
     font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,.25)}
@@ -441,7 +560,7 @@ function injectStyle() {
   @keyframes tm-pop{0%{transform:scale(.9);opacity:.3}100%{transform:none;opacity:1}}
   /* PC(넓은 화면)·휴대폰 가로: 왼쪽 큰 지도 + 오른쪽 안내 */
   @media (orientation:landscape) and (max-height:520px){ #tour-move .tm-guide img{width:56px!important;height:56px!important}
-    #tour-move .tm-side{overflow-y:auto} #tour-move .tm-walk{height:70px} #tour-move .tm-log{max-height:84px}
+    #tour-move .tm-side{overflow-y:auto} #tour-move .tm-walk{height:70px!important} #tour-move .tm-log{max-height:84px}
     #tour-move .tm-bubble{font-size:13.5px!important;padding:8px 12px} #tour-move .tm-btns button{padding:11px} #tour-move .tm-arrow{width:52px;height:52px} }
   @media (min-width:900px), (orientation:landscape) and (max-height:520px){
     #tour-move{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);grid-template-rows:auto auto minmax(0,1fr) auto}
@@ -449,7 +568,19 @@ function injectStyle() {
     #tour-map{grid-column:1;grid-row:3;margin:0 0 0 16px;min-height:0}
     #tour-move .tm-legend{grid-column:1;grid-row:4;padding:6px 16px 12px}
     #tour-move .tm-side{grid-column:2;grid-row:3 / 5;display:flex;flex-direction:column;justify-content:center;padding:0 8px 16px}
-    #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} #tour-move .tm-log{max-height:240px} }`;
+    #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} #tour-move .tm-log{max-height:240px}
+    /* 넓은 화면: 무대는 작게, 말은 오른쪽 대화 기록으로 */
+    #tour-move .tm-walk{height:92px} #tour-move .tm-walk .hx-layer svg{width:240px}
+    #tour-move .tm-walk .hx-far{animation-name:tmScroll;animation-duration:22s} #tour-move .tm-walk .hx-near{animation-name:tmScroll;animation-duration:8s}
+    #tour-move .tm-walk .hx-walker{left:30%;bottom:6px;width:62px;margin-left:-31px}
+    #tour-move .tm-walk .tm-sweat{left:calc(30% + 22px);bottom:62px;font-size:13px} #tour-move .tm-walk .tm-sweat.s2{left:calc(30% - 30px);bottom:56px;font-size:11px}
+    #tour-move .tm-walk .tm-goal{width:58px;height:58px;right:12px;bottom:8px}
+    #tour-move .tm-walk .tm-state{top:8px;bottom:auto}
+    #tour-move .tm-say,#tour-move .tm-say-tail{display:none}
+    #tour-move .tm-log{display:flex;height:300px;max-height:none;overflow-y:scroll;padding:150px 10px 150px 14px;margin-top:8px;
+      border-radius:16px;background:color-mix(in srgb,var(--cream-weak,#f2f4f6) 55%,transparent);scrollbar-width:thin;scrollbar-color:var(--cream,#b0b8c1) transparent}
+    #tour-move .tm-log::-webkit-scrollbar{width:8px} #tour-move .tm-log::-webkit-scrollbar-thumb{background:var(--cream,#b0b8c1);border-radius:4px}
+    #tour-move .tm-log p{opacity:.75} #tour-move .tm-log p.now{opacity:1;font-size:15px;color:var(--ink,#191f28);background:var(--primary-weak,#fbe7e5);box-shadow:0 4px 12px -6px rgba(212,18,26,.35)} }`;
   document.head.appendChild(s);
 }
 
@@ -622,33 +753,62 @@ function _openMove(first) {
         <span class="tm-sweat">💦</span><span class="tm-sweat s2">💦</span>
         <img class="tm-goal" src="${mascot}" alt="">
         <span class="tm-state">잠깐 쉬는 중</span>
+        <p class="tm-say" role="button" aria-label="호반우가 한 말 (누르면 지난 대화 보기)"></p><i class="tm-say-tail"></i>
       </div>
       <div class="tm-log" aria-live="polite"></div>
-      <div class="tm-tools">
-        <button data-t="photo">사진</button>
-        <button data-t="pet">쓰다듬기</button>
-      </div>
       <div class="tm-btns"></div>
     </div>`;
   document.body.appendChild(root);
   const $ = (s) => root.querySelector(s);
   // (장주연) 호반우가 한 말은 대화 기록으로 쌓는다 (투어 내내 유지, 장소가 바뀌어도 이어서 보임)
   const logBox = $(".tm-log");
+  const escT = (t) => t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
+  const sayBox = $(".tm-say");
+  // PC: 대화 기록 전체 (높이 고정 + 스크롤바). 지금 하는 말이 가운데, 지난 말은 위로
   const paintLog = () => {
-    logBox.innerHTML = tourLog.map((t) => `<p>${t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</p>`).join("");
-    logBox.scrollTop = logBox.scrollHeight;
+    logBox.innerHTML = tourLog.map((t, i) => `<p class="${i === tourLog.length - 1 ? "now" : ""}">${escT(t)}</p>`).join("") || `<p class="now">같이 가 보자!</p>`;
+    const cur = logBox.querySelector("p.now");
+    if (cur) logBox.scrollTop = Math.max(0, cur.offsetTop - logBox.clientHeight / 2 + cur.offsetHeight / 2);
   };
-  const addLog = (t) => {
+  // 휴대폰: 긴 말을 한 줄 크기로 잘라 말풍선에 한 줄씩 (음성이 나오는 속도에 맞춰 넘어간다)
+  let live = null, liveIdx = -1;
+  const showLine = (t, audio) => {
+    live = { parts: splitLines(t), start: Date.now(), audio };
+    liveIdx = -1;
+    tickLine();
+  };
+  const tickLine = () => {
+    if (!live) return;
+    const total = live.parts.reduce((s, p) => s + p.length, 0) || 1;
+    let frac;
+    const a = voiceEl;
+    if (live.audio && a && !a.paused && isFinite(a.duration) && a.duration > 0) frac = a.currentTime / a.duration;
+    else frac = (Date.now() - live.start) / (total * 110);   // 녹음이 없으면 한 글자 0.11초로 어림
+    let acc = 0, idx = live.parts.length - 1;
+    for (let i = 0; i < live.parts.length; i++) { acc += live.parts[i].length; if (frac * total < acc) { idx = i; break; } }
+    if (idx === liveIdx) return;
+    liveIdx = idx;
+    sayBox.innerHTML = `<span class="tm-line" key="${idx}">${escT(live.parts[idx])}</span>${live.parts.length > 1 ? `<small>${idx + 1} / ${live.parts.length}</small>` : ""}`;
+  };
+  const lineTimer = setInterval(tickLine, 150);
+  sayBox.onclick = () => openLogSheet(tourLog);
+  const addLog = (t, audio = false) => {
     t = clean(t);
     if (!t || tourLog[tourLog.length - 1] === t) return;
     tourLog.push(t);
     if (tourLog.length > 40) tourLog.shift();
     try { sessionStorage.setItem(LOG_KEY, JSON.stringify(tourLog)); } catch {}
-    if (mv?.root === root || !mv) paintLog();
+    if (mv?.root === root || !mv) { paintLog(); showLine(t, audio); }
   };
   paintLog();
+  if (tourLog.length) showLine(tourLog[tourLog.length - 1], false); else sayBox.innerHTML = `<span class="tm-line">같이 가 보자!</span>`;
   const bubble = (t, opt) => { addLog(t); speak(t, opt); };
-  const say = (key, fallback, mode = "interrupt") => playKey(key, fallback, { mode, onStart: () => addLog(SCRIPT[key] || fallback) });
+  // 글자로만 띄울 말: 호반우가 말하는 중이면 끝난 뒤에 (말풍선이 음성과 엇갈리지 않게)
+  const addAfterVoice = (t) => {
+    const tryIt = () => { if (mv?.root !== root) return; if (playing || waiting.length) setTimeout(tryIt, 500); else addLog(t); };
+    setTimeout(tryIt, 600);
+  };
+  const say = (key, fallback, mode = "interrupt") => playKey(key, fallback, { mode, onStart: () => addLog(SCRIPT[key] || fallback, voiceOn() && !!SCRIPT[key]) });
 
   // --- 걷는 호반우: 실제로 움직이는 동안만 걷는다 ---
   const walk = $(".tm-walk");
@@ -675,20 +835,36 @@ function _openMove(first) {
       if (geo.distanceM(lastPos, zone) < 3000) loadRoute(lastPos);
     }
   };
-  $('[data-t="photo"]').onclick = async () => {
+  const doPhoto = async () => {
     goAway();
     try { await openPhotoStudio({ start: "basic", place: arrived ? zone.name : `${zone.name} 가는 길`, zoneId: arrived ? zone.id : null, record: true }); }
     catch (e) { console.warn("[투어] 사진", e); }
     comeBack();
   };
-  $('[data-t="pet"]').onclick = async () => {
+  // 도착 미션 ① 쓰다듬기: 이 장소의 호반우가 AR로 나온다 (처음 만나면 도감 등록, 친밀도도 오른다)
+  const doPet = async () => {
     goAway();
     try {
-      const r = await startAR({ id: "", name: "캠퍼스 투어", mascot: { name: "호반우", img: "img/hobanu/react-hi.png", lines: ["같이 걸으니까 좋다!", "조금만 더 가면 도착이야!", "쓰다듬어 줘서 힘이 나!"] } },
-        { mission: { id: "tour-pet", ar: "pet", title: "호반우 쓰다듬기" } });
-      if (r?.done) addLog("쓰다듬어 줘서 힘이 났어! 다시 출발하자!");
+      const r = await startAR(zone, { mission: { id: "tour-pet-" + zone.id, ar: "pet", title: `${zone.name} 호반우 쓰다듬기` } });
+      if (r?.done) {
+        if (!tourDone(zone.id).pet) { setTourDone(zone.id, "pet"); if (app.store.grantBonus("tourpet:" + zone.id, 10)) app.ui.reward(10); }
+        addLog(`${zone.name} 호반우랑 친해졌어!`);
+      }
     } catch (e) { console.warn("[투어] 쓰다듬기", e); }
     comeBack();
+    paintBtns();
+  };
+  // 도착 미션 ② 장소 퀴즈 한 문제
+  const doQuiz = async () => {
+    const q = QUIZ[zone.id];
+    if (!q) return;
+    const ok = await openQuiz(zone, q, !!tourDone(zone.id).quiz);
+    if (ok && !tourDone(zone.id).quiz) {
+      setTourDone(zone.id, "quiz");
+      if (app.store.grantBonus("tourquiz:" + zone.id, 15)) app.ui.reward(15);
+      addLog("정답! 이제 이 장소 박사네!");
+    }
+    paintBtns();
   };
   const vBtn = $('[data-a="voice"]');
   // "음성" 버튼 → 소리 설정 창: 안내 멘트(사투리·표준어·끄기 + 크기), 배경 음악(켜기·끄기 + 크기)
@@ -801,7 +977,7 @@ function _openMove(first) {
         gotFix = true;
         // 학교 근처(3km 이내)일 때만 내 위치에서 경로를 다시 받는다 (집에서 시연할 땐 무시)
         if (geo.distanceM(p, zone) < 3000 && geo.distanceM(p, prev) > 60) loadRoute(p);
-        if (geo.distanceM(p, zone) >= 3000) { $(".tm-dist span").textContent = "학교 밖이에요. 데모로 걷기를 눌러 보세요"; return; }
+        if (geo.distanceM(p, zone) >= 3000) { $(".tm-dist span").textContent = DEMO ? "학교 밖이에요. 데모로 걷기를 눌러 보세요" : "학교 밖이에요. 캠퍼스에 오면 길 안내가 시작돼요"; return; }
       }
       if (geo.distanceM(p, zone) < 3000) onPos(p);
     }, () => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -848,6 +1024,7 @@ function _openMove(first) {
     paintBtns();
     map?.fit([zone], (zone.radius || 40) + 50);
     markVisited();
+    addAfterVoice(`여기서 ${zone.name} 호반우 쓰다듬기랑 퀴즈 한 문제 풀어 볼래?`);   // 도착 소개를 다 들은 뒤에
   }
   function markArrived() { const s = load(); if (s) { s.arrived = s.idx; save(s); } }
   // 투어로 도착했으니 그 장소 위치 인증은 끝난 것으로 처리 (나중에 장소 화면에 들어가면 바로 미션 메뉴)
@@ -862,11 +1039,29 @@ function _openMove(first) {
   }
   function paintBtns() {
     const box = $(".tm-btns");
+    const dn = tourDone(zone.id);
+    // 걷는 중: [사진 찍기] + [도착했어요]  /  도착: 도착 미션 3칸(쓰다듬기·퀴즈·사진) + [다음 장소로]
+    box.classList.toggle("arrived", arrived);
     box.innerHTML = arrived
-      ? `<button class="primary" data-a="skip">${st.idx + 1 < c.stops.length ? "다음 장소로 →" : "🏁 완주하기"}</button>`
-      : `${DEMO_WALK ? `<button data-a="demo">▶ 데모로 걷기</button>` : ""}<button data-a="here">도착했어요</button>`;
+      ? `<div class="tm-missions">
+          <button class="tm-ms ${dn.pet ? "done" : ""}" data-t="pet"><b>${dn.pet ? "✓ " : ""}쓰다듬기</b><span>${dn.pet ? "친해졌어요" : "친해지기 +10"}</span></button>
+          ${QUIZ[zone.id] ? `<button class="tm-ms ${dn.quiz ? "done" : ""}" data-t="quiz"><b>${dn.quiz ? "✓ " : ""}퀴즈</b><span>${dn.quiz ? "정답!" : "한 문제 +15"}</span></button>` : ""}
+          <button class="tm-ms" data-t="photo"><b>사진</b><span>기념 사진</span></button>
+        </div>
+        <button class="primary" data-a="skip">${st.idx + 1 < c.stops.length ? "다음 장소로 →" : "완주하기"}</button>`
+      : `<button class="sub" data-t="photo">사진 찍기</button><button class="primary" data-a="here">도착했어요</button>`;
+    box.querySelector('[data-t="photo"]').onclick = doPhoto;
+    box.querySelector('[data-t="pet"]')?.addEventListener("click", doPet);
+    box.querySelector('[data-t="quiz"]')?.addEventListener("click", doQuiz);
+    // 데모로 걷기는 지도 위 작은 버튼으로 (관리자 "데모 모드"가 켜졌을 때만)
+    const dm = $(".tm-demo");
+    if (DEMO && !arrived && !dm) {
+      const b = document.createElement("button");
+      b.className = "tm-demo"; b.type = "button"; b.textContent = "▶ 데모로 걷기";
+      b.onclick = () => { b.disabled = true; b.textContent = "걷는 중…"; demoWalk(); };
+      $("#tour-map").appendChild(b);
+    } else if (arrived) dm?.remove();
     box.querySelector('[data-a="skip"]')?.addEventListener("click", () => { markArrived(); closeMove(); next(zone); });   // 미션은 건너뛰고 투어 계속
-    box.querySelector('[data-a="demo"]')?.addEventListener("click", (e) => { e.currentTarget.disabled = true; demoWalk(); });
     box.querySelector('[data-a="here"]')?.addEventListener("click", () => {
       // GPS가 부정확할 때를 위한 수동 도착 (100m 안이거나 위치를 모를 때만)
       if (lastPos && geo.distanceM(lastPos, zone) > 100) { say("far", "아직 좀 멀어! 화살표를 따라 조금만 더 가 줘!"); return; }
@@ -882,6 +1077,7 @@ function _openMove(first) {
       cancelAnimationFrame(demoRaf);
       clearInterval(arrowTimer);
       clearInterval(moveTimer);
+      clearInterval(lineTimer);
       bgm.stop();
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       window.removeEventListener("deviceorientationabsolute", onOri);

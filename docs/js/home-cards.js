@@ -17,12 +17,17 @@ function injectStyle() {
   .hc-card span{display:block;font-size:12.5px;color:var(--sub,#6b5f52);margin-top:2px;word-break:keep-all}
   .hc-card em{flex:none;font-style:normal;font-weight:800;font-size:13px;padding:8px 12px;border-radius:12px;background:var(--primary-weak,#fbe7e5);color:var(--primary,#d4121a)}
   .hc-ar{background:linear-gradient(135deg,#fff7e8,#ffeef3)}
-  .hc-food{display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px 18px}
-  .hc-food img{width:52px;height:52px;object-fit:contain;flex:none}
+  /* 위 "미션 하러 가기" 카드처럼 살짝 비치는 흰 유리 + 같은 Jua 제목 */
+  .card.hc-food{display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;
+    background:linear-gradient(160deg,rgba(255,255,255,.82),rgba(255,255,255,.62));
+    -webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border-color:rgba(255,255,255,.7)}
+  .hc-food img{width:50px;height:50px;object-fit:contain;flex:none}
   .hc-food .hc-body{flex:1;min-width:0}
-  .hc-food .sum-big{font-size:19px}
-  .hc-food .sum-foot{word-break:keep-all}
-  .hc-food .chip{white-space:nowrap;flex:none}
+  .hc-food .hc-title{font-family:"Jua",var(--font);font-size:19px;line-height:1.3;color:var(--ink)}
+  .hc-food .hc-sub{margin-top:2px;font-size:13px;color:var(--sub);word-break:keep-all}
+  .hc-food .hc-go{flex:none;white-space:nowrap;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800;
+    background:var(--primary);color:#fff;box-shadow:0 4px 10px -4px rgba(212,18,26,.5)}
+  @media (prefers-color-scheme:dark){ .card.hc-food{background:linear-gradient(160deg,rgba(42,45,52,.78),rgba(42,45,52,.6));border-color:rgba(255,255,255,.09)} }
   #hc-sheet{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
   #hc-sheet .hs{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#241c16);border-radius:22px 22px 0 0;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
@@ -45,8 +50,8 @@ export function renderFoodCard(slot, onOpen) {
   // 바로 아래 "오늘의 퀴즈" 카드와 같은 .card 모양 (유리 카드·테두리) + 오른쪽 작은 빨간 버튼
   slot.innerHTML = `<div class="card hc-food" role="button" tabindex="0" aria-label="학교 근처 맛집 보기">
     <img src="img/mascot/eating.png" alt="">
-    <div class="hc-body"><div class="sum-big">배는 항상 고파</div><div class="sum-foot">선배들이 추천하는 맛집 한 번 볼래요?</div></div>
-    <button type="button" class="chip primary">맛집 보기</button></div>`;
+    <div class="hc-body"><div class="hc-title">항상 배는 고프더라</div><div class="hc-sub">선배들이 추천하는 맛집 한 번 볼래요?</div></div>
+    <button type="button" class="hc-go">맛집 보기</button></div>`;
   const card = slot.firstElementChild;
   card.onclick = onOpen;
   card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };

@@ -193,7 +193,7 @@ export function renderExplore(cleared = 0, total = 0, mode = "zones", theme = nu
 /* ---------- 맛집 (캠퍼스 탐험 > 맛집) ---------- */
 // data: data/restaurants.json, list: 필터를 거친 가게들, state: { theme, tipOnly, selId }
 // 필터 버튼은 data-theme / data-tip, 가게는 data-rest(누르면 선택). 클릭 처리는 main.js에서 한다.
-export function renderFood(data, list, { theme = "all", tipOnly = false, selId = null } = {}) {
+export function renderFood(data, list, { theme = "all", tipOnly = false, selId = null, kw = null } = {}) {
   const el = $("food-pane");
   if (!el) return;
   const themes = data.themes || [];
@@ -211,6 +211,7 @@ export function renderFood(data, list, { theme = "all", tipOnly = false, selId =
       </span>
     </button>`;
   el.innerHTML = `
+    ${kw ? `<button type="button" class="filter-chip" data-kwoff>${esc(kw.emoji)} 돌림판 메뉴 <b>${esc(kw.name)}</b> 가게만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">모아 보기 끄기</span></button>` : ""}
     <div class="food-filters" role="group" aria-label="맛집 종류">
       <button type="button" data-theme="all" class="${theme === "all" ? "on" : ""}">전체</button>
       ${themes.map((t) => `<button type="button" data-theme="${t.id}" class="${theme === t.id ? "on" : ""}">${hasIcon(t.id) ? icon(t.id, { size: 20, cls: "jelly-inline" }) : t.emoji} ${esc(t.name)}</button>`).join("")}
@@ -544,15 +545,15 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
   const q = board === "question";
   const count = posts.length;
   $("view-board").innerHTML = `
-    ${subHeader(q ? "질문" : "자유게시판")}
-    ${tag
+    ${subHeader(q ? "질문" : "자유게시판", q ? "" : `<button type="button" class="help-btn" data-help aria-label="글쓰기 방법 보기">?</button>`)}
+    ${tag && q
       ? `<button type="button" class="filter-chip tag-chip" data-f="all"><b>#${esc(tag)}</b> ${placeTag ? "방문 기록" : "글"} ${count}개 <span aria-hidden="true">✕</span><span class="sr-only">해시태그 모아 보기 끄기</span></button>`
       : filter === "mine"
       ? `<button type="button" class="filter-chip" data-f="all">${q ? "내 질문" : "내가 쓴 글"}만 보는 중 <span aria-hidden="true">✕</span><span class="sr-only">전체 보기</span></button>`
       : `<p class="map-guide">${q
         ? "궁금한 걸 물어보세요. 도움이 된 답변에 ♥를 누르면 베스트 답변이 돼요."
-        : "#태그를 누르면 그 태그가 달린 글만 모아 볼 수 있어요. #인기글은 좋아요 5개·댓글 2개 이상 받은 글이에요."}</p>`}
-    ${!q && filter !== "mine" && tagRow.length ? `<div class="tag-row" role="list" aria-label="해시태그로 모아 보기">${tagRow.map((t) =>
+        : "#태그를 누르면 그 글만 모아 볼 수 있어요."}</p>`}
+    ${!q && filter !== "mine" && tagRow.length ? `<div class="tag-row" role="list" aria-label="해시태그로 모아 보기">${(tag && !tagRow.includes(tag) ? [tag, ...tagRow] : tagRow).map((t) =>
       `<button type="button" role="listitem" class="tag-pill ${t === tag ? "on" : ""} ${t === "인기글" ? "hot" : ""}" data-tag="${esc(t)}" aria-pressed="${t === tag}">#${esc(t)}</button>`).join("")}</div>` : ""}
     <div class="feed">
       ${posts.length ? posts.map((p) => postCardHtml(p, zoneName, myId)).join("") : `
@@ -561,7 +562,6 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
             : filter === "mine"
             ? (q ? "아직 올린 질문이 없어요" : "아직 올린 글이 없어요")
             : (q ? "아직 질문이 없어요. 첫 질문을 남겨보세요!" : "아직 글이 없어요. 첫 글을 남겨보세요!")}</p>
-          ${tag === "인기글" ? `<p style="color:var(--mute);margin:6px 0 0;font-size:12.5px">좋아요 5개 이상, 댓글 2개 이상 받은 글이 여기 모여요</p>` : ""}
         </div>`}
     </div>`;
 
@@ -577,6 +577,34 @@ export function renderCommunity(zones, posts, { board = "post", filter = "all", 
   fab.setAttribute("aria-label", label);
   fab.title = label;
   fab.innerHTML = q ? ICON_ASK : ICON_PENCIL;
+}
+
+// 자유게시판 "?" 버튼: 뭘 쓸지 모르는 새내기를 위한 글쓰기 방법 (처음 들어오면 한 번 자동으로 뜬다) (장주연)
+export function showBoardHelp() {
+  document.getElementById("board-help")?.remove();
+  const el = document.createElement("div");
+  el.id = "board-help";
+  el.innerHTML = `<div class="bh-sheet" role="dialog" aria-modal="true" aria-labelledby="bh-title">
+    <h3 id="bh-title">✏️ 자유게시판, 이렇게 써 보세요</h3>
+    <ol class="bh-steps">
+      <li><b>오른쪽 아래 연필 버튼</b>을 누르면 글쓰기 창이 열려요.</li>
+      <li><b>사진</b>을 한 장 올리고, 한두 줄로 이야기를 남겨요.</li>
+      <li><b>장소 태그</b>를 고르면 그 장소의 방문 기록으로 모여요.</li>
+      <li>본문에 <b>#자유글</b>이나 <b>#질문글</b>을 쓰면 위쪽 해시태그로 모아 볼 수 있어요.</li>
+    </ol>
+    <div class="bh-ex">
+      <p class="bh-ex-title">이런 글 어때요?</p>
+      <p>📸 "일청담 야경 진짜 예쁘다! 호롱불 켜지는 시간 노려 보세요 #자유글"</p>
+      <p>🍚 "공식당 오늘 치즈알밥 나왔어요. 12시 전에 가면 줄 짧아요 #자유글"</p>
+      <p>❓ "중앙도서관 열람실 자리 예약은 어디서 해요? #질문글"</p>
+    </div>
+    <p class="bh-note">좋아요 5개·댓글 2개 이상 받으면 <b>#인기글</b>에 올라가요. 서로 배려하는 글을 남겨 주세요!</p>
+    <button type="button" class="btn bh-ok">알겠어요</button>
+  </div>`;
+  document.body.appendChild(el);
+  const close = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) close(); };
+  el.querySelector(".bh-ok").onclick = close;
 }
 
 // 좋아요/댓글 수가 바뀌었을 때 화면 전체를 다시 그리지 않고 그 글 카드만 고친다 (스크롤 위치 유지)
