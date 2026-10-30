@@ -196,8 +196,9 @@ function renderMap(list) {
     status: (r) => r.gate ? "gate" : ["food", r.tip ? "tip" : "", r.id === st.selId ? "sel" : ""].join(" "),
     onSelect: (r) => { if (!r.gate) select(r.id, false); },
     bubble: false,
-    // 북문처럼 가게가 몰린 곳은 숫자 동그라미로 묶고, 누르면 확대해서 풀어 준다 (문 표시·선택한 가게는 안 묶음)
-    cluster: { radius: 46, skip: (z) => z.gate || z.id === st.selId },
+    // 북문처럼 가게가 몰린 곳은 숫자 동그라미로 묶고, 누르면 확대해서 풀어 준다 (문 표시·선택한 가게는 안 묶음).
+    // 3곳 이하로 모인 곳은 묶지 않고 핀을 각 자리에 그대로 보여 준다 (4곳 이상부터 숫자)
+    cluster: { radius: 46, min: 4, skip: (z) => z.gate || z.id === st.selId },
   });
   const sel = list.find((r) => r.id === st.selId);
   if (sel) map.fit([sel], 220);   // 너무 확대하면 캠퍼스 밖은 빈 땅처럼 보여서, 근처 문·가게가 함께 보이게

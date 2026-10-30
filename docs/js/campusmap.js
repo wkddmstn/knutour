@@ -349,7 +349,7 @@ export class CampusMap {
   // status(zone) → "cleared" | "next" | "" , onSelect(zone)
   // status: "cleared" | "next" | "locked"(다른 테마 장소, 누르면 lockNote 안내만) | ""
   // cluster: 핀이 많을 때(맛집 지도) 화면에서 겹치는 핀들을 "숫자 동그라미"로 묶는다. 확대할수록 풀린다.
-  //   { radius: 묶는 거리(px), skip: (z) => true면 안 묶음(문 표시·선택한 가게 등) }. 안 주면 묶지 않는다.
+  //   { radius: 묶는 거리(px), min: 이만큼 이상 모였을 때만 묶음(기본 2), skip: (z) => true면 안 묶음(문 표시·선택한 가게 등) }. 안 주면 묶지 않는다.
   setZones(zones, { status = () => "", onSelect = null, bubble = true, lockNote = () => "", cluster = null } = {}) {
     this.pins.forEach((p) => p.node.remove());
     this.cluster = cluster;
@@ -382,7 +382,7 @@ export class CampusMap {
     const pool = (this.clusterNodes ||= []);
     let used = 0;
     if (this.cluster) {
-      const s = this.scale, R = this.cluster.radius || 44, skip = this.cluster.skip || (() => false);
+      const s = this.scale, R = this.cluster.radius || 44, skip = this.cluster.skip || (() => false), MIN = this.cluster.min || 2;
       const pts = this.pins.filter((p) => !skip(p.z)).map((p) => ({ p, x: (px(p.lng) - this.vb.x) * s, y: (py(p.lat) - this.vb.y) * s }));
       // 핀 하나하나를 묶음으로 시작해서, 중심끼리 R보다 가까운 두 묶음을 더 이상 없을 때까지 합친다 (숫자 동그라미끼리도 안 겹치게)
       let groups = pts.map((b) => ({ m: [b], x: b.x, y: b.y }));
@@ -402,7 +402,7 @@ export class CampusMap {
       }
       const taken = new Set();
       for (const { m: group } of groups) {
-        if (group.length < 2) continue;
+        if (group.length < MIN) continue;   // 몇 개 안 되면 묶지 않고 핀을 각 자리에 그대로 둔다
         const spreadM = Math.max(...group.flatMap((b) => group.map((c) => Math.hypot(b.x - c.x, b.y - c.y)))) / s;
         if (spreadM < 8) continue;
         group.forEach((b) => { taken.add(b); b.p.node.classList.add("cm-clustered"); });
