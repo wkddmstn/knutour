@@ -684,7 +684,7 @@ export function renderQuestCard(container, { entry = false } = {}) {
          <span>정문에서 출발해 호반우가 길 안내·장소 소개를 해 줘요!</span></div>
        <div class="tc-btns"><button data-a="pick">코스 고르기</button></div>`;
   container.prepend(card);
-  card.querySelector('[data-a="pick"]')?.addEventListener("click", openCourseSheet);
+  card.querySelector('[data-a="pick"]')?.addEventListener("click", () => (app?.goTab ? app.goTab("course") : openCourseSheet()));   // 주소 #course로 (뒤로 가기·링크 공유)
   card.querySelector('[data-a="go"]')?.addEventListener("click", () => { unlockAudio(); openMove(); });
   card.querySelector('[data-a="next"]')?.addEventListener("click", () => { unlockAudio(); next(curZone); });
   card.querySelector('[data-a="zone"]')?.addEventListener("click", () => curZone && app.openZone(curZone));
@@ -693,13 +693,19 @@ export function renderQuestCard(container, { entry = false } = {}) {
     save(null); renderQuestCard(container);
   });
 }
-function openCourseSheet() {
+// 코스 고르기 시트. main.js가 주소 #course일 때 연다. onClose: 사용자가 닫거나 투어를 시작해서 시트가 사라질 때
+// (뒤로 가기 등으로 다른 화면이 되면 main.js가 closeCourseSheet()로 조용히 닫는다 — 이때는 onClose를 부르지 않음)
+let sheetQuietClose = null;
+export function closeCourseSheet() { sheetQuietClose?.(); }
+export function openCourseSheet({ onClose } = {}) {
+  closeCourseSheet();
   injectStyle();
   const el = document.createElement("div");
   el.id = "tour-sheet";
   document.body.appendChild(el);
   const quiet = () => { stopVoice(); bgm.stop(); };   // 미리 듣기로 나던 소리 끄기 (설정 값은 그대로)
-  const close = () => { quiet(); el.remove(); };
+  sheetQuietClose = () => { sheetQuietClose = null; quiet(); el.remove(); };
+  const close = () => { sheetQuietClose?.(); onClose?.(); };
   el.onclick = (e) => { if (e.target === el) close(); };
   const head = (title, label) => `
     <div class="ts-grab" aria-hidden="true"></div>
@@ -769,7 +775,9 @@ function openCourseSheet() {
       unlockAudio();
       save({ course: c.id, idx: 0, gate: "main", startedAt: Date.now() });
       try { localStorage.setItem(TRIED_KEY, "1"); } catch {}
+      sheetQuietClose = null;
       el.remove();
+      onClose?.();   // 주소의 #course를 정리 (이동 화면은 그 위에 따로 뜬다)
       openMove(true);
     };
     el.querySelector(".ts").scrollTop = 0;

@@ -22,14 +22,15 @@ import { applyThemeBg } from "./theme-bg.js";   // 테마별 화면 배경 그�
 // 호반우 캠퍼스 투어 (장주연): tour.js를 "있으면 쓰는" 방식으로 불러온다.
 // tour.js에 문제가 생겨도 import가 실패할 뿐 기존 앱은 그대로 동작한다.
 let tour = null;
-import("./tour.js")
+const tourReady = import("./tour.js")
   .then((m) => {
-    if (!m.TOUR_ON) return;
+    if (!m.TOUR_ON) return null;
     tour = m;
     m.initTour({ zones: () => allZones, openZone, goTab, store, ui });   // 투어 코스는 모든 장소 기준 (지금 테마에 없는 장소는 openZone이 안내)
     if (document.body.dataset.view === "home") m.renderQuestCard($("home-tour-slot"));   // 홈의 투어 카드
+    return m;
   })
-  .catch((e) => console.warn("[투어] 불러오지 못했어요 — 투어 없이 계속합니다", e));
+  .catch((e) => { console.warn("[투어] 불러오지 못했어요 — 투어 없이 계속합니다", e); return null; });
 const tourItem = (zone) => { try { const it = tour?.menuItem(zone); return it ? [it] : []; } catch { return []; } };
 
 const $ = (id) => document.getElementById(id);
@@ -334,16 +335,16 @@ function showOnboard() {
 // 상세 화면 3개: explore(홈 > 캠퍼스 탐험 지도 > 미션 하러 가기) · rank(커뮤니티 > 내 순위 > 전체 랭킹)
 //               board(커뮤니티 > 자유게시판 / 질문 카드)
 // 상세 화면의 "‹" 버튼은 자기가 나온 탭으로 돌아간다.
-const BACK_TO = { explore: "home", rank: "community", board: "community", feedback: "me" };
+const BACK_TO = { explore: "home", rank: "community", board: "community", feedback: "me", course: "home" };
 
 /* ================= 주소(#)와 뒤로 가기 ================= */
 // 탭·상세 화면마다 주소를 붙여서 휴대폰·브라우저의 뒤로 가기가 동작하게 한다 (새로고침해도 보던 화면 유지).
 //   홈 = (주소 그대로) · 카메라 #camera · 커뮤니티 #community · 내 정보 #my
-//   상세: 캠퍼스 탐험 #explore · 랭킹 #rank · 게시판 #board · 장소 #zone/일청담id
+//   상세: 캠퍼스 탐험 #explore · 랭킹 #rank · 게시판 #board · 장소 #zone/일청담id · 투어 코스 고르기 #course(홈 위에 시트)
 // 기록 쌓는 규칙: 홈이 맨 아래. 홈 → 탭은 쌓고, 탭 → 탭은 바꿔치기(그래서 탭에서 뒤로 가면 늘 홈),
 // 상세 화면은 그 위에 쌓는다. 이미 지나온 화면으로 가면(예: 장소 → "다른 장소 보기" → 탐험) 그만큼 뒤로 간다.
 // history.state = { nav, route, opts, depth(몇 번째 기록인지, 홈 0), stack(홈부터 지금까지 화면들) }
-const ROUTE_HASH = { dex: "camera", community: "community", me: "my", explore: "explore", rank: "rank", board: "board", feedback: "feedback" };
+const ROUTE_HASH = { dex: "camera", community: "community", me: "my", explore: "explore", rank: "rank", board: "board", feedback: "feedback", course: "course" };
 const TAB_ROOTS = new Set(["home", "dex", "community", "me"]);
 const routeUrl = (route) =>
   route === "home" ? location.pathname + location.search
@@ -412,6 +413,16 @@ function goBack(fallback) {
 }
 
 async function showTab(tab, opts = {}) {
+  if (tab === "course") {   // 투어 코스 고르기: 지금 화면(홈·탐험) 위에 코스 시트. 주소로 바로 들어왔으면 홈을 깐다. 닫거나 시작하면 이전 화면으로
+    const base = $("view-" + document.body.dataset.view);
+    if (!["home", "explore"].includes(document.body.dataset.view) || !base || base.classList.contains("hidden") || !base.childElementCount) await showTab("home");
+    const m = await tourReady;
+    if (!m) return;
+    if (navState()?.route !== "course") return;   // 불러오는 사이에 다른 화면으로 갔으면 열지 않음
+    m.openCourseSheet({ onClose: () => { if (navState()?.route === "course") goBack("home"); } });
+    return;
+  }
+  tour?.closeCourseSheet?.();   // 뒤로 가기 등으로 #course를 벗어나면 시트도 닫는다
   leaveZone();
   ui.updateHud();
   clearCampusMap();
