@@ -308,7 +308,7 @@ export function renderDaily(checkin, quiz, { justStamped = false } = {}) {
     </div>
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
-        <div class="sum-label">오늘의 퀴즈</div>
+        <div class="sum-label">퀴즈</div>
         <div class="sum-big" style="font-size:19px">${quizStatus}</div>
         <div class="sum-foot">${quiz.done ? "내일 또 도전해보세요" : "정답 시 +15 XP"}</div>
       </div>
@@ -325,7 +325,7 @@ export function showDailyQuiz(q, onAnswer) {
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:center">
       <img class="mascot-hero" style="width:64px;margin:0 auto 10px" src="img/mascot/badge-campus.png" alt="호반우">
-      <h2 style="font-size:19px">오늘의 퀴즈</h2>
+      <h2 style="font-size:19px">퀴즈</h2>
       <p style="font-weight:600;margin:14px 0 18px;line-height:1.5">${esc(q.q)}</p>
       <div id="quiz-modal-opts" style="display:flex;flex-direction:column;gap:8px;text-align:left">
         ${q.options.map((opt, i) => `<button class="chip quiz-opt" data-i="${i}">${esc(opt)}</button>`).join("")}

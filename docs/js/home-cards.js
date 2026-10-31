@@ -48,7 +48,7 @@ function injectStyle() {
 export function renderFoodCard(slot, onOpen) {
   if (!slot) return;
   injectStyle();
-  // 바로 아래 "오늘의 퀴즈" 카드와 같은 .card 모양 (유리 카드·테두리) + 오른쪽 작은 빨간 버튼
+  // 바로 아래 "퀴즈" 카드와 같은 .card 모양 (유리 카드·테두리) + 오른쪽 작은 빨간 버튼
   slot.innerHTML = `<div class="card hc-food" role="button" tabindex="0" aria-label="학교 근처 맛집 보기">
     <img src="img/mascot/eating.png" alt="">
     <div class="hc-body"><div class="hc-title">항상 배는 고프더라</div><div class="hc-sub">선배들이 추천하는 맛집 한 번 볼래요?</div></div>

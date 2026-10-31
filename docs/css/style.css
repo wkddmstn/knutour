@@ -1351,7 +1351,7 @@ a.icon-btn { display: inline-grid; place-items: center; color: inherit; }
 .cm-cluster[hidden] { display: none; }
 .campus-map.dragging .cm-cluster { pointer-events: none; }
 
-/* 오늘의 퀴즈: 답을 고르면 정답 보기는 초록, 나머지는 빨강 + 짧은 해설 */
+/* 퀴즈: 답을 고르면 정답 보기는 초록, 나머지는 빨강 + 짧은 해설 */
 .quiz-opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .quiz-opt:disabled { opacity: 1; }
 .quiz-opt.correct, .quiz-opt.wrong { transition: none; }   /* 답을 고르면 색이 바로 보이게 */
