@@ -204,7 +204,7 @@ function injectStyle() {
   .ps-round{width:40px;height:40px;border-radius:50%;border:none;color:#fff;font-size:var(--fs-lg, 17px);display:flex;align-items:center;justify-content:center;padding:0}
   .ps-pill{width:auto;border:none;border-radius:999px;color:#fff;font-size:var(--fs-sm, 13px);font-weight:700;padding:9px 16px}
   .ps-rail{position:absolute;right:10px;top:calc(max(14px,env(safe-area-inset-top)) + 58px);display:flex;flex-direction:column;gap:16px;z-index:3}
-  .ps-tool{width:auto;display:flex;flex-direction:column;align-items:center;gap:4px;border:none;background:none;color:#fff;font-size:var(--fs-xs, 11px);font-weight:700;
+  .ps-tool{width:auto;display:flex;flex-direction:column;align-items:center;gap:4px;border:none;background:none;color:#fff;font-size:var(--fs-xs, 12px);font-weight:700;
     text-shadow:0 1px 3px rgba(0,0,0,.7);padding:0}
   .ps-tool i{font-style:normal;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--fs-xl, 20px)}
   .ps-tip{position:absolute;left:50%;top:calc(max(14px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);z-index:3;padding:8px 14px;
@@ -268,7 +268,7 @@ function injectStyle() {
     background:rgba(25,31,40,.85);color:#fff;font-size:var(--fs-md, 15px);font-weight:700;white-space:nowrap;animation:ar-toast 1.8s forwards}
   /* ---- 가로 모드: 도구는 왼쪽, 호반우 목록·셔터는 오른쪽 세로 줄, 줌은 셔터 옆 ---- */
   #ps-root.land .ps-rail{right:auto;left:max(14px,env(safe-area-inset-left));top:calc(max(12px,env(safe-area-inset-top)) + 52px);gap:8px}
-  #ps-root.land .ps-tool{font-size:var(--fs-xs, 11px)}
+  #ps-root.land .ps-tool{font-size:var(--fs-xs, 12px)}
   #ps-root.land .ps-tool i{width:36px;height:36px;font-size:var(--fs-lg, 17px)}
   #ps-root.land .ps-topbar{right:150px}
   #ps-root.land .ps-tip{left:calc(50% - 75px)}
@@ -276,7 +276,7 @@ function injectStyle() {
     padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) 12px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.6))}
   #ps-root.land .ps-zooms{position:absolute;right:calc(100% - 4px);top:50%;transform:translateY(-50%);flex-direction:column;margin:0;gap:6px}
-  #ps-root.land .ps-zchip{min-width:34px;height:34px;font-size:var(--fs-xs, 11px)}
+  #ps-root.land .ps-zchip{min-width:34px;height:34px;font-size:var(--fs-xs, 12px)}
   #ps-root.land .ps-carousel{flex-direction:column;overflow-x:hidden;overflow-y:auto;max-height:calc(100% - 140px);padding:8px 6px;gap:10px;scroll-snap-type:y mandatory}
   #ps-root.land .ps-item{width:44px;height:44px}
   #ps-root.land .ps-name{display:none}
@@ -315,7 +315,7 @@ function injectStyle() {
   .ps-deco-done{width:auto;margin-left:auto !important;border:none;border-radius:999px;padding:7px 14px;background:#1D1A17;color:#fff;font-size:var(--fs-sm, 13px);font-weight:700}
   .ps-deco-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;overflow-y:auto;padding-bottom:4px}
   .ps-deco-item{width:auto;border:none;background:#f7f8fa;border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;
-    font-size:var(--fs-xs, 11px);font-weight:600;color:#4e5968;line-height:1.2;text-align:center}
+    font-size:var(--fs-xs, 12px);font-weight:600;color:#4e5968;line-height:1.2;text-align:center}
   .ps-deco-item img{width:100%;height:56px;object-fit:contain;pointer-events:none}
   .ps-deco-item img.ps-frameprev{height:auto;object-fit:fill;background:linear-gradient(160deg,#8b95a1,#4e5968);border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
   .ps-deco-item .ps-deco-none{height:84px}
@@ -324,14 +324,24 @@ function injectStyle() {
   .ps-deco-none{height:56px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xl, 24px);color:#b0b8c1}
   .ps-logo-colors{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px}
   .ps-logo-sw{width:auto;flex:none;border:none;background:none;padding:2px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;
-    font-size:var(--fs-xs, 11px);font-weight:700;color:#4e5968;font-family:inherit}
+    font-size:var(--fs-xs, 12px);font-weight:700;color:#4e5968;font-family:inherit}
   .ps-logo-sw i{width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
   .ps-logo-sw.on i{box-shadow:0 0 0 2px #fff,0 0 0 4px #B21B1D}
   .ps-logo-sw.on{color:#B21B1D}
   .ps-deco-item.dark{background:#4e5968;color:#fff}
-  .ps-deco-hint{font-size:var(--fs-xs, 11px);color:#8b95a1;margin:0}
+  .ps-deco-hint{font-size:var(--fs-xs, 12px);color:#8b95a1;margin:0}
   @keyframes ps-tip{0%,80%{opacity:1}100%{opacity:0}}
-  @keyframes ps-flash{0%{opacity:.9}100%{opacity:0}}`;
+  @keyframes ps-flash{0%{opacity:.9}100%{opacity:0}}
+  /* 다크 모드: 카메라 위에 뜨는 시트·카드도 앱의 어두운 카드 색으로 */
+  @media (prefers-color-scheme:dark){
+    #ar-tray{background:rgba(42,45,52,.94)}
+    .ar-tray-title{color:#f2f4f6}
+    #ps-deco,.ps-gcard{background:#2a2d34;color:#f2f4f6}
+    .ps-gcard p{color:#c2c8d0}
+    .ps-deco-tab{background:#33373f;color:#c2c8d0}
+    .ps-deco-item{background:#33373f;color:#c2c8d0}
+    .ps-deco-item.on{background:#4a2427}
+  }`;
   document.head.appendChild(s);
 }
 

@@ -50,7 +50,7 @@ function injectStyle() {
   .arm-cover{width:100%;height:100%;border-radius:4px 8px 8px 4px;background:linear-gradient(90deg,rgba(0,0,0,.25) 0 8%,transparent 8% 100%),var(--c);
     color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px 8px 12px;box-sizing:border-box;text-align:left}
   .arm-cover b{font-size:var(--fs-md, 15px);line-height:1.25;word-break:keep-all}
-  .arm-cover small{font-size:var(--fs-xs, 11px);opacity:.9}
+  .arm-cover small{font-size:var(--fs-xs, 12px);opacity:.9}
   /* 벚꽃 나무: 호반우 바로 뒤에 붙어서 같이 움직인다 */
   .arm-tree{position:absolute;left:50%;bottom:-14px;width:min(420px,92vw,52vh);transform:translateX(-50%);z-index:0;pointer-events:none;
     opacity:0;transition:opacity .5s}
@@ -62,7 +62,7 @@ function injectStyle() {
   .arm-bookinfo .t{font-size:var(--fs-md, 15px)}
   .arm-bookinfo .s{text-align:left;line-height:1.5}
   a.arm-btn{display:block;text-align:center;text-decoration:none;box-sizing:border-box}
-  .arm-found{font-size:var(--fs-xs, 11px);color:#8b95a1;text-align:center;line-height:1.5}
+  .arm-found{font-size:var(--fs-xs, 12px);color:#8b95a1;text-align:center;line-height:1.5}
   .arm-petal-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
   .arm-petal-canvas.on{pointer-events:auto;cursor:pointer}
   /* 벚꽃잎 */
@@ -113,6 +113,12 @@ function injectStyle() {
   @keyframes arm-shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
   @keyframes arm-pulse{0%,100%{transform:translate(-50%,-58%) scale(1)}50%{transform:translate(-50%,-58%) scale(1.04)}}
   @keyframes arm-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @media (prefers-color-scheme:dark){   /* 다크 모드: AR 아래 카드(#ar-tray) 안 글씨·버튼 */
+    .arm-card{color:#f2f4f6}
+    .arm-card .s{color:#c2c8d0}
+    .arm-btn{background:#33373f;color:#f2f4f6}
+    .arm-gauge{background:#33373f}
+  }
   @keyframes arm-got{0%{transform:scale(1);opacity:1}60%{transform:scale(1.6);opacity:1}100%{transform:scale(.2) translateY(-60px);opacity:0}}
   @keyframes arm-fall{to{transform:translate(var(--dx),calc(100vh + 80px)) rotate(var(--rot))}}
   @keyframes arm-sway{from{transform:translateX(-10px) rotate(-15deg)}to{transform:translateX(10px) rotate(15deg)}}

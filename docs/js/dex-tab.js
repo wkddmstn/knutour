@@ -24,8 +24,8 @@ function injectStyle() {
   .dx-item{width:auto;margin:0;padding:8px 4px;border:none;border-radius:14px;background:var(--cream-weak,#f2f4f6);font-family:inherit;color:inherit;
     display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
   .dx-item img{width:100%;aspect-ratio:1;object-fit:contain}
-  .dx-item b{font-size:var(--fs-xs, 11px);line-height:1.2;word-break:keep-all}
-  .dx-item small{font-size:var(--fs-xs, 11px);color:var(--mute,#8b95a1)}
+  .dx-item b{font-size:var(--fs-xs, 12px);line-height:1.2;word-break:keep-all}
+  .dx-item small{font-size:var(--fs-xs, 12px);color:var(--mute,#8b95a1)}
   .dx-item.locked img{filter:brightness(0) opacity(.2)}
   .dx-item.locked b{color:var(--mute,#8b95a1)}
   .dx-item.rare{background:linear-gradient(135deg,#f2f4f6,#ffe9f2)}

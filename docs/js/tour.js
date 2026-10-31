@@ -439,7 +439,7 @@ function injectStyle() {
   .tb-badge.on .tb-medal{box-shadow:0 0 0 4px #e7b84a,0 0 0 7px #fff3cf,0 6px 14px rgba(168,100,0,.3)}
   .tb-badge.on .tb-medal img{filter:none}
   .tb-badge b{display:block;font-size:var(--fs-sm, 13px)}
-  .tb-badge span{display:block;font-size:var(--fs-xs, 11px);color:var(--sub,#4e5968);margin-top:2px}
+  .tb-badge span{display:block;font-size:var(--fs-xs, 12px);color:var(--sub,#4e5968);margin-top:2px}
   .tb-badge:not(.on) b{color:var(--mute,#8b95a1)}
   .tb-badge.big{margin:6px auto 12px;cursor:default}
   .tb-badge.big .tb-medal{width:140px;animation:tb-shine 1s ease-out}
@@ -527,7 +527,7 @@ function injectStyle() {
   #tour-sheet .snd input[type=range]:disabled{opacity:.35}
   #tour-sheet.ts-sound .ts{max-width:480px}
   #tour-sheet.ts-sound .ts-head{margin-bottom:12px}
-  #tour-sheet .ts-credit{margin:4px 0 0;text-align:center;font-size:var(--fs-xs, 11px);color:var(--mute,#8b95a1)}
+  #tour-sheet .ts-credit{margin:4px 0 0;text-align:center;font-size:var(--fs-xs, 12px);color:var(--mute,#8b95a1)}
   /* 일시정지: 이동 화면 위를 덮는 창 */
   #tour-move .tm-icon.pause{display:inline-flex;align-items:center;gap:4px}
   #tour-move .tm-icon.pause svg{width:13px;height:13px;fill:currentColor}
@@ -551,7 +551,7 @@ function injectStyle() {
   #tour-move .tm-steps i.done{background:var(--primary,#d4121a)}
   #tour-move .tm-steps i.now{background:linear-gradient(90deg,var(--primary,#d4121a) var(--p,0%),var(--line,#e5e8eb) var(--p,0%))}
   #tour-map{flex:1;min-height:180px;margin:0 14px;border-radius:18px;overflow:hidden;background:var(--map-bg,#eef1f4)}
-  #tour-map .cm-mark.tm-from span{display:block;padding:2px 8px;border-radius:999px;background:var(--card,#fff);color:var(--ink,#191f28);border:2px solid var(--ink,#191f28);font-size:var(--fs-xs, 11px);font-weight:800;white-space:nowrap}
+  #tour-map .cm-mark.tm-from span{display:block;padding:2px 8px;border-radius:999px;background:var(--card,#fff);color:var(--ink,#191f28);border:2px solid var(--ink,#191f28);font-size:var(--fs-xs, 12px);font-weight:800;white-space:nowrap}
   /* 소리 설정 창 */
   #tm-sound{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center}
   #tm-sound .sd{width:min(480px,100%);background:var(--card,#fff);color:var(--ink,#191f28);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
@@ -576,7 +576,7 @@ function injectStyle() {
   #tm-sound .qz-o button:disabled{opacity:1}
   #tm-sound .qz-why{margin:0 0 12px;font-size:var(--fs-sm, 13px);line-height:1.5;color:var(--sub,#4e5968)}
   @keyframes qzShake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-  #tm-sound .sd-credit{margin:10px 0 0;text-align:center;font-size:var(--fs-xs, 11px);color:var(--mute,#8b95a1)}
+  #tm-sound .sd-credit{margin:10px 0 0;text-align:center;font-size:var(--fs-xs, 12px);color:var(--mute,#8b95a1)}
   #tm-sound .sd-close{width:100%;margin:0;padding:13px;border:none;border-radius:14px;background:var(--line,#e5e8eb);color:inherit;font-weight:800;font-family:inherit}
   #tour-move .tm-next{display:flex;align-items:center;gap:12px;padding:12px 16px 4px}
   #tour-move .tm-arrow{width:64px;height:64px;flex:none;border-radius:50%;background:var(--primary-weak,#fbe7e5);display:flex;align-items:center;justify-content:center}
@@ -613,7 +613,7 @@ function injectStyle() {
   #tour-move .tm-ms{width:auto;margin:0;padding:10px 6px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--primary,#d4121a) 35%,transparent);
     background:var(--primary-weak,#fbe7e5);color:var(--ink,#191f28);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px}
   #tour-move .tm-ms b{font-size:var(--fs-md, 15px);color:var(--primary,#d4121a)}
-  #tour-move .tm-ms span{font-size:var(--fs-xs, 11px);color:var(--sub,#4e5968);font-weight:600}
+  #tour-move .tm-ms span{font-size:var(--fs-xs, 12px);color:var(--sub,#4e5968);font-weight:600}
   #tour-move .tm-ms.done{background:var(--card,#fff);border-color:var(--line,#e5e8eb)}
   #tour-move .tm-ms.done b{color:var(--green,#0a9d63)}
   #tour-move .tm-btns button.sub{padding:12px 4px;font-size:var(--fs-md, 15px);background:var(--card,#fff);border:1.5px solid var(--line,#e5e8eb);color:var(--ink,#191f28)}
@@ -629,8 +629,8 @@ function injectStyle() {
   .tour-tip{background:var(--primary, #d4121a);color:#fff;border:none;border-radius:999px;padding:3px 9px;font-weight:800;font-size:var(--fs-sm, 13px);box-shadow:0 2px 6px rgba(0,0,0,.25)}
   .tour-tip::before{display:none}
   .tour-tip.me{background:#2f6fed}
-  .tour-from{background:#fff;color:#191f28;border:2px solid #191f28;border-radius:999px;font-size:var(--fs-xs, 11px);font-weight:800;text-align:center;line-height:18px}
-  .tm-legend{display:flex;gap:12px;flex-wrap:wrap;padding:6px 18px 0;font-size:var(--fs-xs, 11px);color:var(--sub,#4e5968)}
+  .tour-from{background:#fff;color:#191f28;border:2px solid #191f28;border-radius:999px;font-size:var(--fs-xs, 12px);font-weight:800;text-align:center;line-height:18px}
+  .tm-legend{display:flex;gap:12px;flex-wrap:wrap;padding:6px 18px 0;font-size:var(--fs-xs, 12px);color:var(--sub,#4e5968)}
   .tm-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
   .tour-me{width:18px;height:18px;border-radius:50%;background:#2f6fed;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,111,237,.25)}
   @keyframes tm-pop{0%{transform:scale(.9);opacity:.3}100%{transform:none;opacity:1}}

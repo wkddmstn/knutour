@@ -7,7 +7,7 @@
   --card: #ffffff;
   --ink: #191f28;
   --sub: #4e5968;
-  --mute: #8b95a1;
+  --mute: #6b7684;   /* 흰 배경 대비 4.6:1 (예전 #8b95a1은 3.0:1이라 야외에서 잘 안 보였다) */
   --line: #e5e8eb;
   --primary: #d4121a;
   --primary-dark: #a30d13;
@@ -21,7 +21,7 @@
   --amber-weak: #fff3eb;
   --red: #f04452;
   /* 글자 크기는 이 7단계만 쓴다 (32px 넘는 큰 이모지·장식 글자만 예외) */
-  --fs-xs: 11px;   /* 아주 작은 보조 글씨: 배지, 지도 이름표, 날짜 */
+  --fs-xs: 12px;   /* 아주 작은 보조 글씨: 배지, 지도 이름표, 날짜 */
   --fs-sm: 13px;   /* 보조 설명, 칩, 작은 버튼 */
   --fs-md: 15px;   /* 본문 기본 */
   --fs-lg: 17px;   /* 버튼, 강조 본문, 작은 카드 제목 */
@@ -42,6 +42,7 @@ html { background: var(--bg); }
 body {
   margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
   font-family: var(--font); letter-spacing: -0.01em; -webkit-font-smoothing: antialiased;
+  word-break: keep-all; overflow-wrap: break-word;   /* 한국어는 단어(어절) 단위로 줄바꿈, 너무 긴 단어·주소만 잘라서 */
 }
 #app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; }
 .hidden { display: none !important; }

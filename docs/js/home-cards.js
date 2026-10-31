@@ -38,8 +38,8 @@ function injectStyle() {
   #hc-sheet .hs-grid button{width:auto;margin:0;padding:8px 4px;border:none;border-radius:14px;background:var(--cream-weak,#f3ead9);font-family:inherit;color:inherit;
     display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
   #hc-sheet .hs-grid img{width:100%;aspect-ratio:1;object-fit:contain}
-  #hc-sheet .hs-grid b{font-size:var(--fs-xs, 11px);line-height:1.2;word-break:keep-all}
-  #hc-sheet .hs-grid small{font-size:var(--fs-xs, 11px);color:var(--mute,#9a8c7c)}
+  #hc-sheet .hs-grid b{font-size:var(--fs-xs, 12px);line-height:1.2;word-break:keep-all}
+  #hc-sheet .hs-grid small{font-size:var(--fs-xs, 12px);color:var(--mute,#9a8c7c)}
   #hc-sheet .hs-grid .new img{filter:brightness(0) opacity(.25)}
   #hc-sheet .hs-close{width:100%;margin:14px 0 0;padding:13px;border:none;border-radius:14px;background:var(--line,#ece3d8);font-weight:800;font-family:inherit;color:inherit}`;
   document.head.appendChild(s);
@@ -100,7 +100,7 @@ function injectFestStyle() {
   .fest-dots b{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;opacity:.2;animation:festTw 2s ease-in-out infinite;z-index:-1}
   @keyframes festTw{50%{opacity:.9;transform:scale(1.6)}}
   .fest-body{position:relative;max-width:62%}
-  .fest-tag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:var(--fs-xs, 11px);font-weight:800;letter-spacing:.02em;color:#2b0f4a;
+  .fest-tag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:var(--fs-xs, 12px);font-weight:800;letter-spacing:.02em;color:#2b0f4a;
     background:linear-gradient(90deg,#ffe066,#ffb3d9);box-shadow:0 0 14px rgba(255,224,102,.6)}
   .fest-title{margin-top:8px;font-size:var(--fs-2xl, 24px);font-weight:900;line-height:1.25;text-shadow:0 0 18px rgba(255,120,200,.75),0 2px 0 rgba(0,0,0,.25)}
   .fest-sub{margin-top:6px;font-size:var(--fs-sm, 13px);line-height:1.5;color:rgba(255,255,255,.85);word-break:keep-all}
