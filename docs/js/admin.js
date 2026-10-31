@@ -45,8 +45,9 @@ function lock(msg = "") {
   $("lock-screen").classList.remove("hidden");
   $("pw-input").value = "";
   $("pw-err").textContent = msg;
-  // 화면에 남은 학생 데이터도 지운다
-  document.querySelectorAll("#admin-app .ad-scroll, #user-list").forEach((el) => (el.innerHTML = ""));
+  // 화면에 남은 학생 데이터도 지운다 (사용자 표는 .ad-scroll이 표 전체를 감싸서, 통째로 비우면 #user-list까지 사라진다 → 목록 칸만 비운다)
+  document.querySelectorAll("#admin-app .ad-scroll[id], #user-list, #user-depts").forEach((el) => (el.innerHTML = ""));
+  $("user-count").textContent = "";
 }
 function touch() {
   lastActive = Date.now();
