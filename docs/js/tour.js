@@ -301,32 +301,31 @@ function openLogSheet(lines) {
   el.querySelector(".sd-close").onclick = close;
 }
 
-// 소리 설정 창 (이동 화면 위쪽 "음성" 버튼)
-function openSoundPanel(host, onChange) {
-  const el = document.createElement("div");
-  el.id = "tm-sound";
-  const choice = () => (voiceOn() ? voicePick() : "off");
-  el.innerHTML = `<div class="sd">
-    <h3>소리 설정</h3>
-    <div class="sd-row">
-      <h4>호반우 안내 멘트 <small data-vv></small></h4>
-      <div class="sd-seg" data-g="voice">
-        <button data-v="mongsil">표준어</button><button data-v="gaenari">사투리</button><button data-v="off">끄기</button>
+// 소리 설정 칸: 시작하기 전(코스 확인 시트)과 투어 중("음성" 버튼) 둘 다 이 모양 하나를 쓴다
+function soundHtml() {
+  return `<div class="snd">
+    <div class="snd-row">
+      <h4 class="ts-h">호반우 안내 음성 <small data-vv></small></h4>
+      <div class="seg" data-g="voice">
+        <button type="button" data-v="mongsil">표준어</button><button type="button" data-v="gaenari">사투리</button><button type="button" data-v="off">끄기</button>
       </div>
-      <input type="range" min="0" max="100" step="5" data-r="voice" aria-label="안내 멘트 크기">
+      <input type="range" min="0" max="100" step="5" data-r="voice" aria-label="안내 음성 크기">
+      <p class="ts-note">고르거나 크기를 바꾸면 미리 들려줘요</p>
     </div>
-    <div class="sd-row">
-      <h4>배경 음악 <small data-bv></small></h4>
-      <div class="sd-seg" data-g="bgm"><button data-v="on">켜기</button><button data-v="off">끄기</button></div>
+    <div class="snd-row">
+      <h4 class="ts-h">배경 음악 <small data-bv></small></h4>
+      <div class="seg" data-g="bgm"><button type="button" data-v="on">켜기</button><button type="button" data-v="off">끄기</button></div>
       <input type="range" min="0" max="100" step="5" data-r="bgm" aria-label="배경 음악 크기">
     </div>
-    <button class="sd-close">닫기</button>
-    <p class="sd-credit">호반우 음성: 타입캐스트</p></div>`;
-  (host || document.body).appendChild(el);
-  const q = (s) => el.querySelector(s);
+  </div>`;
+}
+// box 안의 소리 설정 칸에 동작을 붙인다. onChange: 값이 바뀔 때마다 (위쪽 "음성" 버튼 모양 갱신 등)
+function bindSound(box, onChange) {
+  const q = (s) => box.querySelector(s);
+  const choice = () => (voiceOn() ? voicePick() : "off");
   const paint = () => {
-    el.querySelectorAll('[data-g="voice"] button').forEach((b) => b.classList.toggle("on", b.dataset.v === choice()));
-    el.querySelectorAll('[data-g="bgm"] button').forEach((b) => b.classList.toggle("on", (b.dataset.v === "on") === bgm.isOn()));
+    box.querySelectorAll('[data-g="voice"] button').forEach((b) => b.classList.toggle("on", b.dataset.v === choice()));
+    box.querySelectorAll('[data-g="bgm"] button').forEach((b) => b.classList.toggle("on", (b.dataset.v === "on") === bgm.isOn()));
     q('[data-r="voice"]').value = Math.round(voiceVol() * 100);
     q('[data-r="voice"]').disabled = !voiceOn();
     q('[data-r="bgm"]').value = Math.round(bgm.getVolume() * 100);
@@ -336,18 +335,36 @@ function openSoundPanel(host, onChange) {
     onChange?.();
   };
   paint();
-  el.querySelectorAll('[data-g="voice"] button').forEach((b) => (b.onclick = () => {
+  box.querySelectorAll('[data-g="voice"] button').forEach((b) => (b.onclick = () => {
+    unlockAudio();
     if (b.dataset.v === "off") { setVoice(false); stopVoice(); }
     else { setVoice(true); setVoicePick(b.dataset.v); playKey("near", SCRIPT.near); }   // 미리 듣기
     paint();
   }));
-  el.querySelectorAll('[data-g="bgm"] button').forEach((b) => (b.onclick = () => { bgm.setOn(b.dataset.v === "on"); bgm.resume(); paint(); }));
+  box.querySelectorAll('[data-g="bgm"] button').forEach((b) => (b.onclick = () => { bgm.setOn(b.dataset.v === "on"); bgm.resume(); paint(); }));
   q('[data-r="voice"]').oninput = (e) => { setVoiceVol(e.target.value / 100); paint(); };
-  q('[data-r="voice"]').onchange = () => playKey("near", SCRIPT.near);
+  q('[data-r="voice"]').onchange = () => { unlockAudio(); playKey("near", SCRIPT.near); };
   q('[data-r="bgm"]').oninput = (e) => { bgm.setVolume(e.target.value / 100); paint(); };
+}
+
+// 투어 중 소리 설정 창 (이동 화면 위쪽 "음성" 버튼): 코스 확인 시트와 같은 모양, 코스 정보는 빼고 소리 설정만
+function openSoundPanel(host, onChange) {
+  const el = document.createElement("div");
+  el.id = "tour-sheet";
+  el.className = "ts-sound";
+  el.innerHTML = `<div class="ts" role="dialog" aria-label="소리 설정">
+    <div class="ts-grab" aria-hidden="true"></div>
+    <div class="ts-head">
+      <h3>소리 설정</h3>
+      <button class="ts-x" type="button" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    ${soundHtml()}
+    <p class="ts-credit">호반우 음성: 타입캐스트</p></div>`;
+  (host || document.body).appendChild(el);
+  bindSound(el, onChange);
   const close = () => el.remove();
   el.onclick = (e) => { if (e.target === el) close(); };
-  q(".sd-close").onclick = close;
+  el.querySelector(".ts-x").onclick = close;
 }
 let voiceEl = null;   // 하나의 오디오를 돌려 쓴다 (아이폰은 처음 버튼 누를 때 한 번 풀어 줘야 함)
 const getVoiceEl = () => (voiceEl = voiceEl || new Audio());
@@ -499,6 +516,28 @@ function injectStyle() {
     padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:var(--card,#fff);border-top:1px solid var(--line,#e5e8eb)}
   #tour-sheet .ts-foot .btn{margin:0}
   @media (prefers-color-scheme:dark){ #tour-sheet .ts-route i{color:#ffb3b7} }
+  /* 소리 설정 칸 (코스 확인 시트·투어 중 소리 설정 창 공통) */
+  #tour-sheet .snd-row{margin-bottom:16px}
+  #tour-sheet .snd .ts-h{display:flex;justify-content:space-between;align-items:center}
+  #tour-sheet .snd .ts-h small{font-size:12px;font-weight:600;color:var(--sub,#4e5968)}
+  #tour-sheet .snd .seg{margin-bottom:0}
+  #tour-sheet .snd .seg button{padding:9px 4px}
+  #tour-sheet .snd input[type=range]{display:block;width:100%;margin:12px 0 0;accent-color:var(--primary,#d4121a)}
+  #tour-sheet .snd input[type=range]:disabled{opacity:.35}
+  #tour-sheet.ts-sound .ts{max-width:480px}
+  #tour-sheet.ts-sound .ts-head{margin-bottom:12px}
+  #tour-sheet .ts-credit{margin:4px 0 0;text-align:center;font-size:11px;color:var(--mute,#8b95a1)}
+  /* 일시정지: 이동 화면 위를 덮는 창 */
+  #tour-move .tm-icon.pause{display:inline-flex;align-items:center;gap:4px}
+  #tour-move .tm-icon.pause svg{width:13px;height:13px;fill:currentColor}
+  #tm-pause{position:fixed;inset:0;z-index:2050;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:color-mix(in srgb,var(--bg,#fff) 72%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  #tm-pause .pz{width:min(360px,100%);padding:24px 20px 20px;border-radius:24px;background:var(--card,#fff);border:1px solid var(--line,#e5e8eb);
+    box-shadow:var(--shadow-hero);text-align:center}
+  #tm-pause img{width:96px;height:96px;object-fit:contain}
+  #tm-pause h3{margin:6px 0 4px;font-size:19px}
+  #tm-pause p{margin:0 0 18px;font-size:13.5px;line-height:1.5;color:var(--sub,#4e5968);word-break:keep-all}
+  #tm-pause .btn{margin:0 0 8px}
   .ts-close{width:100%;margin:4px 0 0;padding:12px;border:none;border-radius:12px;background:var(--line,#e5e8eb);color:inherit;font-weight:700;font-family:inherit}
   #tour-move{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--ink,#191f28);display:flex;flex-direction:column;font-family:inherit}
   #tour-move .tm-head{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
@@ -604,13 +643,9 @@ function injectStyle() {
     #tour-map{grid-column:1;grid-row:3;margin:0 0 0 16px;min-height:0}
     #tour-move .tm-legend{grid-column:1;grid-row:4;padding:6px 16px 12px}
     #tour-move .tm-side{grid-column:2;grid-row:3 / 5;display:flex;flex-direction:column;justify-content:center;padding:0 8px 16px}
-    #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px} #tour-move .tm-log{max-height:240px}
-    /* 넓은 화면: 호반우 말은 오른쪽 대화 기록으로 */
-    #tour-move .tm-walk{display:none}
-    #tour-move .tm-log{display:flex;height:300px;max-height:none;overflow-y:scroll;padding:150px 10px 150px 14px;margin-top:8px;
-      border-radius:16px;background:color-mix(in srgb,var(--cream-weak,#f2f4f6) 55%,transparent);scrollbar-width:thin;scrollbar-color:var(--cream,#b0b8c1) transparent}
-    #tour-move .tm-log::-webkit-scrollbar{width:8px} #tour-move .tm-log::-webkit-scrollbar-thumb{background:var(--cream,#b0b8c1);border-radius:4px}
-    #tour-move .tm-log p{opacity:.75} #tour-move .tm-log p.now{opacity:1;font-size:15px;color:var(--ink,#191f28);background:var(--primary-weak,#fbe7e5);box-shadow:0 4px 12px -6px rgba(212,18,26,.35)} }`;
+    #tour-move .tm-bubble{font-size:16px} #tour-move .tm-guide img{width:96px;height:96px}
+    /* 넓은 화면도 휴대폰과 같게: 호반우 그림 + 지금 하는 말 한 줄 (지난 대화는 말풍선을 누르면) */
+    #tour-move .tm-walk{margin:14px 0 10px} #tour-move .tm-hob{width:104px;height:104px} #tour-move .tm-line{font-size:16.5px} }`;
   document.head.appendChild(s);
 }
 
@@ -721,35 +756,13 @@ function openCourseSheet() {
           <button type="button" disabled>북문 <small>준비 중</small></button>
         </div>
       </div>
-      <div class="ts-set">
-        <h4 class="ts-h">호반우 안내 음성</h4>
-        <div class="seg" data-g="voice">
-          <button type="button" data-v="mongsil">표준어</button><button type="button" data-v="gaenari">사투리</button><button type="button" data-v="off">끄기</button>
-        </div>
-        <p class="ts-note">누르면 미리 들어볼 수 있어요</p>
-      </div>
-      <div class="ts-set">
-        <h4 class="ts-h">배경 음악</h4>
-        <div class="seg" data-g="bgm"><button type="button" data-v="on">켜기</button><button type="button" data-v="off">끄기</button></div>
-        <p class="ts-note">투어 중에도 위쪽 "음성" 버튼에서 바꿀 수 있어요</p>
-      </div>
+      ${soundHtml()}
+      <p class="ts-note" style="margin:-4px 2px 4px">소리 설정은 투어 중에도 위쪽 "음성" 버튼에서 바꿀 수 있어요</p>
       <div class="ts-foot"><button class="btn cta-glow ts-start" type="button">시작하기</button></div>
     </div>`;
-    const paint = () => {
-      const v = voiceOn() ? voicePick() : "off";
-      el.querySelectorAll('[data-g="voice"] button').forEach((b) => b.classList.toggle("on", b.dataset.v === v));
-      el.querySelectorAll('[data-g="bgm"] button').forEach((b) => b.classList.toggle("on", (b.dataset.v === "on") === bgm.isOn()));
-    };
-    paint();
+    bindSound(el.querySelector(".snd"));   // 음악을 켜면 미리 들려줌 (시트를 닫거나 시작하면 quiet()로 끔)
     el.querySelector(".ts-x").onclick = close;
     el.querySelector(".ts-back").onclick = () => { quiet(); showList(); };
-    el.querySelectorAll('[data-g="voice"] button').forEach((b) => (b.onclick = () => {
-      unlockAudio();
-      if (b.dataset.v === "off") { setVoice(false); stopVoice(); }
-      else { setVoice(true); setVoicePick(b.dataset.v); playKey("near", SCRIPT.near); }   // 미리 듣기
-      paint();
-    }));
-    el.querySelectorAll('[data-g="bgm"] button').forEach((b) => (b.onclick = () => { bgm.setOn(b.dataset.v === "on"); bgm.resume(); paint(); }));   // 켜면 미리 들려줌
     el.querySelector(".ts-start").onclick = () => {
       quiet();   // 이동 화면이 열리면서 음악·안내를 처음부터 다시 튼다
       unlockAudio();
@@ -842,6 +855,7 @@ function _openMove(first) {
   root.innerHTML = `
     <div class="tm-head">
       <b>${c.emoji} ${c.name}<small>${st.idx + 1}번째 장소 / 총 ${c.stops.length}곳</small></b>
+      <button class="tm-icon pause" data-a="pause" aria-label="일시정지"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>일시정지</button>
       <button class="tm-icon" data-a="voice"></button>
       <button class="tm-icon" data-a="out">나가기</button>
     </div>
@@ -986,6 +1000,44 @@ function _openMove(first) {
   vBtn.onclick = () => openSoundPanel(root, paintVoice);
   $('[data-a="out"]').onclick = () => { stopVoice(); closeMove(); try { app.goTab("home"); } catch {} };
 
+  // --- 일시정지: 안내 말·배경 음악·위치 따라가기·데모 걷기를 멈추고, "이어서 하기"를 누르면 다시 ---
+  // 멈춘 동안 들어온 위치는 쓰지 않는다 (그사이 도착해도, 이어서 하면 다음 위치에서 도착 처리)
+  let paused = false;
+  function pauseTour() {
+    if (paused || arrived) return;
+    paused = true;
+    stopVoice();
+    bgm.stop();
+    if (demoRunning) {   // 데모 걷기는 멈추고 버튼을 다시 누를 수 있게
+      demoRunning = false;
+      cancelAnimationFrame(demoRaf);
+      const b = $(".tm-demo");
+      if (b) { b.disabled = false; b.textContent = "▶ 데모로 걷기"; }
+    }
+    setMoving(false);
+    const pz = document.createElement("div");
+    pz.id = "tm-pause";
+    pz.innerHTML = `<div class="pz" role="dialog" aria-label="일시정지">
+      <img src="img/hobanu/react-hi.png" alt="">
+      <h3>잠깐 쉬어 갈까?</h3>
+      <p>안내와 음악을 멈췄어요. 준비되면 <b>${zone.name}</b>까지 이어서 가요.</p>
+      <button class="btn" type="button" data-p="resume">이어서 하기</button>
+      <button class="btn alt" type="button" data-p="out">투어 나가기</button></div>`;
+    root.appendChild(pz);
+    pz.querySelector('[data-p="resume"]').onclick = resumeTour;
+    pz.querySelector('[data-p="out"]').onclick = () => $('[data-a="out"]').click();
+  }
+  function resumeTour() {
+    if (!paused) return;
+    paused = false;
+    root.querySelector("#tm-pause")?.remove();
+    unlockAudio();
+    bgm.start();
+    bgm.resume();
+    addLog(`다시 가 보자! ${zone.name}까지 같이 가자.`);
+  }
+  $('[data-a="pause"]').onclick = pauseTour;
+
   // --- 지도: 미션 화면과 같은 캠퍼스 일러스트 지도 (campusmap.js) (장주연) ---
   let map = null, lastPos = null;
   if (campusDataReady()) {
@@ -1049,7 +1101,7 @@ function _openMove(first) {
   let d0 = null, minD = Infinity, said = {}, arrived = false, lastWrong = 0, lastUi = 0;
   const poiSaid = new Set();
   function onPos(p, { sim = false } = {}) {
-    if (arrived || !mv) return;
+    if (arrived || !mv || paused) return;
     setMe(p);
     const d = geo.distanceM(p, zone);
     lastBearing = geo.bearingDeg(p, zone);
@@ -1127,6 +1179,7 @@ function _openMove(first) {
     arrived = true;
     demoRunning = false;
     cancelAnimationFrame(demoRaf);
+    $('[data-a="pause"]')?.classList.add("hidden");   // 도착한 뒤엔 미션 화면이라 일시정지가 필요 없다
     navigator.vibrate?.([120, 60, 120]);
     root.querySelector(".tm-steps .now")?.style.setProperty("--p", "100%");
     $(".tm-dist span").textContent = "도착했어요!";
