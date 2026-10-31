@@ -149,20 +149,20 @@ export function renderDashboard(zones, onGoExplore, hidden = null, onHidden = nu
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
         <span id="bell-badge" class="bell-badge hidden">0</span>
       </button>
-      <h1 class="onb-title" style="font-size:22px">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
+      <h1 class="onb-title" style="font-size:var(--fs-2xl, 24px)">${esc(st.profile.nickname)}님, 안녕하세요!</h1>
       <p class="map-guide">오늘도 캠퍼스를 채워볼까요?</p>
     </div>
     ${specials.map((sp) => `
     <div class="card special-card">
       <div class="sum-label">🎉 오늘만 열리는 특별 미션</div>
-      <div class="sum-big" style="font-size:18px">${esc(sp.emoji || "✨")} ${esc(sp.title)}</div>
+      <div class="sum-big title">${esc(sp.emoji || "✨")} ${esc(sp.title)}</div>
       <p class="sum-foot" style="margin:6px 0 12px">${esc(sp.desc || "")}</p>
       <button class="btn soft" data-special="${esc(sp.id)}">사진 올리고 +${sp.points} XP</button>
     </div>`).join("")}
     ${hidden ? `
     <div class="card hidden-mission-card">
       <div class="sum-label">✨ 히든미션</div>
-      <div class="sum-big" style="font-size:18px">${esc(hidden.emoji)} ${esc(hidden.title)}</div>
+      <div class="sum-big title">${esc(hidden.emoji)} ${esc(hidden.title)}</div>
       <p class="sum-foot" style="margin:6px 0 12px">${esc(hidden.desc)}</p>
       <button id="btn-hidden-mission" class="btn soft">만나러 가기</button>
     </div>` : ""}
@@ -299,7 +299,7 @@ export function renderDaily(checkin, quiz, { justStamped = false } = {}) {
       <div class="att-head">
         <div>
           <div class="sum-label">출석 체크</div>
-          <div class="sum-big" style="font-size:19px">${checkin.done ? "오늘 도장 쾅! 내일 또 만나요" : "오늘의 도장을 찍어볼까요?"}</div>
+          <div class="sum-big title">${checkin.done ? "오늘 도장 쾅! 내일 또 만나요" : "오늘의 도장을 찍어볼까요?"}</div>
         </div>
         ${checkin.live ? `<span class="att-streak">🔥 ${checkin.live}일 연속</span>` : ""}
       </div>
@@ -309,7 +309,7 @@ export function renderDaily(checkin, quiz, { justStamped = false } = {}) {
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
         <div class="sum-label">퀴즈</div>
-        <div class="sum-big" style="font-size:19px">${quizStatus}</div>
+        <div class="sum-big title">${quizStatus}</div>
         <div class="sum-foot">${quiz.done ? "내일 또 도전해보세요" : "정답 시 +15 XP"}</div>
       </div>
       ${quiz.done ? "" : `<button id="btn-daily-quiz" class="chip primary" style="white-space:nowrap">퀴즈 풀기</button>`}   <!-- 푼 뒤엔 버튼처럼 보이는 "완료" 없이 글로만 -->
@@ -325,7 +325,7 @@ export function showDailyQuiz(q, onAnswer) {
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:center">
       <img class="mascot-hero" style="width:64px;margin:0 auto 10px" src="img/mascot/badge-campus.png" alt="호반우">
-      <h2 style="font-size:19px">퀴즈</h2>
+      <h2 style="font-size:var(--fs-xl, 20px)">퀴즈</h2>
       <p style="font-weight:600;margin:14px 0 18px;line-height:1.5">${esc(q.q)}</p>
       <div id="quiz-modal-opts" style="display:flex;flex-direction:column;gap:8px;text-align:left">
         ${q.options.map((opt, i) => `<button class="chip quiz-opt" data-i="${i}">${esc(opt)}</button>`).join("")}
@@ -503,6 +503,22 @@ export function renderCommunityHome(zones, posts) {
         : `<span class="bc-empty">아직 글이 없어요. 첫 글을 남겨보세요!</span>`}
     </button>`;
 }
+
+// 게시판 사진: 비율 그대로 보이게 줄였을 때 양옆에 여백이 넉넉하면(.tall) 여백 폭(--side)을 알려 줘서 CSS가 호반우를 그린다
+function fitPostPhoto(img) {
+  const box = img?.parentElement;
+  if (!box?.classList.contains("post-photo") || !img.clientWidth) return;
+  const side = (box.clientWidth - img.clientWidth) / 2;
+  box.classList.toggle("tall", side >= 40);
+  box.style.setProperty("--side", `${Math.max(0, Math.floor(side))}px`);
+}
+// 사진은 늦게(지연 로딩) 들어오므로 로드될 때마다 잰다 (load는 위로 전달되지 않아서 capture로 받는다)
+document.addEventListener("load", (e) => { if (e.target?.tagName === "IMG") fitPostPhoto(e.target); }, true);
+let fitTimer = 0;
+window.addEventListener("resize", () => {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => document.querySelectorAll(".post-photo img").forEach(fitPostPhoto), 150);
+});
 
 // 게시판 상세 화면 (커뮤니티 > 자유게시판)
 // board: "post"(자유게시판) | "question"(질문), posts: listPosts() 결과(최신순), filter: "all" | "mine",
@@ -758,7 +774,7 @@ export function showComposer({ zones = null, zoneId = null, zoneName = "", lockZ
 
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:18px;text-align:center">${title || (photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기")}</h2>
+      <h2 style="font-size:var(--fs-lg, 17px);text-align:center">${title || (photo ? "📤 커뮤니티에 올리기" : "✏️ 글쓰기")}</h2>
       ${!lockZone && zones ? `
         <select id="cw-zone" class="text-in" style="margin-bottom:4px" aria-label="장소 해시태그">
           <option value=""># 장소 태그 없음</option>
@@ -841,7 +857,7 @@ export function renderMe(zones, { onMyPosts = null, onEditNickname, onWithdraw, 
     <div class="card card-hero me-hero">
       <img class="me-college" src="${collegeSticker(st.profile.dept)}" alt="${esc(st.profile.dept)} 호반우">
       <div class="sum-label">${esc(st.profile.dept)}</div>
-      <div class="sum-big" style="font-size:26px">${esc(st.profile.nickname)}</div>
+      <div class="sum-big name">${esc(st.profile.nickname)}</div>
       <div class="sum-foot" style="margin-top:6px">
         Lv.${lv.level} ${lv.title}
         <button id="btn-level-info" class="level-info-btn" type="button" aria-label="레벨 기준 보기">ⓘ</button>
@@ -852,7 +868,7 @@ export function renderMe(zones, { onMyPosts = null, onEditNickname, onWithdraw, 
     ${myCode ? `
     <div class="card" style="text-align:center;margin-top:16px">
       <div class="sum-label">내 친구 코드</div>
-      <div class="sum-big" style="font-size:30px;letter-spacing:4px">${esc(myCode)}</div>
+      <div class="sum-big code">${esc(myCode)}</div>
       <div class="sum-foot">'함께하기' 미션에서 친구에게 이 코드를 알려주세요</div>
     </div>` : ""}
     ${menuCard("btn-my-posts", "내가 쓴 글", "커뮤니티에 올린 글 모아 보기", { icon: "📝" })}
@@ -880,8 +896,8 @@ export function showNicknameEditor(current, onSave) {
   m.classList.add("modal-center");
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:19px;text-align:center">닉네임 수정</h2>
-      <p style="text-align:center;font-size:13px;margin-bottom:14px">랭킹·커뮤니티에 보이는 이름이에요. 내가 쓴 글·댓글의 이름도 함께 바뀌어요.</p>
+      <h2 style="font-size:var(--fs-xl, 20px);text-align:center">닉네임 수정</h2>
+      <p style="text-align:center;font-size:var(--fs-sm, 13px);margin-bottom:14px">랭킹·커뮤니티에 보이는 이름이에요. 내가 쓴 글·댓글의 이름도 함께 바뀌어요.</p>
       <input id="nick-in" class="text-in" maxlength="10" placeholder="2~10자로 입력해 주세요" autocomplete="off" value="${esc(current)}">
       <p id="nick-err" class="err" style="margin-top:6px"></p>
       <button id="nick-save" class="btn">저장</button>
@@ -918,8 +934,8 @@ export function showWithdrawConfirm(onConfirm) {
   m.classList.add("modal-center");
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:19px;text-align:center">회원 탈퇴</h2>
-      <p style="font-size:14px;margin:6px 0 10px">탈퇴하면 아래 정보가 모두 지워지고 <b>되돌릴 수 없어요.</b></p>
+      <h2 style="font-size:var(--fs-xl, 20px);text-align:center">회원 탈퇴</h2>
+      <p style="font-size:var(--fs-md, 15px);margin:6px 0 10px">탈퇴하면 아래 정보가 모두 지워지고 <b>되돌릴 수 없어요.</b></p>
       <ul class="withdraw-list">
         <li>닉네임·소속·점수(XP)·레벨과 미션 기록</li>
         <li>내가 쓴 글·댓글·좋아요와 알림</li>
@@ -989,7 +1005,7 @@ function showLevelInfo(myLevel) {
   m.classList.add("modal-center");
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:18px;text-align:center">레벨 기준</h2>
+      <h2 style="font-size:var(--fs-lg, 17px);text-align:center">레벨 기준</h2>
       <p class="sum-foot" style="text-align:center;margin:4px 0 14px">레벨이 오를수록 다음 레벨까지 필요한 XP가 점점 늘어나요</p>
       <div class="level-table">
         ${table.map((r) => `
@@ -1014,7 +1030,7 @@ export function showZoneInfo(info) {
   m.classList.add("modal-center");
   m.innerHTML = `
     <div class="modal-card pop-in" style="text-align:left">
-      <h2 style="font-size:18px;text-align:center">${esc(info.title || "더 알아보기")}</h2>
+      <h2 style="font-size:var(--fs-lg, 17px);text-align:center">${esc(info.title || "더 알아보기")}</h2>
       <div class="accordion" style="margin-top:10px">
         ${info.sections.map((s, i) => `
           <details${i === 0 ? " open" : ""}>

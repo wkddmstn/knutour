@@ -1,4 +1,10 @@
-// js/together.js — "함께 돌기" 실시간 미션 (대운동장)
+// js/together.js — "함께 돌기·함께 걷기" 실시간 미션 (대운동장 한 바퀴 · 러브로드 한 방향 걷기)
+//
+// 미션 종류 (zones.json의 미션에 적는다)
+//   lap  : 체크포인트를 모두 지나 처음 지난 곳으로 돌아오면 한 바퀴 (도는 방향 상관없음) — 대운동장
+//   path : 첫 점(출발)에서 시작해 순서대로 마지막 점(도착)까지 한 방향으로 걷기 — 러브로드
+//          둘 다 출발점 근처에서 위치 인증해야 시작할 수 있다
+//   areaName: 구역을 부르는 말("운동장", "러브로드"), goalName: 카드 제목("대운동장 한 바퀴")
 //
 // 흐름
 //   1) 내가 친구 코드를 입력해 요청 → 친구가 알림에서 수락 → 친구 앱도 대운동장 화면으로 이동
@@ -19,8 +25,16 @@ const OUT_LIMIT_S = 30;    // 구역 밖에 이만큼 있으면 실패
 const STALE_MS = 12000;    // 친구 신호가 이만큼 끊기면 "연결 끊김"(구역 이탈과 똑같이 경고)
 const BEAT_MS = 2000;      // 내 상태를 보내는 간격
 const CP_RADIUS = 20;      // 체크포인트를 "지났다"고 보는 거리(m)
+const START_RADIUS = 30;   // path: 출발점에서 이만큼 안이어야 위치 인증(시작) 가능
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// "로/으로": 받침이 없거나 ㄹ받침이면 "로" (러브로드로, 운동장으로)
+function ro(word) {
+  const c = String(word).charCodeAt(String(word).length - 1);
+  const jong = c >= 0xac00 && c <= 0xd7a3 ? (c - 0xac00) % 28 : 0;
+  return word + (jong === 0 || jong === 8 ? "로" : "으로");
+}
 
 // 받침에 따라 조사 고르기: josa("주연", "이", "가") → "주연이"
 function josa(name, withBatchim, without) {
@@ -75,8 +89,30 @@ function makeLap(points) {
   return lap;
 }
 
-// 진행 정도 0~(N+1): 체크포인트 N곳 + 출발점 복귀 1
-const progressOf = (visitedCount, back) => visitedCount + (back ? 1 : 0);
+/* ---------- 한 방향 길 판정 (path) ---------- */
+// 출발점(0번)을 먼저 지나야 하고, 그 뒤로는 순서대로. GPS가 중간 점 하나를 놓쳐도 다음 점에 닿으면 앞의 점들은 지난 것으로 친다.
+// 마지막 점(도착)에 닿으면 끝(back = true, 한 바퀴 판정과 같은 이름을 써서 나머지 코드를 그대로 쓴다)
+function makePath(points) {
+  const lap = { visited: [], start: -1, back: false };
+  lap.update = (pos) => {
+    if (lap.back) return false;
+    const next = lap.visited.length;
+    const upto = next === 0 ? 0 : points.length - 1;   // 아직 출발 전이면 출발점만 본다
+    for (let i = upto; i >= next; i--) {
+      if (geo.distanceM(pos, points[i]) > CP_RADIUS) continue;
+      for (let k = next; k <= i; k++) lap.visited.push(k);
+      if (lap.start < 0) lap.start = 0;
+      if (lap.visited.length === points.length) lap.back = true;
+      return true;
+    }
+    return false;
+  };
+  lap.reset = () => { lap.visited = []; lap.start = -1; lap.back = false; };
+  return lap;
+}
+
+// 진행 정도: lap은 0~(N+1) (체크포인트 N곳 + 출발점 복귀 1), path는 0~N (점 N개, 마지막이 도착)
+const progressOf = (visitedCount, back, oneWay) => (oneWay ? visitedCount : visitedCount + (back ? 1 : 0));
 
 /* ---------- 세션 ---------- */
 // opts: { key(pairKey), mission, zone, partnerName, role("requester"|"partner"), demo, map(): CampusMap|null,
@@ -84,8 +120,11 @@ const progressOf = (visitedCount, back) => visitedCount + (back ? 1 : 0);
 // 결과: "done"(성공) | "quit"(그만둠)
 export function runSession(opts) {
   const { key, mission, zone, demo, ask } = opts;
-  const points = mission.lap || [];
+  const oneWay = Array.isArray(mission.path) && mission.path.length >= 2;   // 러브로드처럼 한 방향 걷기
+  const points = oneWay ? mission.path : mission.lap || [];
   const N = points.length;
+  const AREA = mission.areaName || "운동장";
+  const GOAL = mission.goalName || (oneWay ? `${zone.name} 끝까지 걷기` : "대운동장 한 바퀴");
   const me = getCachedProfile() || {};
   const myId = me.id || "me-" + Math.random().toString(36).slice(2);
   const myName = me.nickname || "나";
@@ -99,8 +138,8 @@ export function runSession(opts) {
     let phase = "wait";      // wait(수락·인증 대기) | run(진행 중) | fail(실패) | done(성공) | bye(친구가 그만둠)
     let ready = false;
     let inside = true;
-    let pos = demo ? { ...points[0], accuracy: 5 } : null;   // 데모: 출발점(북쪽)에서 시작
-    const lap = makeLap(points);
+    let pos = demo ? { ...points[0], accuracy: 5 } : null;   // 데모: 출발점에서 시작
+    const lap = oneWay ? makePath(points) : makeLap(points);
     let peer = null;         // 친구가 마지막으로 보낸 상태 { round, ready, inside, lat, lng, visited, back, name, at }
     let outSince = null;     // 누군가 구역 밖에 나간 시각 (진행 중일 때만)
     let finished = false;
@@ -183,7 +222,7 @@ export function runSession(opts) {
       const map = opts.map?.();
       if (!map) return;
       if (!drawMap.routed && N) {
-        map.setRoute([...points, points[0]]);
+        map.setRoute(oneWay ? points : [...points, points[0]]);
         map.fit(points, 45);
         drawMap.routed = true;
       }
@@ -260,21 +299,22 @@ export function runSession(opts) {
       if (!st) return `<div class="tg-name">${esc(name)}</div><div class="tg-sub">수락 기다리는 중...</div>`;
       const sameRound = isMe || st.round === round;
       const vis = sameRound ? (st.visited || []).length : 0;
-      const prog = progressOf(vis, sameRound && st.back);
+      const prog = progressOf(vis, sameRound && st.back, oneWay);
       const stale = !isMe && Date.now() - st.at > STALE_MS;
-      const place = stale ? "📵 연결 끊김" : st.inside ? "✅ 운동장 안" : "⚠️ 운동장 밖";
-      const dots = Array.from({ length: N + 1 }, (_, i) =>
-        `<i class="${i < prog ? "on" : ""}">${i === N ? "🏁" : ""}</i>`).join("");
+      const place = stale ? "📵 연결 끊김" : st.inside ? `✅ ${AREA} 안` : `⚠️ ${AREA} 밖`;
+      const total = oneWay ? N : N + 1;
+      const dots = Array.from({ length: total }, (_, i) =>
+        `<i class="${i < prog ? "on" : ""}">${i === total - 1 ? "🏁" : ""}</i>`).join("");
       const sub = phase === "bye" ? "" : phase === "wait" || phase === "fail"
         ? (st.ready && sameRound ? "준비 완료" : "위치 인증 전")
-        : (sameRound && st.back ? "한 바퀴 완료!" : `체크포인트 ${vis}/${N}`);
+        : (sameRound && st.back ? (oneWay ? "도착!" : "한 바퀴 완료!") : `체크포인트 ${vis}/${N}`);
       return `<div class="tg-name">${esc(name)}${isMe ? " (나)" : ""}</div>
         <div class="tg-sub">${place}</div>${sub ? `<div class="tg-sub">${sub}</div>` : ""}
         <div class="tg-dots">${dots}</div>`;
     }
 
     function render() {
-      $c(".tg-title").innerHTML = `${josa(partnerName, "과", "와")} 대운동장 한 바퀴`;
+      $c(".tg-title").innerHTML = `${josa(partnerName, "과", "와")} ${esc(GOAL)}`;
       $c(".tg-phase").textContent = { wait: "준비", run: "진행 중", fail: "실패", done: "성공!", bye: "종료" }[phase];
       $c(".tg-phase").dataset.phase = phase;
       $c('[data-who="me"]').innerHTML = personHtml(myName, { ...myState(), at: Date.now() }, true);
@@ -286,7 +326,7 @@ export function runSession(opts) {
         const left = Math.max(0, OUT_LIMIT_S - Math.floor((Date.now() - outSince) / 1000));
         const who = !inside ? "내가" : peer && Date.now() - peer.at > STALE_MS ? `${josa(partnerName, "과", "와")} 연결이 끊겨서` : josa(partnerName, "이", "가");
         warn = !inside || !(peer && Date.now() - peer.at > STALE_MS)
-          ? `⚠️ ${who} 운동장 밖으로 나갔어요! ${left}초 안에 돌아오지 않으면 미션 실패`
+          ? `⚠️ ${who} ${AREA} 밖으로 나갔어요! ${left}초 안에 돌아오지 않으면 미션 실패`
           : `⚠️ ${who} ${left}초 안에 다시 연결되지 않으면 미션 실패`;
       }
       banner.innerHTML = warn;
@@ -297,17 +337,20 @@ export function runSession(opts) {
       const msg = $c(".tg-msg");
       if (phase === "wait") {
         msg.innerHTML = !peer ? `${josa(partnerName, "이", "가")} 수락하면 여기서 바로 이어져요.`
-          : !ready ? "운동장 안에 있는지 위치 인증을 해 주세요."
+          : !ready ? (oneWay ? `출발점(지도의 <b>1</b>)에서 위치 인증을 해 주세요.` : `${AREA} 안에 있는지 위치 인증을 해 주세요.`)
           : `${esc(partnerName)}의 위치 인증을 기다리는 중...`;
       } else if (phase === "run") {
-        msg.innerHTML = warn ? "얼른 운동장 안으로 돌아와 주세요!"
+        msg.innerHTML = warn ? `얼른 ${ro(AREA)} 돌아와 주세요!`
+          : oneWay ? (lap.back ? `나는 도착! ${josa(partnerName, "이", "가")} 도착하길 기다리는 중...`
+            : !lap.visited.length ? "출발점(<b>1</b>)에서 시작해요. 출발점으로 가 주세요."
+            : `하트(♥)를 따라 도착점(<b>2</b>)까지 함께 걸어가 주세요. 둘 다 도착하면 성공이에요!`)
           : lap.back ? `나는 한 바퀴 완료! ${josa(partnerName, "이", "가")} 들어오길 기다리는 중...`
           : lap.visited.length === N ? "출발점으로 돌아가면 한 바퀴 완료!"
           : "트랙을 따라 지도의 깃발을 모두 지나가 주세요. 둘 다 한 바퀴를 돌면 성공이에요!";
       } else if (phase === "fail") {
-        msg.innerHTML = "<b>미션 실패!</b> 30초 넘게 운동장 밖에 있었어요. 처음부터 다시 도전해 보세요.";
+        msg.innerHTML = `<b>미션 실패!</b> 30초 넘게 ${AREA} 밖에 있었어요. 처음부터 다시 도전해 보세요.`;
       } else if (phase === "done") {
-        msg.innerHTML = "<b>둘 다 한 바퀴 완주! 🎉</b>";
+        msg.innerHTML = oneWay ? `<b>둘 다 ${esc(zone.name)} 끝까지 완주! 💕</b>` : "<b>둘 다 한 바퀴 완주! 🎉</b>";
       } else if (phase === "bye") {
         msg.innerHTML = `${josa(partnerName, "이", "가")} 미션을 그만뒀어요.`;
       }
@@ -318,11 +361,11 @@ export function runSession(opts) {
     let lastBtnKey = "";
     function renderButtons() {
       const btns = [];
-      if (phase === "wait" && peer && !ready) btns.push(["ready", "📍 운동장 안에 있어요 (위치 인증)", "primary"]);
+      if (phase === "wait" && peer && !ready) btns.push(["ready", oneWay ? "📍 출발점에 있어요 (위치 인증)" : `📍 ${AREA} 안에 있어요 (위치 인증)`, "primary"]);
       if (phase === "fail") btns.push(["retry", "처음부터 다시 도전", "primary"]);
       if (demo && (phase === "run" || phase === "wait") && ready) {
-        if (phase === "run" && inside && !lap.back) btns.push(["walk", walking ? "걷는 중..." : "🚶 트랙 한 바퀴 걷기 (데모)", "ghost"]);
-        btns.push(inside ? ["out", "🚪 구역 밖으로 나가기 (데모)", "ghost"] : ["in", "↩️ 운동장으로 돌아오기 (데모)", "ghost"]);
+        if (phase === "run" && inside && !lap.back) btns.push(["walk", walking ? "걷는 중..." : oneWay ? `🚶 ${zone.name} 걷기 (데모)` : "🚶 트랙 한 바퀴 걷기 (데모)", "ghost"]);
+        btns.push(inside ? ["out", "🚪 구역 밖으로 나가기 (데모)", "ghost"] : ["in", `↩️ ${ro(AREA)} 돌아오기 (데모)`, "ghost"]);
       }
       if (phase === "bye") btns.push(["close", "확인", "primary"]);
       else if (phase !== "done") btns.push(["quit", "그만두기", "ghost"]);
@@ -339,7 +382,14 @@ export function runSession(opts) {
         btn.disabled = true;
         const ok = await checkInside();
         if (!ok) {
-          $c(".tg-msg").innerHTML = "아직 운동장 밖이에요. 운동장(빨간 점선) 안으로 들어와서 다시 눌러 주세요.";
+          $c(".tg-msg").innerHTML = `아직 ${AREA} 밖이에요. ${AREA}(빨간 점선) 안으로 들어와서 다시 눌러 주세요.`;
+          btn.disabled = false;
+          return;
+        }
+        // 한 방향 길은 출발점에서만 시작할 수 있다
+        if (oneWay && (!pos || geo.distanceM(pos, points[0]) > START_RADIUS)) {
+          const d = pos ? Math.round(geo.distanceM(pos, points[0])) : null;
+          $c(".tg-msg").innerHTML = `출발점(지도의 <b>1</b>)에서 시작해요.${d != null ? ` 지금 출발점까지 약 ${d}m 남았어요.` : ""} 출발점으로 가서 다시 눌러 주세요.`;
           btn.disabled = false;
           return;
         }
@@ -385,12 +435,16 @@ export function runSession(opts) {
       });
     }
 
-    // 데모: 지금 자리에서 가까운 체크포인트부터 트랙을 따라 한 바퀴 걸어간다 (약 10초)
+    // 데모: lap은 지금 자리에서 가까운 체크포인트부터 트랙을 따라 한 바퀴, path는 남은 점을 순서대로 도착점까지 (약 10초)
     function walkLap() {
       if (walking || !N) return;
-      const near = points.map((p, i) => [geo.distanceM(pos || points[0], p), i]).sort((a, b) => a[0] - b[0])[0][1];
-      const path = [pos || points[near]];
-      for (let k = 0; k <= N; k++) path.push(points[(near + k) % N]);
+      let path;
+      if (oneWay) path = [pos || points[0], ...points.slice(Math.max(0, lap.visited.length - 1))];
+      else {
+        const near = points.map((p, i) => [geo.distanceM(pos || points[0], p), i]).sort((a, b) => a[0] - b[0])[0][1];
+        path = [pos || points[near]];
+        for (let k = 0; k <= N; k++) path.push(points[(near + k) % N]);
+      }
       let seg = 0, t = 0;
       walking = setInterval(() => {
         t += 0.2;

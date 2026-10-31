@@ -190,8 +190,17 @@
       ],
       "polygonBuffer": 10,
       "missions": [
-        { "id": "m-loveroad-together", "type": "together", "title": "러브로드 함께 돌기",
-          "desc": "친구와 함께 백양로를 걸어보세요. 서로 친구 코드를 입력하면 인증돼요.", "points": 100 },
+        { "id": "m-loveroad-together", "type": "together", "live": true, "title": "러브로드 함께 걷기",
+          "desc": "친구 코드를 입력하고 친구가 수락하면 함께 시작해요. 둘 다 출발점(1)에서 위치 인증한 뒤, 하트를 따라 도착점(2)까지 함께 걸으면 성공! 한 명이라도 러브로드 밖으로 나가 30초 안에 안 돌아오면 실패예요.",
+          "points": 100,
+          "areaName": "러브로드", "goalName": "러브로드 끝까지 걷기",
+          "path": [
+            { "label": "1", "lat": 35.889130, "lng": 128.614940 },
+            { "label": "♥", "lat": 35.889420, "lng": 128.614160 },
+            { "label": "♥", "lat": 35.889570, "lng": 128.613670 },
+            { "label": "♥", "lat": 35.889630, "lng": 128.612820 },
+            { "label": "2", "lat": 35.889630, "lng": 128.612490 }
+          ] },
         { "id": "m-loveroad-ar", "type": "ar", "ar": "heart", "goal": 3, "title": "호반우에게 하트 그리기 (AR)",
           "desc": "화면에 손가락으로 하트를 그려서 러브로드의 호반우에게 마음을 전해 보세요.", "points": 100 }
       ]

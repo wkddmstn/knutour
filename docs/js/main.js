@@ -254,7 +254,8 @@ function setupNotifications() {
           return;
         }
         const req = await getFriendRequest(payload.id);
-        ui.toast("친구가 함께 돌기를 수락했어요! 대운동장으로 이동해요");
+        const where = allZones.find((z) => z.missions.some((x) => x.id === live.id))?.name || "미션 장소";
+        ui.toast(`친구가 함께 ${live.path ? "걷기" : "돌기"}를 수락했어요! ${where}(으)로 이동해요`);
         joinTogether(live, { partnerId: payload.partner_id, partnerName: req?.partnerNickname || "친구", role: "requester" });
         return;
       }
