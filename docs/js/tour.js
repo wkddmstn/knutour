@@ -470,6 +470,35 @@ function injectStyle() {
   .ts-course .r span:not(:last-child)::after{content:"";display:inline-block;width:3px;height:3px;margin:0 6px 2px;border-radius:50%;background:var(--mute,#8b95a1);vertical-align:middle}
   .ts-course .r .st{color:var(--primary,#d4121a);font-weight:700}
   .ts-course .go{flex:none;color:var(--mute,#8b95a1);font-size:20px}
+  /* 2단계: 고른 코스 자세히 보기 + 설정 + 시작하기 */
+  #tour-sheet .ts-back{display:inline-flex;align-items:center;gap:2px;margin:-4px 0 10px -6px;padding:6px 8px;border-radius:10px;
+    color:var(--sub,#4e5968);font-size:14px;font-weight:600;font-family:inherit}
+  #tour-sheet .ts-back:active{background:var(--cream-weak,#f2f4f6)}
+  #tour-sheet .ts-pick{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  #tour-sheet .ts-pick .ic{flex:none;width:52px;height:52px}
+  #tour-sheet .ts-pick h3{margin:0}
+  #tour-sheet .ts-pick p{margin:2px 0 0;font-size:13px;color:var(--sub,#4e5968);word-break:keep-all}
+  #tour-sheet .ts-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+  #tour-sheet .ts-stats div{padding:10px 8px;border-radius:14px;background:var(--cream-weak,#f2f4f6);text-align:center}
+  #tour-sheet .ts-stats b{display:block;font-size:17px;font-weight:800}
+  #tour-sheet .ts-stats small{font-size:12px;color:var(--sub,#4e5968)}
+  #tour-sheet .ts-h{margin:0 0 8px;font-size:14px;font-weight:700;color:var(--sub,#4e5968)}
+  /* 경로: 세로 타임라인 (출발 → 1 → 2 …) */
+  #tour-sheet .ts-route{list-style:none;margin:0 0 18px;padding:0}
+  #tour-sheet .ts-route li{position:relative;display:flex;align-items:center;gap:10px;padding:5px 0;font-size:14.5px;font-weight:600}
+  #tour-sheet .ts-route li:not(:last-child)::before{content:"";position:absolute;left:11px;top:22px;bottom:-12px;border-left:2px dotted var(--line,#e5e8eb)}
+  #tour-sheet .ts-route i{position:relative;flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+    font-size:12px;font-weight:800;background:var(--primary-weak,#fbe7e5);color:var(--primary-dark,#a30d13)}
+  #tour-sheet .ts-route li.start i{background:var(--primary,#d4121a);color:#fff}
+  #tour-sheet .ts-route li.start{color:var(--primary,#d4121a)}
+  #tour-sheet .ts-set{margin-bottom:14px}
+  #tour-sheet .ts-set .seg{margin-bottom:0}
+  #tour-sheet .ts-set .seg button{padding:9px 4px}
+  #tour-sheet .ts-note{margin:6px 2px 0;font-size:12px;color:var(--mute,#8b95a1)}
+  #tour-sheet .ts-foot{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));margin:6px -18px calc(-18px - env(safe-area-inset-bottom));
+    padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:var(--card,#fff);border-top:1px solid var(--line,#e5e8eb)}
+  #tour-sheet .ts-foot .btn{margin:0}
+  @media (prefers-color-scheme:dark){ #tour-sheet .ts-route i{color:#ffb3b7} }
   .ts-close{width:100%;margin:4px 0 0;padding:12px;border:none;border-radius:12px;background:var(--line,#e5e8eb);color:inherit;font-weight:700;font-family:inherit}
   #tour-move{position:fixed;inset:0;z-index:2000;background:var(--bg,#fff);color:var(--ink,#191f28);display:flex;flex-direction:column;font-family:inherit}
   #tour-move .tm-head{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
@@ -632,45 +661,107 @@ function openCourseSheet() {
   injectStyle();
   const el = document.createElement("div");
   el.id = "tour-sheet";
-  el.innerHTML = `<div class="ts" role="dialog" aria-label="투어 코스 고르기">
+  document.body.appendChild(el);
+  const quiet = () => { stopVoice(); bgm.stop(); };   // 미리 듣기로 나던 소리 끄기 (설정 값은 그대로)
+  const close = () => { quiet(); el.remove(); };
+  el.onclick = (e) => { if (e.target === el) close(); };
+  const head = (title, label) => `
     <div class="ts-grab" aria-hidden="true"></div>
     <div class="ts-head">
-      <h3>호반우와 캠퍼스 투어</h3>
-      <button class="ts-x" type="button" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    </div>
-    <p class="ts-sub">호반우가 길을 안내하고 장소를 소개해 줘요. 걸으면서 사진도 찍고 호반우도 쓰다듬어 봐요!</p>
-    <div class="seg" role="tablist" aria-label="출발 문">
-      <button type="button" class="on" aria-selected="true">정문에서 출발</button>
-      <button type="button" disabled>북문 <small>준비 중</small></button>
-    </div>
-    ${COURSES.map((c) => `
-      <button class="ts-course" type="button" data-c="${c.id}">
+      <h3>${title}</h3>
+      <button class="ts-x" type="button" aria-label="${label}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>`;
+  const stopNames = (c) => c.stops.map((id) => zoneById(id)?.name || id);
+
+  // ① 코스 고르기: 누르면 바로 시작하지 않고 ②로
+  function showList() {
+    el.innerHTML = `<div class="ts" role="dialog" aria-label="투어 코스 고르기">
+      ${head("호반우와 캠퍼스 투어", "닫기")}
+      <p class="ts-sub">호반우가 길을 안내하고 장소를 소개해 줘요. 걸으면서 사진도 찍고 호반우도 쓰다듬어 봐요!</p>
+      ${COURSES.map((c) => `
+        <button class="ts-course" type="button" data-c="${c.id}">
+          <span class="ic" aria-hidden="true">${icon(c.icon)}</span>
+          <span class="bd">
+            <span class="t">${c.name}<em>${c.stops.length}곳 · 약 ${courseStats(c).total}분</em></span>
+            <span class="d">${c.desc}</span>
+            <span class="r"><span class="st">정문</span>${stopNames(c).map((n) => `<span>${n}</span>`).join("")}</span>
+          </span>
+          <span class="go" aria-hidden="true">›</span>
+        </button>`).join("")}
+    </div>`;
+    el.querySelector(".ts-x").onclick = close;
+    el.querySelectorAll(".ts-course").forEach((b) => (b.onclick = () => showDetail(course(b.dataset.c))));
+  }
+
+  // ② 코스 자세히 + 설정 + 시작하기. 소리 설정은 이동 화면의 "음성" 버튼과 같은 값을 쓴다
+  function showDetail(c) {
+    const gate = GATES.main;   // 북문이 생기면 여기서 고른 문으로
+    const s = courseStats(c, gate);
+    el.innerHTML = `<div class="ts" role="dialog" aria-label="${c.name} 시작하기">
+      ${head("코스 확인", "닫기")}
+      <button class="ts-back" type="button">‹ 다른 코스 보기</button>
+      <div class="ts-pick">
         <span class="ic" aria-hidden="true">${icon(c.icon)}</span>
-        <span class="bd">
-          <span class="t">${c.name}<em>${c.stops.length}곳</em></span>
-          <span class="d">${c.desc}</span>
-          <span class="r"><span class="st">정문</span>${c.stops.map((id) => `<span>${zoneById(id)?.name || id}</span>`).join("")}</span>
-        </span>
-        <span class="go" aria-hidden="true">›</span>
-      </button>`).join("")}
-  </div>`;
-  document.body.appendChild(el);
-  el.onclick = (e) => { if (e.target === el) el.remove(); };
-  el.querySelector(".ts-x").onclick = () => el.remove();
-  el.querySelectorAll(".ts-voice [data-v]").forEach((b) => (b.onclick = () => {
-    unlockAudio();
-    setVoicePick(b.dataset.v);
-    setVoice(true);
-    el.querySelectorAll(".ts-voice [data-v]").forEach((x) => x.classList.toggle("on", x === b));
-    playKey("near", SCRIPT.near);   // 미리 듣기
-  }));
-  el.querySelectorAll(".ts-course").forEach((b) => (b.onclick = () => {
-    unlockAudio();
-    save({ course: b.dataset.c, idx: 0, gate: "main", startedAt: Date.now() });
-    try { localStorage.setItem(TRIED_KEY, "1"); } catch {}
-    el.remove();
-    openMove(true);
-  }));
+        <div><h3>${c.name}</h3><p>${c.desc}</p></div>
+      </div>
+      <div class="ts-stats">
+        <div><b>${c.stops.length}곳</b><small>장소</small></div>
+        <div><b>약 ${s.walk}분</b><small>걷는 시간</small></div>
+        <div><b>약 ${s.total}분</b><small>미션 포함</small></div>
+      </div>
+      <h4 class="ts-h">이 순서로 돌아요</h4>
+      <ol class="ts-route">
+        <li class="start"><i>출</i>${gate.name}에서 출발</li>
+        ${stopNames(c).map((n, i) => `<li><i>${i + 1}</i>${n}</li>`).join("")}
+      </ol>
+      <div class="ts-set">
+        <h4 class="ts-h">출발 장소</h4>
+        <div class="seg" data-g="gate">
+          <button type="button" class="on">정문</button>
+          <button type="button" disabled>북문 <small>준비 중</small></button>
+        </div>
+      </div>
+      <div class="ts-set">
+        <h4 class="ts-h">호반우 안내 음성</h4>
+        <div class="seg" data-g="voice">
+          <button type="button" data-v="mongsil">표준어</button><button type="button" data-v="gaenari">사투리</button><button type="button" data-v="off">끄기</button>
+        </div>
+        <p class="ts-note">누르면 미리 들어볼 수 있어요</p>
+      </div>
+      <div class="ts-set">
+        <h4 class="ts-h">배경 음악</h4>
+        <div class="seg" data-g="bgm"><button type="button" data-v="on">켜기</button><button type="button" data-v="off">끄기</button></div>
+        <p class="ts-note">투어 중에도 위쪽 "음성" 버튼에서 바꿀 수 있어요</p>
+      </div>
+      <div class="ts-foot"><button class="btn cta-glow ts-start" type="button">시작하기</button></div>
+    </div>`;
+    const paint = () => {
+      const v = voiceOn() ? voicePick() : "off";
+      el.querySelectorAll('[data-g="voice"] button').forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+      el.querySelectorAll('[data-g="bgm"] button').forEach((b) => b.classList.toggle("on", (b.dataset.v === "on") === bgm.isOn()));
+    };
+    paint();
+    el.querySelector(".ts-x").onclick = close;
+    el.querySelector(".ts-back").onclick = () => { quiet(); showList(); };
+    el.querySelectorAll('[data-g="voice"] button').forEach((b) => (b.onclick = () => {
+      unlockAudio();
+      if (b.dataset.v === "off") { setVoice(false); stopVoice(); }
+      else { setVoice(true); setVoicePick(b.dataset.v); playKey("near", SCRIPT.near); }   // 미리 듣기
+      paint();
+    }));
+    el.querySelectorAll('[data-g="bgm"] button').forEach((b) => (b.onclick = () => { bgm.setOn(b.dataset.v === "on"); bgm.resume(); paint(); }));   // 켜면 미리 들려줌
+    el.querySelector(".ts-start").onclick = () => {
+      quiet();   // 이동 화면이 열리면서 음악·안내를 처음부터 다시 튼다
+      unlockAudio();
+      save({ course: c.id, idx: 0, gate: "main", startedAt: Date.now() });
+      try { localStorage.setItem(TRIED_KEY, "1"); } catch {}
+      el.remove();
+      openMove(true);
+    };
+    el.querySelector(".ts").scrollTop = 0;
+  }
+
+  showList();
 }
 // 아이폰은 버튼을 누른 순간에 한 번 소리를 내 줘야 그 뒤에도 음성이 나온다
 function unlockAudio() {
