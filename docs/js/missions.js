@@ -152,7 +152,7 @@ async function togetherLive(m, zone, ctx) {
         : "어, 오류가 났어. 다시 시도해줄래?");
     }
   } else if (join.role === "partner") {
-    await chat.bot(`<b>${esc(join.partnerName)}</b>의 함께 돌기 요청을 수락했어! 운동장 안에서 위치 인증하면 시작해.`);
+    await chat.bot(`<b>${esc(join.partnerName)}</b>의 함께 ${m.path ? "걷기" : "돌기"} 요청을 수락했어! ${m.path ? "출발점(1)" : `${m.areaName || "운동장"} 안`}에서 위치 인증하면 시작해.`);
   }
   together2.savePending({ missionId: m.id, zoneId: zone.id, ...join });
 
@@ -164,7 +164,7 @@ async function togetherLive(m, zone, ctx) {
   together2.clearPending();
   if (result === "done") {
     if (completeMission(m.id, m.points)) reward(m.points);
-    await chat.bot(`<b>${esc(join.partnerName)}</b>랑 대운동장 한 바퀴 완주! 🎉 <b>+${m.points} XP</b>`);
+    await chat.bot(`<b>${esc(join.partnerName)}</b>랑 ${esc(m.goalName || "대운동장 한 바퀴")} 완주! ${m.path ? "💕" : "🎉"} <b>+${m.points} XP</b>`);
   } else {
     await chat.bot("함께 돌기는 여기까지! 다음에 다시 도전해 보자.");
   }
