@@ -32,15 +32,15 @@ function injectStyle() {
   .arm-wheel canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 6px 16px rgba(0,0,0,.35);
     transition:transform 3.4s cubic-bezier(.12,.67,.12,1)}
   .arm-wheel::before{content:"";position:absolute;left:50%;top:-10px;margin-left:-11px;border:11px solid transparent;
-    border-top:18px solid #d4121a;z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+    border-top:18px solid var(--primary, #d4121a);z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
   .arm-wheel b{position:absolute;left:50%;top:50%;width:24%;height:24%;transform:translate(-50%,-50%);border-radius:50%;background:#fff;
-    color:#d4121a;font-size:clamp(13px,3.2vmin,24px);font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+    color:var(--primary, #d4121a);font-size:clamp(13px,3.2vmin,24px);font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
   .arm-card{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;color:#191f28}
-  .arm-card .t{font-size:14px;font-weight:800}
-  .arm-card .s{font-size:12px;color:#6b7684;text-align:center}
+  .arm-card .t{font-size:var(--fs-md, 15px);font-weight:800}
+  .arm-card .s{font-size:var(--fs-sm, 13px);color:#6b7684;text-align:center}
   .arm-row{display:flex;gap:8px;width:100%}
-  .arm-btn{flex:1;width:auto;margin:0;padding:10px;border:none;border-radius:12px;font-size:14px;font-weight:700;background:#f2f4f6;color:#191f28;font-family:inherit}
-  .arm-btn.primary{background:#d4121a;color:#fff}
+  .arm-btn{flex:1;width:auto;margin:0;padding:10px;border:none;border-radius:12px;font-size:var(--fs-md, 15px);font-weight:700;background:#f2f4f6;color:#191f28;font-family:inherit}
+  .arm-btn.primary{background:var(--primary, #d4121a);color:#fff}
   /* 숨은 물건 찾기 */
   .arm-item{position:absolute;left:0;top:0;width:64px;height:64px;margin:-32px 0 0 -32px;font-size:46px;line-height:64px;text-align:center;
     z-index:3;display:none;cursor:pointer;filter:drop-shadow(0 0 8px rgba(255,255,200,.9));animation:arm-bob 1.6s ease-in-out infinite;touch-action:manipulation}
@@ -49,8 +49,8 @@ function injectStyle() {
   .arm-book img{width:100%;height:100%;object-fit:cover;border-radius:4px 8px 8px 4px}
   .arm-cover{width:100%;height:100%;border-radius:4px 8px 8px 4px;background:linear-gradient(90deg,rgba(0,0,0,.25) 0 8%,transparent 8% 100%),var(--c);
     color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px 8px 12px;box-sizing:border-box;text-align:left}
-  .arm-cover b{font-size:15px;line-height:1.25;word-break:keep-all}
-  .arm-cover small{font-size:10px;opacity:.9}
+  .arm-cover b{font-size:var(--fs-md, 15px);line-height:1.25;word-break:keep-all}
+  .arm-cover small{font-size:var(--fs-xs, 11px);opacity:.9}
   /* 벚꽃 나무: 호반우 바로 뒤에 붙어서 같이 움직인다 */
   .arm-tree{position:absolute;left:50%;bottom:-14px;width:min(420px,92vw,52vh);transform:translateX(-50%);z-index:0;pointer-events:none;
     opacity:0;transition:opacity .5s}
@@ -59,17 +59,17 @@ function injectStyle() {
   .arm-tree svg,.arm-tree img{display:block;width:100%;height:auto}
   .arm-bookinfo{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left}
   .arm-bookinfo img{width:58px;height:86px;object-fit:cover;border-radius:3px 6px 6px 3px;box-shadow:0 3px 8px rgba(0,0,0,.25);flex:none}
-  .arm-bookinfo .t{font-size:15px}
+  .arm-bookinfo .t{font-size:var(--fs-md, 15px)}
   .arm-bookinfo .s{text-align:left;line-height:1.5}
   a.arm-btn{display:block;text-align:center;text-decoration:none;box-sizing:border-box}
-  .arm-found{font-size:11px;color:#8b95a1;text-align:center;line-height:1.5}
+  .arm-found{font-size:var(--fs-xs, 11px);color:#8b95a1;text-align:center;line-height:1.5}
   .arm-petal-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
   .arm-petal-canvas.on{pointer-events:auto;cursor:pointer}
   /* 벚꽃잎 */
   .arm-petal{position:absolute;top:-50px;font-size:34px;z-index:3;cursor:pointer;touch-action:manipulation;user-select:none;
     animation:arm-fall var(--dur) linear forwards}
   .arm-petal i{display:inline-block;font-style:normal;animation:arm-sway 1.4s ease-in-out infinite alternate}
-  .arm-pop{position:absolute;z-index:4;font-size:22px;font-weight:900;color:#ff6fa5;pointer-events:none;animation:arm-up .7s ease-out forwards;
+  .arm-pop{position:absolute;z-index:4;font-size:var(--fs-2xl, 24px);font-weight:900;color:#ff6fa5;pointer-events:none;animation:arm-up .7s ease-out forwards;
     text-shadow:0 1px 3px #fff}
   /* 응원 게이지 */
   .arm-gauge{width:100%;height:16px;border-radius:8px;background:#f2f4f6;overflow:hidden}
@@ -81,10 +81,10 @@ function injectStyle() {
   .arm-fest .f3{right:-10%;background:linear-gradient(180deg,rgba(255,110,180,.9),transparent 70%);animation:armSwing 3.4s ease-in-out infinite -1s}
   @keyframes armSwing{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
   .arm-fest .fs-banner{position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top));transform:translateX(-50%);padding:6px 16px;border-radius:999px;
-    font-size:14px;font-weight:900;color:#2b0f4a;background:linear-gradient(90deg,#ffe066,#ff8fc7);box-shadow:0 0 20px rgba(255,140,210,.8);white-space:nowrap}
+    font-size:var(--fs-md, 15px);font-weight:900;color:#2b0f4a;background:linear-gradient(90deg,#ffe066,#ff8fc7);box-shadow:0 0 20px rgba(255,140,210,.8);white-space:nowrap}
   .arm-fest-tray .arm-gauge i{background:linear-gradient(90deg,#6a3cff,#ff3d7f,#ffe066)}
   .arm-fest-tray .arm-btn.primary{background:linear-gradient(90deg,#ff3d7f,#ff8f3d)}
-  .arm-confetti{position:absolute;top:-30px;font-size:26px;z-index:4;pointer-events:none;animation:arm-fall var(--dur) linear forwards}
+  .arm-confetti{position:absolute;top:-30px;font-size:var(--fs-3xl, 28px);z-index:4;pointer-events:none;animation:arm-fall var(--dur) linear forwards}
   /* 하트 그리기 */
   .arm-draw{position:absolute;inset:0;width:100%;height:100%;z-index:3;touch-action:none;transition:opacity .5s}
   .arm-draw.fade{opacity:0}
@@ -98,15 +98,15 @@ function injectStyle() {
     border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 4px 12px rgba(0,0,0,.25);transition:transform .15s,background .15s;pointer-events:none}
   .arm-basket.over{transform:scale(1.18);background:rgba(255,240,200,.9)}
   .arm-basket.bump{animation:arm-bump .4s ease-out}
-  .arm-basket i{position:absolute;right:-4px;top:-4px;min-width:26px;height:26px;border-radius:13px;background:#d4121a;color:#fff;font-style:normal;
-    font-size:14px;font-weight:800;line-height:26px;padding:0 6px;box-sizing:border-box}
+  .arm-basket i{position:absolute;right:-4px;top:-4px;min-width:26px;height:26px;border-radius:13px;background:var(--primary, #d4121a);color:#fff;font-style:normal;
+    font-size:var(--fs-md, 15px);font-weight:800;line-height:26px;padding:0 6px;box-sizing:border-box}
   .arm-shop{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%}
   .arm-shop button{width:auto;margin:0;padding:6px 2px;border:none;border-radius:12px;background:#fff3e0;color:#191f28;font-family:inherit;
-    font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;touch-action:none;cursor:grab}
-  .arm-shop button b{font-size:30px;line-height:1.1;pointer-events:none}
+    font-size:var(--fs-sm, 13px);font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;touch-action:none;cursor:grab}
+  .arm-shop button b{font-size:var(--fs-3xl, 28px);line-height:1.1;pointer-events:none}
   .arm-shop button.got{opacity:.35;pointer-events:none}
   .arm-shop button.no{animation:arm-shake .35s}
-  .arm-need{font-size:13px;font-weight:800;color:#191f28;text-align:center}
+  .arm-need{font-size:var(--fs-sm, 13px);font-weight:800;color:#191f28;text-align:center}
   .arm-need s{color:#b0b8c1}
   .arm-ghost{position:fixed;z-index:10;font-size:54px;transform:translate(-50%,-60%);pointer-events:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
   @keyframes arm-bump{40%{transform:scale(1.25) rotate(-8deg)}}

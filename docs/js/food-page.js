@@ -144,7 +144,7 @@ function renderPane(all) {
         <span class="food-emoji lg" aria-hidden="true">${emojiOf(sel)}</span>
         <div style="min-width:0">
           <div class="sum-label">${esc(sel.area)} · ${esc(sel.kind || "")}</div>
-          <div class="sum-big" style="font-size:20px">${esc(sel.name)}</div>
+          <div class="sum-big title">${esc(sel.name)}</div>
         </div>
         <button type="button" class="cm-x" data-close aria-label="닫기">✕</button>
       </div>

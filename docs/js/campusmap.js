@@ -436,10 +436,11 @@ export class CampusMap {
     this.hideBubble();
     const node = document.createElement("div");
     node.className = "cm-bubble";
+    // 아이콘 없이 장소 이름 자체가 버튼 (누르면 미션 화면). 다 깬 곳은 ✓, 잠긴 곳은 이름 + 안내만
     node.innerHTML = st === "locked"
-      ? `<b>${esc(z.emoji || "")} ${esc(z.name)}</b><span class="cm-bubble-note">🔒 ${esc(note)}</span>`
-      : `<b>${esc(z.emoji || "")} ${esc(z.name)}</b>
-      <button type="button">${st === "cleared" ? "다시 보기" : "미션 보기"}</button>`;
+      ? `<b>${esc(z.name)}</b><span class="cm-bubble-note">🔒 ${esc(note)}</span>`
+      : `<button type="button" aria-label="${esc(z.name)} ${st === "cleared" ? "다시 보기" : "미션 보기"}">${st === "cleared" ? `<span class="cm-go-done" aria-hidden="true">✓</span>` : ""}${esc(z.name)}<span class="cm-go-arrow" aria-hidden="true">›</span></button>`;
+    if (st !== "locked") node.classList.add("cm-bubble-go");
     node.querySelector("button")?.addEventListener("click", (e) => { e.stopPropagation(); onSelect(z); });
     node.onclick = (e) => e.stopPropagation();
     this.layer.appendChild(node);

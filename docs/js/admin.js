@@ -389,7 +389,7 @@ async function loadThemes() {
   if (!cfg) { list.textContent = "data/themes.json을 불러오지 못했어요."; return; }
   const { data, error } = await client.from("theme_settings").select("*");
   if (error) {
-    list.innerHTML = `<p style="color:var(--mute);font-size:13px">테마 설정 표가 아직 없어요. supabase/themes.sql을 SQL Editor에서 실행해 주세요.</p>`;
+    list.innerHTML = `<p style="color:var(--mute);font-size:var(--fs-sm, 13px)">테마 설정 표가 아직 없어요. supabase/themes.sql을 SQL Editor에서 실행해 주세요.</p>`;
     return;
   }
   const saved = Object.fromEntries((data || []).map((r) => [r.id, r]));
@@ -458,7 +458,7 @@ async function loadHiddenMissions() {
   data = (data || []).filter((h) => h.id !== DEMO_ID);   // 데모 모드 줄은 아래 "데모 모드" 칸에서 따로
   const list = $("hidden-list");
   if (error) {
-    list.innerHTML = `<p style="color:var(--mute);font-size:13px">히든미션 설정이 아직 없어요. ranking-sync-setup.sql / admin-extra-setup.sql을 실행했는지 확인해 주세요.</p>`;
+    list.innerHTML = `<p style="color:var(--mute);font-size:var(--fs-sm, 13px)">히든미션 설정이 아직 없어요. ranking-sync-setup.sql / admin-extra-setup.sql을 실행했는지 확인해 주세요.</p>`;
     return;
   }
   // 앱이 아는 히든미션은 설정 줄이 아직 없어도 보여 준다 (꺼짐으로 표시)
@@ -472,7 +472,7 @@ async function loadHiddenMissions() {
         <input type="checkbox" data-hidden-toggle="${h.id}" ${h.enabled ? "checked" : ""}>
         <span class="slider"></span>
       </label>
-      ${h.missing ? `<div data-missing="${h.id}" style="display:none;width:100%;font-size:12px;color:var(--mute);line-height:1.6">
+      ${h.missing ? `<div data-missing="${h.id}" style="display:none;width:100%;font-size:var(--fs-sm, 13px);color:var(--mute);line-height:1.6">
         켜지지 않으면 설정 줄이 아직 없는 거예요. Supabase 관리자가 SQL Editor에서 아래 한 줄을 한 번 실행하면 이 스위치가 동작해요.
         <code style="display:block;white-space:pre-wrap;background:var(--line);padding:6px 8px;border-radius:8px;margin-top:4px;user-select:all">${esc(sqlFor(h.id))}</code></div>` : ""}
     </div>`).join("");
@@ -519,10 +519,10 @@ async function loadDemoSetting() {
     loadDemoSetting();
   }));
   if (error || !data) {
-    box.innerHTML = deviceRow + `<p style="color:var(--mute);font-size:12.5px;line-height:1.6;margin-top:8px">
+    box.innerHTML = deviceRow + `<p style="color:var(--mute);font-size:var(--fs-sm, 13px);line-height:1.6;margin-top:8px">
       모든 사용자에게 한 번에 적용하는 스위치는 Supabase 설정 줄이 있어야 생겨요 (지금 서버 기본값은 <b>켜짐</b>).
       Supabase 관리자가 SQL Editor에서 아래 한 줄을 한 번 실행하면 돼요.</p>
-      <code style="display:block;white-space:pre-wrap;font-size:12px;background:var(--line);padding:8px 10px;border-radius:8px;user-select:all">${esc(DEMO_SQL)}</code>`;
+      <code style="display:block;white-space:pre-wrap;font-size:var(--fs-sm, 13px);background:var(--line);padding:8px 10px;border-radius:8px;user-select:all">${esc(DEMO_SQL)}</code>`;
     bindDevice();
     return;
   }
@@ -550,7 +550,7 @@ async function loadProgress() {
   try { zones = (await (await fetch("data/zones.json")).json()).zones || []; } catch { /* ignore */ }
   const { data, error } = await client.from("mission_completions").select("user_id, mission_id");
   if (error || !zones.length) {
-    el.innerHTML = `<p style="color:var(--mute);font-size:13px">진행 현황을 불러오지 못했어요.</p>`;
+    el.innerHTML = `<p style="color:var(--mute);font-size:var(--fs-sm, 13px)">진행 현황을 불러오지 못했어요.</p>`;
     return;
   }
   const byMission = new Map();   // mission_id -> Set(user_id)

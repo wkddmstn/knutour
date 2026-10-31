@@ -200,7 +200,7 @@ async function togetherRandom(m) {
     card.innerHTML = `
       <div style="text-align:center;padding:8px 0">
         <div class="rec-timer">⏳</div>
-        <p style="color:var(--mute);font-size:13px;margin:0 0 10px">대기 중...</p>
+        <p style="color:var(--mute);font-size:var(--fs-sm, 13px);margin:0 0 10px">대기 중...</p>
         <button class="chip ghost">대기 취소하기</button>
       </div>`;
     card.querySelector(".chip").onclick = () => { done(null); };
