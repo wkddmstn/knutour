@@ -275,8 +275,10 @@ body[data-view="zone"] {
 .bot .bubble { background: var(--card); border: 1px solid rgba(0, 0, 0, .04);
                box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .05); }
 .row.bot:not(.row.bot + .row.bot) .bubble { border-top-left-radius: 6px; }   /* 말꼬리: 첫 말풍선만 */
-.user .bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 6px;
-                box-shadow: 0 4px 14px rgba(0, 0, 0, .06); }
+/* 내 말풍선: 꽉 찬 빨강 대신 흰 바탕 + 빨간 테두리, 호반우 말풍선과 같은 모양의 옅은 빨간 그림자 */
+.user .bubble { background: var(--card); color: var(--ink); border: 1.5px solid var(--primary); border-bottom-right-radius: 6px;
+                box-shadow: 0 1px 2px rgba(212, 18, 26, .06), 0 4px 14px rgba(212, 18, 26, .12); }
+.user .bubble .media-gone { background: var(--primary-weak); color: var(--primary-dark); }
 .typing { display: flex; gap: 5px; padding: 15px 16px; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); animation: blink 1s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s; }
