@@ -2,6 +2,7 @@ import * as geo from "./geo.js";
 import * as chat from "./chat.js";
 import * as store from "./storage.js";
 import * as ui from "./ui.js";
+import { confirmDialog } from "./dialog.js";   // 앱 디자인 확인 창 (confirm() 대신)
 import { runMission, icon } from "./missions.js";
 import { getRanking } from "./ranking.js";
 import { ensureProfile, getCachedProfile } from "./supa.js";
@@ -691,7 +692,7 @@ async function renderCommunityTab() {
         break;
       }
       case "report": {
-        if (!confirm("이 글을 신고할까요? 관리자가 확인 후 조치해요.")) return;
+        if (!(await confirmDialog({ title: "이 글을 신고할까요?", message: "관리자가 확인한 뒤 조치해요.", ok: "신고하기", danger: true }))) return;
         const ok = await reportPost(p.id);
         ui.toast(ok ? "신고가 접수됐어요." : "신고에 실패했어요. 잠시 후 다시 시도해 주세요.");
         break;

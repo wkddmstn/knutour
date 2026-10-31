@@ -297,19 +297,19 @@ export function runSession(opts) {
       const msg = $c(".tg-msg");
       if (phase === "wait") {
         msg.innerHTML = !peer ? `${josa(partnerName, "이", "가")} 수락하면 여기서 바로 이어져요.`
-          : !ready ? "운동장 안에 있는지 위치 인증을 해 줘!"
+          : !ready ? "운동장 안에 있는지 위치 인증을 해 주세요."
           : `${esc(partnerName)}의 위치 인증을 기다리는 중...`;
       } else if (phase === "run") {
-        msg.innerHTML = warn ? "얼른 운동장 안으로 돌아와!"
+        msg.innerHTML = warn ? "얼른 운동장 안으로 돌아와 주세요!"
           : lap.back ? `나는 한 바퀴 완료! ${josa(partnerName, "이", "가")} 들어오길 기다리는 중...`
           : lap.visited.length === N ? "출발점으로 돌아가면 한 바퀴 완료!"
-          : "트랙을 따라 지도의 깃발을 모두 지나가 봐! 둘 다 한 바퀴를 돌면 성공이야.";
+          : "트랙을 따라 지도의 깃발을 모두 지나가 주세요. 둘 다 한 바퀴를 돌면 성공이에요!";
       } else if (phase === "fail") {
-        msg.innerHTML = "<b>미션 실패!</b> 30초 넘게 운동장 밖에 있었어. 처음부터 다시 해 보자.";
+        msg.innerHTML = "<b>미션 실패!</b> 30초 넘게 운동장 밖에 있었어요. 처음부터 다시 도전해 보세요.";
       } else if (phase === "done") {
         msg.innerHTML = "<b>둘 다 한 바퀴 완주! 🎉</b>";
       } else if (phase === "bye") {
-        msg.innerHTML = `${josa(partnerName, "이", "가")} 미션을 그만뒀어.`;
+        msg.innerHTML = `${josa(partnerName, "이", "가")} 미션을 그만뒀어요.`;
       }
 
       renderButtons();
@@ -339,7 +339,7 @@ export function runSession(opts) {
         btn.disabled = true;
         const ok = await checkInside();
         if (!ok) {
-          $c(".tg-msg").innerHTML = "아직 운동장 밖이야. 운동장(빨간 점선) 안으로 들어와서 다시 눌러 줘!";
+          $c(".tg-msg").innerHTML = "아직 운동장 밖이에요. 운동장(빨간 점선) 안으로 들어와서 다시 눌러 주세요.";
           btn.disabled = false;
           return;
         }

@@ -10,6 +10,7 @@
 import { loadCampusData, campusDataReady, CampusMap } from "./campusmap.js";
 import { icon, hasIcon } from "./icons.js";
 import { matchFood } from "./ar-missions.js";
+import { linkDialog } from "./dialog.js";   // 링크 복사가 막혔을 때 (prompt() 대신)
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) =>
@@ -68,7 +69,7 @@ async function share({ title, text, url }) {
     await navigator.clipboard.writeText(url);
     toast("🔗 링크를 복사했어요");
   } catch {
-    window.prompt("아래 링크를 복사해 주세요", url);
+    linkDialog(url);   // 자동 복사가 막힌 브라우저: 앱 디자인 창에서 직접 복사
   }
 }
 

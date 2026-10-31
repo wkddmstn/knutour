@@ -1399,6 +1399,18 @@ body[data-theme-bg] #home-tour-slot .tour-card { background: color-mix(in srgb, 
 .me-row.danger span { color: var(--red); }
 .withdraw-list { margin: 0 0 6px; padding-left: 20px; color: var(--sub); font-size: var(--fs-sm); line-height: 1.7; }
 .btn.btn-danger { background: var(--red); }
+
+/* ============ 확인 창 (dialog.js: 브라우저 기본 confirm·prompt 대신) ============
+   #modal과 같은 카드 모양. 댓글 시트·투어·사진 화면 위에서도 뜨도록 따로 맨 위 층에 둔다 */
+.dialog-layer { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center;
+                padding: 20px; background: rgba(25, 31, 40, .5); }
+.dialog-card { max-width: 360px; padding: 26px 20px 20px; text-align: center; }
+.dialog-card h2 { font-size: 18px; line-height: 1.4; color: var(--ink); }
+.dialog-card p { font-size: 14px; }
+.dialog-btns { display: flex; gap: 8px; margin-top: 20px; }
+.dialog-btns .btn, .dialog-btns .btn + .btn { flex: 1; margin: 0; padding: 14px; font-size: 15px; }
+.dialog-link { margin-top: 6px; font-size: 13px; }
+@media (prefers-color-scheme: dark) { .dialog-layer { background: rgba(0, 0, 0, .65); } }
 .modal-card .err { color: var(--red); text-align: left; }   /* 창 안의 오류 문구도 빨갛게 (예: 이미 가입된 닉네임입니다.) */
 
 /* 의견과 제안 화면 */

@@ -1,5 +1,6 @@
 import { icon, zoneIcon, hasIcon } from "./icons.js";   // 동글동글 젤리 아이콘
-import { heroHtml } from "./hero.js";   // 홈 대표 카드의 움직이는 산책 그림
+import { heroHtml } from "./hero.js";
+import { confirmDialog } from "./dialog.js";   // 앱 디자인 확인 창 (confirm() 대신)   // 홈 대표 카드의 움직이는 산책 그림
 import { getState, isDone, getLevel, getLevelTable, getLevelLog } from "./storage.js";
 import { getCachedProfile } from "./supa.js";
 import { pickBest, toTag } from "./community.js";
@@ -718,7 +719,7 @@ export function showComments({ myId, myName, question = false, context = "", rea
       return;
     }
     const btn = e.target.closest("[data-del]");
-    if (!btn || !confirm(`이 ${noun}을 삭제할까요?`)) return;
+    if (!btn || !(await confirmDialog({ title: `이 ${noun}을 삭제할까요?`, ok: "삭제", danger: true }))) return;
     btn.disabled = true;
     if (await remove(btn.dataset.del)) {
       comments = comments.filter((c) => c.id !== btn.dataset.del);

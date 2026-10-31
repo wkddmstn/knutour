@@ -4,6 +4,7 @@
 import { zoneIcon } from "./icons.js";   // 장소 젤리 아이콘
 import { postCommunity } from "./community.js";
 import * as ui from "./ui.js";
+import { confirmDialog } from "./dialog.js";
 import { getState } from "./storage.js";
 import * as geo from "./geo.js";
 
@@ -251,7 +252,7 @@ function openViewer(p, zones, onChange) {
     };
   };
   el.querySelector('[data-a="del"]').onclick = async () => {
-    if (!confirm("이 사진을 지울까요? (이 기기에서만 지워져요)")) return;
+    if (!(await confirmDialog({ title: "이 사진을 지울까요?", message: "이 기기에서만 지워져요.", ok: "지우기", danger: true }))) return;
     await deletePhoto(p.id);
     close(); onChange?.();
   };

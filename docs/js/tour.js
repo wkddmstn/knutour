@@ -4,6 +4,7 @@
 // main.js는 이 파일을 "있으면 쓰는" 방식(동적 import + try/catch)으로 불러온다.
 // 그래서 이 파일에 문제가 생겨도 기존 앱(구역 채팅·미션·AR)은 그대로 동작한다.
 import * as geo from "./geo.js";
+import { confirmDialog } from "./dialog.js";
 import { MASCOTS, setHobanuPaneExtra, startAR, openPhotoStudio } from "./ar.js";
 import * as bgm from "./tour-bgm.js";
 import { icon } from "./icons.js";   // 코스 고르기 시트: 장소 목록과 같은 젤리 아이콘   // 안내 음성이 없을 때 깔리는 배경 음악 (말할 땐 작아짐)
@@ -687,8 +688,8 @@ export function renderQuestCard(container, { entry = false } = {}) {
   card.querySelector('[data-a="go"]')?.addEventListener("click", () => { unlockAudio(); openMove(); });
   card.querySelector('[data-a="next"]')?.addEventListener("click", () => { unlockAudio(); next(curZone); });
   card.querySelector('[data-a="zone"]')?.addEventListener("click", () => curZone && app.openZone(curZone));
-  card.querySelector('[data-a="stop"]')?.addEventListener("click", () => {
-    if (!confirm("투어를 그만할까요? (지금까지 한 미션과 XP는 그대로 남아요)")) return;
+  card.querySelector('[data-a="stop"]')?.addEventListener("click", async () => {
+    if (!(await confirmDialog({ title: "투어를 그만할까요?", message: "지금까지 한 미션과 XP는 그대로 남아요.", ok: "그만하기", cancel: "계속하기" }))) return;
     save(null); renderQuestCard(container);
   });
 }
