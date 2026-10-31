@@ -693,18 +693,23 @@ export function renderQuestCard(container, { entry = false } = {}) {
     save(null); renderQuestCard(container);
   });
 }
-// 코스 고르기 시트. main.js가 주소 #course일 때 연다. onClose: 사용자가 닫거나 투어를 시작해서 시트가 사라질 때
+// 코스 고르기 시트. main.js가 주소 #course(목록)·#course/코스id(코스 확인)일 때 연다.
+// courseId: 처음 보여 줄 코스 (없으면 목록). onClose: 사용자가 닫거나 투어를 시작해서 시트가 사라질 때
+// onPick(id)·onList(): 목록에서 코스를 누를 때·"다른 코스 보기"를 누를 때 — main.js가 주소를 바꾸고 다시 openCourseSheet를 부른다
+// 이미 열려 있으면 새로 만들지 않고 안의 화면만 바꾼다
 // (뒤로 가기 등으로 다른 화면이 되면 main.js가 closeCourseSheet()로 조용히 닫는다 — 이때는 onClose를 부르지 않음)
 let sheetQuietClose = null;
+let sheetShow = null;
 export function closeCourseSheet() { sheetQuietClose?.(); }
-export function openCourseSheet({ onClose } = {}) {
+export function openCourseSheet({ courseId, onClose, onPick, onList } = {}) {
+  if (sheetShow && document.getElementById("tour-sheet")) { sheetShow(courseId, { onClose, onPick, onList }); return; }
   closeCourseSheet();
   injectStyle();
   const el = document.createElement("div");
   el.id = "tour-sheet";
   document.body.appendChild(el);
   const quiet = () => { stopVoice(); bgm.stop(); };   // 미리 듣기로 나던 소리 끄기 (설정 값은 그대로)
-  sheetQuietClose = () => { sheetQuietClose = null; quiet(); el.remove(); };
+  sheetQuietClose = () => { sheetQuietClose = null; sheetShow = null; quiet(); el.remove(); };
   const close = () => { sheetQuietClose?.(); onClose?.(); };
   el.onclick = (e) => { if (e.target === el) close(); };
   const head = (title, label) => `
@@ -732,7 +737,7 @@ export function openCourseSheet({ onClose } = {}) {
         </button>`).join("")}
     </div>`;
     el.querySelector(".ts-x").onclick = close;
-    el.querySelectorAll(".ts-course").forEach((b) => (b.onclick = () => showDetail(course(b.dataset.c))));
+    el.querySelectorAll(".ts-course").forEach((b) => (b.onclick = () => (onPick ? onPick(b.dataset.c) : showDetail(course(b.dataset.c)))));
   }
 
   // ② 코스 자세히 + 설정 + 시작하기. 소리 설정은 이동 화면의 "음성" 버튼과 같은 값을 쓴다
@@ -769,13 +774,14 @@ export function openCourseSheet({ onClose } = {}) {
     </div>`;
     bindSound(el.querySelector(".snd"));   // 음악을 켜면 미리 들려줌 (시트를 닫거나 시작하면 quiet()로 끔)
     el.querySelector(".ts-x").onclick = close;
-    el.querySelector(".ts-back").onclick = () => { quiet(); showList(); };
+    el.querySelector(".ts-back").onclick = () => { quiet(); onList ? onList() : showList(); };
     el.querySelector(".ts-start").onclick = () => {
       quiet();   // 이동 화면이 열리면서 음악·안내를 처음부터 다시 튼다
       unlockAudio();
       save({ course: c.id, idx: 0, gate: "main", startedAt: Date.now() });
       try { localStorage.setItem(TRIED_KEY, "1"); } catch {}
       sheetQuietClose = null;
+      sheetShow = null;
       el.remove();
       onClose?.();   // 주소의 #course를 정리 (이동 화면은 그 위에 따로 뜬다)
       openMove(true);
@@ -783,7 +789,9 @@ export function openCourseSheet({ onClose } = {}) {
     el.querySelector(".ts").scrollTop = 0;
   }
 
-  showList();
+  const show = (id) => { const c = id && course(id); c ? showDetail(c) : (quiet(), showList()); };
+  sheetShow = (id, h) => { ({ onClose, onPick, onList } = h); show(id); };
+  show(courseId);
 }
 // 아이폰은 버튼을 누른 순간에 한 번 소리를 내 줘야 그 뒤에도 음성이 나온다
 function unlockAudio() {
